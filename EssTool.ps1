@@ -5,7 +5,7 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "Winget Package Installer"
+$form.Text = "ESS Tool Box a.01"
 $form.Size = New-Object System.Drawing.Size(400, 300)
 $form.StartPosition = "CenterScreen"
 
