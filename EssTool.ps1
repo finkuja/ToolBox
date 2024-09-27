@@ -71,6 +71,26 @@ $buttonInstall.Add_Click({
     [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
 })
 
+# Create an Get Packets button in the Install tab
+$buttonGetPackets = New-Object System.Windows.Forms.Button
+$buttonGetPackets.Text = "Get Packets"
+$buttonGetPackets.Location = New-Object System.Drawing.Point(120, 160)
+$tabInstall.Controls.Add($buttonGetPackets)
+
+# Define the action for the Get Packets button
+$buttonGetPackets.Add_Click({
+    $output = Start-Process "winget" -ArgumentList "search" -NoNewWindow -Wait -PassThru
+    $installedPackages = $output.StandardOutput -split '\r?\n' | Select-Object -Skip 2 | ForEach-Object { $_ -split '\s{2,}' } | Where-Object { $_[0] -ne '' }
+    
+    foreach ($package in $installedPackages) {
+        $packageName = $package[0]
+        $checkBox = $tabInstall.Controls | Where-Object { $_.Text -eq $packageName }
+        if ($checkBox) {
+            $checkBox.Checked = $true
+        }
+    }
+})
+
 # Create the Tweak tab
 $tabTweak = New-Object System.Windows.Forms.TabPage
 $tabTweak.Text = "Tweak"
