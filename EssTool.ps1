@@ -27,10 +27,20 @@ $checkboxPowerToys.Text = "PowerToys"
 $checkboxPowerToys.Location = New-Object System.Drawing.Point(20, 50)
 $form.Controls.Add($checkboxPowerToys)
 
+$checkboxTeams = New-Object System.Windows.Forms.CheckBox
+$checkboxTeams.Text = "Microsoft Teams"
+$checkboxTeams.Location = New-Object System.Drawing.Point(20, 80)
+$form.Controls.Add($checkboxTeams)
+
+$checkboxOneNote = New-Object System.Windows.Forms.CheckBox
+$checkboxOneNote.Text = "Microsoft OneNote"
+$checkboxOneNote.Location = New-Object System.Drawing.Point(20, 110)
+$form.Controls.Add($checkboxOneNote)
+
 # Create an Install button
 $buttonInstall = New-Object System.Windows.Forms.Button
 $buttonInstall.Text = "Install"
-$buttonInstall.Location = New-Object System.Drawing.Point(20, 100)
+$buttonInstall.Location = New-Object System.Drawing.Point(20, 160)
 $form.Controls.Add($buttonInstall)
 
 # Define the action for the Install button
@@ -40,6 +50,12 @@ $buttonInstall.Add_Click({
     }
     if ($checkboxPowerToys.Checked) {
         Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e" -NoNewWindow -Wait
+    }
+    if ($checkboxTeams.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e" -NoNewWindow -Wait
+    }
+    if ($checkboxOneNote.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.OneNote -e" -NoNewWindow -Wait
     }
     [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
 })
