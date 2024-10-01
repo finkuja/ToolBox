@@ -11,6 +11,14 @@ Write-Output "  ______  _____  _____    _______          _
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+#Check if winget is installed
+$winget = Get-Command winget -ErrorAction SilentlyContinue
+if ($winget -eq $null) {
+    [System.Windows.Forms.MessageBox]::Show("Windows Package Manager (winget) is not installed. Please install it from https://github.com/microsoft/winget-cli/releases")
+    Start-Process "https://github.com/microsoft/winget-cli/releases"
+    exit
+}
+
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "ESS Tool Box a.01"
 $form.Size = New-Object System.Drawing.Size(400, 300)
@@ -103,7 +111,71 @@ $tabTweak.Text = "Tweak"
 $tabControl.Controls.Add($tabTweak)
 
 # Create controls for the Tweak tab
+$checkboxRightClickEndTask = New-Object System.Windows.Forms.CheckBox
+$checkboxRightClickEndTask.Text = "Enable right click end task"
+$checkboxRightClickEndTask.Name = "EnableRightClickEndTask"
+$checkboxRightClickEndTask.Location = New-Object System.Drawing.Point(20, 20)
+$tabTweak.Controls.Add($checkboxRightClickEndTask)
 
+$checkboxRunDiskCleanup = New-Object System.Windows.Forms.CheckBox
+$checkboxRunDiskCleanup.Text = "Run disk cleanup"
+$checkboxRunDiskCleanup.Name = "RunDiskCleanup"
+$checkboxRunDiskCleanup.Location = New-Object System.Drawing.Point(20, 50)
+$tabTweak.Controls.Add($checkboxRunDiskCleanup)
+
+$buttonApply = New-Object System.Windows.Forms.Button
+$buttonApply.Text = "Apply"
+$buttonApply.Location = New-Object System.Drawing.Point(20, 100)
+$tabTweak.Controls.Add($buttonApply)
+
+$buttonUndo = New-Object System.Windows.Forms.Button
+$buttonUndo.Text = "Undo"
+$buttonUndo.Location = New-Object System.Drawing.Point(120, 100)
+$tabTweak.Controls.Add($buttonUndo)
+
+# Define the action for the Apply button
+$buttonApply.Add_Click({
+    if ($checkboxRightClickEndTask.Checked) {
+        # Add registry key to enable right click end task
+        $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
+        $regName = "TaskbarEndTask"
+        $regValue = 1
+        #Ensure the registry path exists
+        if (-not (Test-Path $regPath)) {
+            New-Item -Path $regPath -Force | Out-Null
+        }
+        #Set the registry value, creating it if it doesn't exist
+        New-ItemProperty -Path $regPath -Name $regName -Value $regValue -Force | Out-Null
+    }
+    if ($checkboxRunDiskCleanup.Checked) {
+        # Run disk cleanup
+        Start-Process "cleanmgr.exe" -ArgumentList "/sagerun:1" -NoNewWindow -Wait
+        Start-Process "dism.exe" -ArgumentList "/Online /Cleanup-Image /ResetBase" -NoNewWindow -Wait
+    }
+    [System.Windows.Forms.MessageBox]::Show("Selected tweaks have been applied.")
+})
+
+# Define the action for the Undo button
+$buttonUndo.Add_Click({
+    if ($checkboxRightClickEndTask.Checked) {
+        # Remove registry key to disable right click end task
+        $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
+        $regName = "TaskbarEndTask"
+        $regValue = 0
+        
+    #Ensure the registry path exists
+        if (-not (Test-Path $regPath)) {
+            New-Item -Path $regPath -Force | Out-Null
+        }
+        #Remove the registry value, creating it if it doesn't exist
+        New-ItemProperty -Path $regPath -Name $regName -Value $regValue -Force | Out-Null
+    }
+    if ($checkboxRunDiskCleanup.Checked) {
+        # Undo disk cleanup
+        Write-Output "Nothing to do here..."
+    }
+    [System.Windows.Forms.MessageBox]::Show("Selected tweaks have been undone.")
+})
 # ...
 
 # Create the Fix tab
