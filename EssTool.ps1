@@ -117,7 +117,7 @@ $sectionTeams.Text = "Teams"
 $sectionTeams.Size = New-Object System.Drawing.Size(350, 150)
 $sectionTeams.Location = New-Object System.Drawing.Point(20, 20)
 $tabFix.Controls.Add($sectionTeams)
-$sectionTeams.Controls.Add($buttonFixOutlookAddin)
+
 $buttonFixOutlookAddin = New-Object System.Windows.Forms.Button
 $buttonFixOutlookAddin.Text = "Fix Outlook Addin"
 $buttonFixOutlookAddin.Location = New-Object System.Drawing.Point(20, 30)
@@ -140,6 +140,7 @@ $buttonFixOutlookAddin.Add_Click({
 
     [System.Windows.Forms.MessageBox]::Show("Teams Outlook Add-in has been fixed.")
 })
+$sectionTeams.Controls.Add($buttonFixOutlookAddin)
 
 # Run the form
 $form.ShowDialog()
