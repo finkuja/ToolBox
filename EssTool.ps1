@@ -30,21 +30,25 @@ $tabControl.Controls.Add($tabInstall)
 # Create checkboxes for packages in the Install tab
 $checkboxOffice = New-Object System.Windows.Forms.CheckBox
 $checkboxOffice.Text = "Microsoft Office 365"
+$checkboxOffice.Name = "Microsoft.Office"
 $checkboxOffice.Location = New-Object System.Drawing.Point(20, 20)
 $tabInstall.Controls.Add($checkboxOffice)
 
 $checkboxPowerToys = New-Object System.Windows.Forms.CheckBox
 $checkboxPowerToys.Text = "PowerToys"
+$checkboxPowerToys.Name = "Microsoft.PowerToys"
 $checkboxPowerToys.Location = New-Object System.Drawing.Point(20, 50)
 $tabInstall.Controls.Add($checkboxPowerToys)
 
 $checkboxTeams = New-Object System.Windows.Forms.CheckBox
 $checkboxTeams.Text = "Microsoft Teams"
+$checkboxTeams.Name = "Microsoft.Teams"
 $checkboxTeams.Location = New-Object System.Drawing.Point(20, 80)
 $tabInstall.Controls.Add($checkboxTeams)
 
 $checkboxOneNote = New-Object System.Windows.Forms.CheckBox
 $checkboxOneNote.Text = "Microsoft OneNote"
+$checkboxOneNote.Name = "Microsoft.OneNote"
 $checkboxOneNote.Location = New-Object System.Drawing.Point(20, 110)
 $tabInstall.Controls.Add($checkboxOneNote)
 
@@ -71,22 +75,24 @@ $buttonInstall.Add_Click({
     [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
 })
 
-# Create an Get Packets button in the Install tab
-$buttonGetPackets = New-Object System.Windows.Forms.Button
-$buttonGetPackets.Text = "Get Packets"
-$buttonGetPackets.Location = New-Object System.Drawing.Point(120, 160)
-$tabInstall.Controls.Add($buttonGetPackets)
+# Create a Get Packages button in the Install tab
+$buttonGetPackages = New-Object System.Windows.Forms.Button
+$buttonGetPackages.Text = "Get Packages"
+$buttonGetPackages.Location = New-Object System.Drawing.Point(120, 160)
+$tabInstall.Controls.Add($buttonGetPackages)
 
-# Define the action for the Get Packets button
-$buttonGetPackets.Add_Click({
-    $output = Start-Process "winget" -ArgumentList "search" -NoNewWindow -Wait -PassThru
+# Define the action for the Get Packages button
+$buttonGetPackages.Add_Click({
+    $output = Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait -PassThru
     $installedPackages = $output.StandardOutput -split '\r?\n' | Select-Object -Skip 2 | ForEach-Object { $_ -split '\s{2,}' } | Where-Object { $_[0] -ne '' }
     
     foreach ($package in $installedPackages) {
-        $packageName = $package[0]
-        $checkBox = $tabInstall.Controls | Where-Object { $_.Text -eq $packageName }
-        if ($checkBox) {
-            $checkBox.Checked = $true
+        $packageId = $package[1]
+        Write-Line $package[1]
+        foreach ($control in $tabInstall.Controls) {
+            if ($control.Name -eq $packageId) {
+                $control.Checked = $true
+            }
         }
     }
 })
@@ -97,6 +103,7 @@ $tabTweak.Text = "Tweak"
 $tabControl.Controls.Add($tabTweak)
 
 # Create controls for the Tweak tab
+
 # ...
 
 # Create the Fix tab
@@ -105,7 +112,34 @@ $tabFix.Text = "Fix"
 $tabControl.Controls.Add($tabFix)
 
 # Create controls for the Fix tab
-# ...
+$sectionTeams = New-Object System.Windows.Forms.GroupBox
+$sectionTeams.Text = "Teams"
+$sectionTeams.Size = New-Object System.Drawing.Size(350, 150)
+$sectionTeams.Location = New-Object System.Drawing.Point(20, 20)
+$tabFix.Controls.Add($sectionTeams)
+
+$buttonFixOutlookAddin = New-Object System.Windows.Forms.Button
+$buttonFixOutlookAddin.Text = "Fix Outlook Addin"
+$buttonFixOutlookAddin.Location = New-Object System.Drawing.Point(20, 30)
+$buttonFixOutlookAddin.Add_Click({
+    Stop-Process -Name "Teams" -Force
+    Stop-Process -Name "Outlook" -Force
+    $currentUser = $env:USERNAME
+    $squirrelTempPath = "C:\Users\$currentUser\AppData\Local\SquirrelTemp"
+    $teamsPath = "C:\Users\$currentUser\AppData\Local\Microsoft\Teams"
+    if (Test-Path $squirrelTempPath) {
+        Remove-Item -Path $squirrelTempPath -Recurse -Force
+    }
+
+    if (Test-Path $teamsPath) {
+        Remove-Item -Path $teamsPath -Recurse -Force
+    }
+
+    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.Teams -e" -NoNewWindow -Wait
+    Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e" -NoNewWindow -Wait
+
+    [System.Windows.Forms.MessageBox]::Show("Teams Outlook Add-in has been fixed.")
+})# ..$sectionTeams.Controls.Add($buttonFixOutlookAddin)
 
 # Run the form
 $form.ShowDialog()
