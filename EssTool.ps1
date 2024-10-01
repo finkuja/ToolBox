@@ -39,24 +39,28 @@ $tabControl.Controls.Add($tabInstall)
 $checkboxOffice = New-Object System.Windows.Forms.CheckBox
 $checkboxOffice.Text = "Microsoft Office 365"
 $checkboxOffice.Name = "Microsoft.Office"
+$checkboxOffice.AutoSize = $true
 $checkboxOffice.Location = New-Object System.Drawing.Point(20, 20)
 $tabInstall.Controls.Add($checkboxOffice)
 
 $checkboxPowerToys = New-Object System.Windows.Forms.CheckBox
 $checkboxPowerToys.Text = "PowerToys"
 $checkboxPowerToys.Name = "Microsoft.PowerToys"
+$checkboxOffice.AutoSize = $true
 $checkboxPowerToys.Location = New-Object System.Drawing.Point(20, 50)
 $tabInstall.Controls.Add($checkboxPowerToys)
 
 $checkboxTeams = New-Object System.Windows.Forms.CheckBox
 $checkboxTeams.Text = "Microsoft Teams"
 $checkboxTeams.Name = "Microsoft.Teams"
+$checkboxOffice.AutoSize = $true
 $checkboxTeams.Location = New-Object System.Drawing.Point(20, 80)
 $tabInstall.Controls.Add($checkboxTeams)
 
 $checkboxOneNote = New-Object System.Windows.Forms.CheckBox
 $checkboxOneNote.Text = "Microsoft OneNote"
 $checkboxOneNote.Name = "Microsoft.OneNote"
+$checkboxOffice.AutoSize = $true
 $checkboxOneNote.Location = New-Object System.Drawing.Point(20, 110)
 $tabInstall.Controls.Add($checkboxOneNote)
 
@@ -86,6 +90,7 @@ $buttonInstall.Add_Click({
 # Create a Get Installed Packages button in the Install tab
 $buttonGetPackages = New-Object System.Windows.Forms.Button
 $buttonGetPackages.Text = "Get Installed"
+$buttonGetPackages.AutoSize = $true
 $buttonGetPackages.Location = New-Object System.Drawing.Point(120, 160)
 $tabInstall.Controls.Add($buttonGetPackages)
 
@@ -191,7 +196,8 @@ $sectionTeams.Location = New-Object System.Drawing.Point(20, 20)
 $tabFix.Controls.Add($sectionTeams)
 
 $buttonFixOutlookAddin = New-Object System.Windows.Forms.Button
-$buttonFixOutlookAddin.Text = "Fix Addin"
+$buttonFixOutlookAddin.Text = "Fix Outlook Addin"
+$buttonFixOutlookAddin.AutoSize = $true
 $buttonFixOutlookAddin.Location = New-Object System.Drawing.Point(20, 30)
 $buttonFixOutlookAddin.Add_Click({
     Stop-Process -Name "Teams" -Force
