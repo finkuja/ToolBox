@@ -1,12 +1,17 @@
 # Ensure you run this script with administrator privileges
 # Import necessary .NET assemblies
 
-Write-Output "  ______  _____  _____    _______          _ 
- |  ____|/ ____|/ ____|  |__   __|        | |
- | |__  | (___ | (___       | | ___   ___ | |
- |  __|  \___ \ \___ \      | |/ _ \ / _ \| |
- | |____ ____) |____) |     | | (_) | (_) | |
- |______|_____/|_____/      |_|\___/ \___/|_|"
+Write-Output "  ______  _____  _____    _______          _   ____ 
+|  ____|/ ____|/ ____|  |__   __|        | | |  _ \             
+| |__  | (___ | (___       | | ___   ___ | | | |_) | ___  __  __
+|  __|  \___ \ \___ \      | |/ _ \ / _ \| | |  _ < / _ \ \ \/ /
+| |____ ____) |____) |     | | (_) | (_) | | | |_) | (_) | |  |
+|______|_____/|_____/      |_|\___/ \___/|_| |____/ \___/ /_/\_\
+ 
+ === Version Alpha 0.1 ===
+
+ === Created by: Carlos Alvarez Magariños ===
+ "
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
