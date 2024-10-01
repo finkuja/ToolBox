@@ -1,7 +1,7 @@
 # Ensure you run this script with administrator privileges
 # Import necessary .NET assemblies
 
-Write-Output "  ______  _____  _____    _______          _   ____ 
+Write-Output " ______  _____  _____    _______          _   ____ 
 |  ____|/ ____|/ ____|  |__   __|        | | |  _ \             
 | |__  | (___ | (___       | | ___   ___ | | | |_) | ___  __  __
 |  __|  \___ \ \___ \      | |/ _ \ / _ \| | |  _ < / _ \ \ \/ /
@@ -51,21 +51,21 @@ $tabInstall.Controls.Add($checkboxOffice)
 $checkboxPowerToys = New-Object System.Windows.Forms.CheckBox
 $checkboxPowerToys.Text = "PowerToys"
 $checkboxPowerToys.Name = "Microsoft.PowerToys"
-$checkboxOffice.AutoSize = $true
+$checkboxPowerToys.AutoSize = $true
 $checkboxPowerToys.Location = New-Object System.Drawing.Point(20, 50)
 $tabInstall.Controls.Add($checkboxPowerToys)
 
 $checkboxTeams = New-Object System.Windows.Forms.CheckBox
 $checkboxTeams.Text = "Microsoft Teams"
 $checkboxTeams.Name = "Microsoft.Teams"
-$checkboxOffice.AutoSize = $true
+$checkboxTeams.AutoSize = $true
 $checkboxTeams.Location = New-Object System.Drawing.Point(20, 80)
 $tabInstall.Controls.Add($checkboxTeams)
 
 $checkboxOneNote = New-Object System.Windows.Forms.CheckBox
 $checkboxOneNote.Text = "Microsoft OneNote"
 $checkboxOneNote.Name = "Microsoft.OneNote"
-$checkboxOffice.AutoSize = $true
+$checkboxOneNote.AutoSize = $true
 $checkboxOneNote.Location = New-Object System.Drawing.Point(20, 110)
 $tabInstall.Controls.Add($checkboxOneNote)
 
@@ -124,12 +124,14 @@ $tabControl.Controls.Add($tabTweak)
 $checkboxRightClickEndTask = New-Object System.Windows.Forms.CheckBox
 $checkboxRightClickEndTask.Text = "Enable right click end task"
 $checkboxRightClickEndTask.Name = "EnableRightClickEndTask"
+$checkboxRightClickEndTask.AutoSize = $true
 $checkboxRightClickEndTask.Location = New-Object System.Drawing.Point(20, 20)
 $tabTweak.Controls.Add($checkboxRightClickEndTask)
 
 $checkboxRunDiskCleanup = New-Object System.Windows.Forms.CheckBox
 $checkboxRunDiskCleanup.Text = "Run disk cleanup"
 $checkboxRunDiskCleanup.Name = "RunDiskCleanup"
+$checkboxRunDiskCleanup.AutoSize = $true
 $checkboxRunDiskCleanup.Location = New-Object System.Drawing.Point(20, 50)
 $tabTweak.Controls.Add($checkboxRunDiskCleanup)
 
