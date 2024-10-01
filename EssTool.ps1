@@ -75,9 +75,9 @@ $buttonInstall.Add_Click({
     [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
 })
 
-# Create a Get Packages button in the Install tab
+# Create a Get Installed Packages button in the Install tab
 $buttonGetPackages = New-Object System.Windows.Forms.Button
-$buttonGetPackages.Text = "Get Packages"
+$buttonGetPackages.Text = "Get Installed"
 $buttonGetPackages.Location = New-Object System.Drawing.Point(120, 160)
 $tabInstall.Controls.Add($buttonGetPackages)
 
@@ -119,7 +119,7 @@ $sectionTeams.Location = New-Object System.Drawing.Point(20, 20)
 $tabFix.Controls.Add($sectionTeams)
 
 $buttonFixOutlookAddin = New-Object System.Windows.Forms.Button
-$buttonFixOutlookAddin.Text = "Fix Outlook Addin"
+$buttonFixOutlookAddin.Text = "Fix Addin"
 $buttonFixOutlookAddin.Location = New-Object System.Drawing.Point(20, 30)
 $buttonFixOutlookAddin.Add_Click({
     Stop-Process -Name "Teams" -Force
