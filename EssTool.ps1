@@ -26,12 +26,12 @@ if ($winget -eq $null) {
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "ESS Tool Box a.01"
-$form.Size = New-Object System.Drawing.Size(400, 300)
+$form.Size = New-Object System.Drawing.Size(500, 400)
 $form.StartPosition = "CenterScreen"
 
 # Create a TabControl
 $tabControl = New-Object System.Windows.Forms.TabControl
-$tabControl.Size = New-Object System.Drawing.Size(380, 250)
+$tabControl.Size = New-Object System.Drawing.Size(480, 350)
 $tabControl.Location = New-Object System.Drawing.Point(10, 10)
 $form.Controls.Add($tabControl)
 
