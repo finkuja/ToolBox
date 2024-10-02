@@ -40,70 +40,74 @@ $tabInstall = New-Object System.Windows.Forms.TabPage
 $tabInstall.Text = "Install / Update"
 $tabControl.Controls.Add($tabInstall)
 
+# Define column positions
+$column1X = 20
+$column2X = 200
+
 # Create checkboxes for packages in the Install tab
-
-$checkboxOffice = New-Object System.Windows.Forms.CheckBox
-$checkboxOffice.Text = "Microsoft Office 365"
-$checkboxOffice.Name = "Microsoft.Office"
-$checkboxOffice.AutoSize = $true
-$checkboxOffice.Location = New-Object System.Drawing.Point(20, 20)
-$tabInstall.Controls.Add($checkboxOffice)
-
-$checkboxPowerToys = New-Object System.Windows.Forms.CheckBox
-$checkboxPowerToys.Text = "PowerToys"
-$checkboxPowerToys.Name = "Microsoft.PowerToys"
-$checkboxPowerToys.AutoSize = $true
-$checkboxPowerToys.Location = New-Object System.Drawing.Point(20, 50)
-$tabInstall.Controls.Add($checkboxPowerToys)
-
-$checkboxTeams = New-Object System.Windows.Forms.CheckBox
-$checkboxTeams.Text = "Microsoft Teams"
-$checkboxTeams.Name = "Microsoft.Teams"
-$checkboxTeams.AutoSize = $true
-$checkboxTeams.Location = New-Object System.Drawing.Point(20, 80)
-$tabInstall.Controls.Add($checkboxTeams)
-
-$checkboxOneNote = New-Object System.Windows.Forms.CheckBox
-$checkboxOneNote.Text = "Microsoft OneNote"
-$checkboxOneNote.Name = "Microsoft.OneNote"
-$checkboxOneNote.AutoSize = $true
-$checkboxOneNote.Location = New-Object System.Drawing.Point(20, 110)
-$tabInstall.Controls.Add($checkboxOneNote)
 
 $checkboxAdobe = New-Object System.Windows.Forms.CheckBox
 $checkboxAdobe.Text = "Adobe"
 $checkboxAdobe.Name = "Adobe"
 $checkboxAdobe.AutoSize = $true
-$checkboxAdobe.Location = New-Object System.Drawing.Point(20, 140)
+$checkboxAdobe.Location = New-Object System.Drawing.Point($column1X, 20)
 $tabInstall.Controls.Add($checkboxAdobe)
 
 $checkboxAdobeCloud = New-Object System.Windows.Forms.CheckBox
 $checkboxAdobeCloud.Text = "Adobe Cloud"
 $checkboxAdobeCloud.Name = "Adobe.Cloud"
 $checkboxAdobeCloud.AutoSize = $true
-$checkboxAdobeCloud.Location = New-Object System.Drawing.Point(20, 170)
+$checkboxAdobeCloud.Location = New-Object System.Drawing.Point($column1X, 50)
 $tabInstall.Controls.Add($checkboxAdobeCloud)
 
-$checkboxPowerAutomate = New-Object System.Windows.Forms.CheckBox
-$checkboxPowerAutomate.Text = "Power Automate"
-$checkboxPowerAutomate.Name = "PowerAutomate"
-$checkboxPowerAutomate.AutoSize = $true
-$checkboxPowerAutomate.Location = New-Object System.Drawing.Point(20, 200)
-$tabInstall.Controls.Add($checkboxPowerAutomate)
+$checkboxOffice = New-Object System.Windows.Forms.CheckBox
+$checkboxOffice.Text = "Microsoft Office 365"
+$checkboxOffice.Name = "Microsoft.Office"
+$checkboxOffice.AutoSize = $true
+$checkboxOffice.Location = New-Object System.Drawing.Point($column1X, 80)
+$tabInstall.Controls.Add($checkboxOffice)
 
-$checkboxVisio = New-Object System.Windows.Forms.CheckBox
-$checkboxVisio.Text = "Visio"
-$checkboxVisio.Name = "Visio"
-$checkboxVisio.AutoSize = $true
-$checkboxVisio.Location = New-Object System.Drawing.Point(20, 230)
-$tabInstall.Controls.Add($checkboxVisio)
+$checkboxOneNote = New-Object System.Windows.Forms.CheckBox
+$checkboxOneNote.Text = "Microsoft OneNote"
+$checkboxOneNote.Name = "Microsoft.OneNote"
+$checkboxOneNote.AutoSize = $true
+$checkboxOneNote.Location = New-Object System.Drawing.Point($column1X, 110)
+$tabInstall.Controls.Add($checkboxOneNote)
+
+$checkboxTeams = New-Object System.Windows.Forms.CheckBox
+$checkboxTeams.Text = "Microsoft Teams"
+$checkboxTeams.Name = "Microsoft.Teams"
+$checkboxTeams.AutoSize = $true
+$checkboxTeams.Location = New-Object System.Drawing.Point($column2X, 20)
+$tabInstall.Controls.Add($checkboxTeams)
 
 $checkboxNetFrameworks = New-Object System.Windows.Forms.CheckBox
 $checkboxNetFrameworks.Text = ".NET Frameworks"
 $checkboxNetFrameworks.Name = "NetFrameworks"
 $checkboxNetFrameworks.AutoSize = $true
-$checkboxNetFrameworks.Location = New-Object System.Drawing.Point(20, 260)
+$checkboxNetFrameworks.Location = New-Object System.Drawing.Point($column2X, 50)
 $tabInstall.Controls.Add($checkboxNetFrameworks)
+
+$checkboxPowerAutomate = New-Object System.Windows.Forms.CheckBox
+$checkboxPowerAutomate.Text = "Power Automate"
+$checkboxPowerAutomate.Name = "PowerAutomate"
+$checkboxPowerAutomate.AutoSize = $true
+$checkboxPowerAutomate.Location = New-Object System.Drawing.Point($column2X, 80)
+$tabInstall.Controls.Add($checkboxPowerAutomate)
+
+$checkboxPowerToys = New-Object System.Windows.Forms.CheckBox
+$checkboxPowerToys.Text = "PowerToys"
+$checkboxPowerToys.Name = "Microsoft.PowerToys"
+$checkboxPowerToys.AutoSize = $true
+$checkboxPowerToys.Location = New-Object System.Drawing.Point($column2X, 110)
+$tabInstall.Controls.Add($checkboxPowerToys)
+
+$checkboxVisio = New-Object System.Windows.Forms.CheckBox
+$checkboxVisio.Text = "Visio"
+$checkboxVisio.Name = "Visio"
+$checkboxVisio.AutoSize = $true
+$checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 140)
+$tabInstall.Controls.Add($checkboxVisio)
 
 # Create an Install button in the Install tab
 $buttonInstall = New-Object System.Windows.Forms.Button
