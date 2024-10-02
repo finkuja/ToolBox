@@ -17,12 +17,12 @@ Add-Type -AssemblyName System.Drawing
 
 #Check if winget is installed
 $winget = Get-Command winget -ErrorAction SilentlyContinue
-if ($winget -eq $null) {
+if ($null -eq $winget) {
     [System.Windows.Forms.MessageBox]::Show("Windows Package Manager (winget) is not installed. Please install it from https://github.com/microsoft/winget-cli/releases")
     Start-Process "https://github.com/microsoft/winget-cli/releases"
     exit
 }
-
+# Create the form of the main GUI window
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "ESS Tool Box a.01"
 $form.Size = New-Object System.Drawing.Size(500, 400)
@@ -125,7 +125,8 @@ $tabInstall.Controls.Add($checkboxVisio)
 # Create an Install button in the Install tab
 $buttonInstall = New-Object System.Windows.Forms.Button
 $buttonInstall.Text = "Install"
-$buttonInstall.Location = New-Object System.Drawing.Point(20, 230)
+$buttonInstall.AutoSize = $true
+$buttonInstall.Location = New-Object System.Drawing.Point(20, 290)
 $tabInstall.Controls.Add($buttonInstall)
 
 # Define the action for the Install button
@@ -178,24 +179,75 @@ $buttonInstall.Add_Click({
     [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
 })
 
+# Create an Uninstall button in the Install tab
+$buttonUninstall = New-Object System.Windows.Forms.Button
+$buttonUninstall.Text = "Uninstall"
+$buttonUninstall.AutoSize = $true
+$buttonUninstall.Location = New-Object System.Drawing.Point(120, 290)
+$tabInstall.Controls.Add($buttonUninstall)
+
+# Define the action for the Uninstall button
+$buttonUninstall.Add_Click({
+    if ($checkboxOffice.Checked) {
+        Start-Process "winget" -ArgumentList "uninstall --id Microsoft.Office -e" -NoNewWindow -Wait
+    }
+    if ($checkboxPowerToys.Checked) {
+        Start-Process "winget" -ArgumentList "uninstall --id Microsoft.PowerToys -e" -NoNewWindow -Wait
+    }
+    if ($checkboxTeams.Checked) {
+        Start-Process "winget" -ArgumentList "uninstall --id Microsoft.Teams -e" -NoNewWindow -Wait
+    }
+    if ($checkboxOneNote.Checked) {
+        Start-Process "winget" -ArgumentList "uninstall --id Microsoft.OneNote -e" -NoNewWindow -Wait
+    }
+    if ($checkboxAdobe.Checked) {
+        Start-Process "winget" -ArgumentList "uninstall --id Adobe -e" -NoNewWindow -Wait
+    }
+    if ($checkboxAdobeCloud.Checked) {
+        Start-Process "winget" -ArgumentList "uninstall --id Adobe.Cloud -e" -NoNewWindow -Wait
+    }
+    if ($checkboxPowerAutomate.Checked) {
+        Start-Process "winget" -ArgumentList "uninstall --id PowerAutomate -e" -NoNewWindow -Wait
+    }
+    if ($checkboxVisio.Checked) {
+        Start-Process "winget" -ArgumentList "uninstall --id Visio -e" -NoNewWindow -Wait
+    }
+    if ($checkboxNetFrameworks.Checked) {
+        Start-Process "winget" -ArgumentList "uninstall --id NetFrameworks -e" -NoNewWindow -Wait
+    }
+    if ($checkboxQuickAssist.Checked) {
+        Start-Process "winget" -ArgumentList "uninstall --id QuickAssist -e" -NoNewWindow -Wait
+    }
+    if ($checkboxSurfaceDiagnosticToolkit.Checked) {
+        Start-Process "winget" -ArgumentList "uninstall --id SurfaceDiagnosticToolkit -e" -NoNewWindow -Wait
+    }
+    [System.Windows.Forms.MessageBox]::Show("Selected packages have been uninstalled.")
+})
+
 # Create a Get Installed Packages button in the Install tab
 $buttonGetPackages = New-Object System.Windows.Forms.Button
 $buttonGetPackages.Text = "Get Installed"
 $buttonGetPackages.AutoSize = $true
-$buttonGetPackages.Location = New-Object System.Drawing.Point(120, 230)
+$buttonGetPackages.Location = New-Object System.Drawing.Point(220, 290)
 $tabInstall.Controls.Add($buttonGetPackages)
 
 # Define the action for the Get Packages button
 $buttonGetPackages.Add_Click({
-    $output = Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait -PassThru
-    $installedPackages = $output.StandardOutput -split '\r?\n' | Select-Object -Skip 2 | ForEach-Object { $_ -split '\s{2,}' } | Where-Object { $_[0] -ne '' }
+    # Run the winget list command and capture the output directly
+    $output = & winget list
     
-    foreach ($package in $installedPackages) {
-        $packageId = $package[1]
-        Write-Line $package[1]
-        foreach ($control in $tabInstall.Controls) {
-            if ($control.Name -eq $packageId) {
+    # Split the output into lines and skip the first two lines (headers)
+    $outputLines = $output -split '\r?\n'
+    
+    # Iterate through each control in the install tab
+    foreach ($control in $tabInstall.Controls) {
+        if ($control -is [System.Windows.Forms.CheckBox]) {
+            $checkboxName = $control.Name
+            # Check if the checkbox name is present in the output lines
+            if ($outputLines -match $checkboxName) {
                 $control.Checked = $true
+            } else {
+                $control.Checked = $false
             }
         }
     }
@@ -221,14 +273,35 @@ $checkboxRunDiskCleanup.AutoSize = $true
 $checkboxRunDiskCleanup.Location = New-Object System.Drawing.Point(20, 50)
 $tabTweak.Controls.Add($checkboxRunDiskCleanup)
 
+$checkboxDetailedBSOD = New-Object System.Windows.Forms.CheckBox
+$checkboxDetailedBSOD.Text = "Enable detailed BSOD information"
+$checkboxDetailedBSOD.Name = "EnableDetailedBSOD"
+$checkboxDetailedBSOD.AutoSize = $true
+$checkboxDetailedBSOD.Location = New-Object System.Drawing.Point(20, 80)
+$tabTweak.Controls.Add($checkboxDetailedBSOD)
+
+$checkboxVerboseLogon = New-Object System.Windows.Forms.CheckBox
+$checkboxVerboseLogon.Text = "Enable verbose logon messages"
+$checkboxVerboseLogon.Name = "EnableVerboseLogon"
+$checkboxVerboseLogon.AutoSize = $true
+$checkboxVerboseLogon.Location = New-Object System.Drawing.Point(20, 110)
+$tabTweak.Controls.Add($checkboxVerboseLogon)
+
+$checkboxDeleteTempFiles = New-Object System.Windows.Forms.CheckBox
+$checkboxDeleteTempFiles.Text = "Delete temporary files"
+$checkboxDeleteTempFiles.Name = "DeleteTempFiles"
+$checkboxDeleteTempFiles.AutoSize = $true
+$checkboxDeleteTempFiles.Location = New-Object System.Drawing.Point(20, 140)
+$tabTweak.Controls.Add($checkboxDeleteTempFiles)
+
 $buttonApply = New-Object System.Windows.Forms.Button
 $buttonApply.Text = "Apply"
-$buttonApply.Location = New-Object System.Drawing.Point(20, 100)
+$buttonApply.Location = New-Object System.Drawing.Point(20, 190)
 $tabTweak.Controls.Add($buttonApply)
 
 $buttonUndo = New-Object System.Windows.Forms.Button
 $buttonUndo.Text = "Undo"
-$buttonUndo.Location = New-Object System.Drawing.Point(120, 100)
+$buttonUndo.Location = New-Object System.Drawing.Point(120, 190)
 $tabTweak.Controls.Add($buttonUndo)
 
 # Define the action for the Apply button
@@ -249,6 +322,21 @@ $buttonApply.Add_Click({
         # Run disk cleanup
         Start-Process "cleanmgr.exe" -ArgumentList "/sagerun:1" -NoNewWindow -Wait
         Start-Process "dism.exe" -ArgumentList "/Online /Cleanup-Image /ResetBase" -NoNewWindow -Wait
+    }
+    if ($checkboxDetailedBSOD.Checked) {
+        # Enable detailed BSOD information
+        Write-Output "Enabling detailed BSOD information..."
+        # Add your code here
+    }
+    if ($checkboxVerboseLogon.Checked) {
+        # Enable verbose logon messages
+        Write-Output "Enabling verbose logon messages..."
+        # Add your code here
+    }
+    if ($checkboxDeleteTempFiles.Checked) {
+        # Delete temporary files
+        Write-Output "Deleting temporary files..."
+        # Add your code here
     }
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks have been applied.")
 })
@@ -272,9 +360,23 @@ $buttonUndo.Add_Click({
         # Undo disk cleanup
         Write-Output "Nothing to do here..."
     }
+    if ($checkboxDetailedBSOD.Checked) {
+        # Disable detailed BSOD information
+        Write-Output "Disabling detailed BSOD information..."
+        # Add your code here
+    }
+    if ($checkboxVerboseLogon.Checked) {
+        # Disable verbose logon messages
+        Write-Output "Disabling verbose logon messages..."
+        # Add your code here
+    }
+    if ($checkboxDeleteTempFiles.Checked) {
+        # Undo delete temporary files
+        Write-Output "Nothing to do here..."
+        # Add your code here
+    }
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks have been undone.")
 })
-# ...
 
 # Create the Fix tab
 $tabFix = New-Object System.Windows.Forms.TabPage
@@ -283,38 +385,100 @@ $tabControl.Controls.Add($tabFix)
 
 # Create controls for the Fix tab
 
-# Teams section
-$sectionTeams = New-Object System.Windows.Forms.GroupBox
-$sectionTeams.Text = "Teams"
-$sectionTeams.Size = New-Object System.Drawing.Size(350, 150)
-$sectionTeams.Location = New-Object System.Drawing.Point(20, 20)
-$tabFix.Controls.Add($sectionTeams)
+# Apps section
+$sectionApps = New-Object System.Windows.Forms.GroupBox
+$sectionApps.Text = "Apps"
+$sectionApps.Size = New-Object System.Drawing.Size(480, 100)
+$sectionApps.Location = New-Object System.Drawing.Point($column1X, 20)
+$tabFix.Controls.Add($sectionApps)
 
-# Create a button to fix the Teams Outlook Add-in
-$buttonFixOutlookAddin = New-Object System.Windows.Forms.Button
-$buttonFixOutlookAddin.Text = "Fix Outlook Addin"
-$buttonFixOutlookAddin.AutoSize = $true
-$buttonFixOutlookAddin.Location = New-Object System.Drawing.Point(20, 30)
-$buttonFixOutlookAddin.Add_Click({
-    Stop-Process -Name "Teams" -Force
-    Stop-Process -Name "Outlook" -Force
-    $currentUser = $env:USERNAME
-    $squirrelTempPath = "C:\Users\$currentUser\AppData\Local\SquirrelTemp"
-    $teamsPath = "C:\Users\$currentUser\AppData\Local\Microsoft\Teams"
-    if (Test-Path $squirrelTempPath) {
-        Remove-Item -Path $squirrelTempPath -Recurse -Force
-    }
-
-    if (Test-Path $teamsPath) {
-        Remove-Item -Path $teamsPath -Recurse -Force
-    }
-
-    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.Teams -e" -NoNewWindow -Wait
-    Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e" -NoNewWindow -Wait
-
-    [System.Windows.Forms.MessageBox]::Show("Teams Outlook Add-in has been fixed.")
+# Create a button to remove Adobe Cloud
+$buttonRemoveAdobeCloud = New-Object System.Windows.Forms.Button
+$buttonRemoveAdobeCloud.Text = "Remove Adobe Cloud"
+$buttonRemoveAdobeCloud.AutoSize = $true
+$buttonRemoveAdobeCloud.Location = New-Object System.Drawing.Point($column1X, 30)
+$buttonRemoveAdobeCloud.Add_Click({
+    # Remove Adobe Cloud
+    Write-Output "Removing Adobe Cloud..."
+    # Add your code here
 })
-$sectionTeams.Controls.Add($buttonFixOutlookAddin)
+$sectionApps.Controls.Add($buttonRemoveAdobeCloud)
+
+# Create a button to remove Adobe Reader
+$buttonRemoveAdobeReader = New-Object System.Windows.Forms.Button
+$buttonRemoveAdobeReader.Text = "Remove Adobe Reader"
+$buttonRemoveAdobeReader.AutoSize = $true
+$buttonRemoveAdobeReader.Location = New-Object System.Drawing.Point($column1X, 60)
+$buttonRemoveAdobeReader.Add_Click({
+    # Remove Adobe Reader
+    Write-Output "Removing Adobe Reader..."
+    # Add your code here
+})
+$sectionApps.Controls.Add($buttonRemoveAdobeReader)
+
+# System section
+$sectionSystem = New-Object System.Windows.Forms.GroupBox
+$sectionSystem.Text = "System"
+$sectionSystem.Size = New-Object System.Drawing.Size(480, 100)
+$sectionSystem.Location = New-Object System.Drawing.Point(20, 140)
+$tabFix.Controls.Add($sectionSystem)
+
+# Create a button to reset Windows Update
+$buttonResetWinUpdate = New-Object System.Windows.Forms.Button
+$buttonResetWinUpdate.Text = "Reset Windows Update"
+$buttonResetWinUpdate.AutoSize = $true
+$buttonResetWinUpdate.Location = New-Object System.Drawing.Point($column1X, 30)
+$buttonResetWinUpdate.Add_Click({
+    # Reset Windows Update
+    Write-Output "Resetting Windows Update..."
+    # Add your code here
+})
+$sectionSystem.Controls.Add($buttonResetWinUpdate)
+
+# Create a button to reset network
+$buttonResetNetwork = New-Object System.Windows.Forms.Button
+$buttonResetNetwork.Text = "Reset Network"
+$buttonResetNetwork.AutoSize = $true
+$buttonResetNetwork.Location = New-Object System.Drawing.Point($column1X, 60)
+$buttonResetNetwork.Add_Click({
+    # Reset network
+    Write-Output "Resetting network..."
+    # Add your code here
+})
+$sectionSystem.Controls.Add($buttonResetNetwork)
+
+# Create a button to run system repair
+$buttonSysRepair = New-Object System.Windows.Forms.Button
+$buttonSysRepair.Text = "System Repair"
+$buttonSysRepair.AutoSize = $true
+$buttonSysRepair.Location = New-Object System.Drawing.Point($column2X, 30)
+$buttonSysRepair.Add_Click({
+    # Run system repair
+    Write-Output "Running system repair..."
+    # Add your code here
+})
+$sectionSystem.Controls.Add($buttonSysRepair)
+
+# Office Apps section
+$sectionOfficeApps = New-Object System.Windows.Forms.GroupBox
+$sectionOfficeApps.Text = "Office Apps"
+$sectionOfficeApps.Size = New-Object System.Drawing.Size(480, 100)
+$sectionOfficeApps.Location = New-Object System.Drawing.Point($column1X, 260)
+$tabFix.Controls.Add($sectionOfficeApps)
+
+# Create a button to rebuild .OST file
+$buttonRebuildOST = New-Object System.Windows.Forms.Button
+$buttonRebuildOST.Text = "Rebuild .OST file"
+$buttonRebuildOST.AutoSize = $true
+$buttonRebuildOST.Location = New-Object System.Drawing.Point($column1X, 30)
+$buttonRebuildOST.Add_Click({
+    # Rebuild .OST file
+    Write-Output "Rebuilding .OST file..."
+    # Add your code here
+})
+$sectionOfficeApps.Controls.Add($buttonRebuildOST)
+
+# ...
 
 # Run the form
 $form.ShowDialog()
