@@ -41,6 +41,7 @@ $tabInstall.Text = "Install / Update"
 $tabControl.Controls.Add($tabInstall)
 
 # Create checkboxes for packages in the Install tab
+
 $checkboxOffice = New-Object System.Windows.Forms.CheckBox
 $checkboxOffice.Text = "Microsoft Office 365"
 $checkboxOffice.Name = "Microsoft.Office"
@@ -69,6 +70,41 @@ $checkboxOneNote.AutoSize = $true
 $checkboxOneNote.Location = New-Object System.Drawing.Point(20, 110)
 $tabInstall.Controls.Add($checkboxOneNote)
 
+$checkboxAdobe = New-Object System.Windows.Forms.CheckBox
+$checkboxAdobe.Text = "Adobe"
+$checkboxAdobe.Name = "Adobe"
+$checkboxAdobe.AutoSize = $true
+$checkboxAdobe.Location = New-Object System.Drawing.Point(20, 140)
+$tabInstall.Controls.Add($checkboxAdobe)
+
+$checkboxAdobeCloud = New-Object System.Windows.Forms.CheckBox
+$checkboxAdobeCloud.Text = "Adobe Cloud"
+$checkboxAdobeCloud.Name = "Adobe.Cloud"
+$checkboxAdobeCloud.AutoSize = $true
+$checkboxAdobeCloud.Location = New-Object System.Drawing.Point(20, 170)
+$tabInstall.Controls.Add($checkboxAdobeCloud)
+
+$checkboxPowerAutomate = New-Object System.Windows.Forms.CheckBox
+$checkboxPowerAutomate.Text = "Power Automate"
+$checkboxPowerAutomate.Name = "PowerAutomate"
+$checkboxPowerAutomate.AutoSize = $true
+$checkboxPowerAutomate.Location = New-Object System.Drawing.Point(20, 200)
+$tabInstall.Controls.Add($checkboxPowerAutomate)
+
+$checkboxVisio = New-Object System.Windows.Forms.CheckBox
+$checkboxVisio.Text = "Visio"
+$checkboxVisio.Name = "Visio"
+$checkboxVisio.AutoSize = $true
+$checkboxVisio.Location = New-Object System.Drawing.Point(20, 230)
+$tabInstall.Controls.Add($checkboxVisio)
+
+$checkboxNetFrameworks = New-Object System.Windows.Forms.CheckBox
+$checkboxNetFrameworks.Text = ".NET Frameworks"
+$checkboxNetFrameworks.Name = "NetFrameworks"
+$checkboxNetFrameworks.AutoSize = $true
+$checkboxNetFrameworks.Location = New-Object System.Drawing.Point(20, 260)
+$tabInstall.Controls.Add($checkboxNetFrameworks)
+
 # Create an Install button in the Install tab
 $buttonInstall = New-Object System.Windows.Forms.Button
 $buttonInstall.Text = "Install"
@@ -88,6 +124,33 @@ $buttonInstall.Add_Click({
     }
     if ($checkboxOneNote.Checked) {
         Start-Process "winget" -ArgumentList "install --id Microsoft.OneNote -e" -NoNewWindow -Wait
+    }
+    if ($checkboxOffice.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.Office -e" -NoNewWindow -Wait
+    }
+    if ($checkboxPowerToys.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e" -NoNewWindow -Wait
+    }
+    if ($checkboxTeams.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e" -NoNewWindow -Wait
+    }
+    if ($checkboxOneNote.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.OneNote -e" -NoNewWindow -Wait
+    }
+    if ($checkboxAdobe.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Adobe -e" -NoNewWindow -Wait
+    }
+    if ($checkboxAdobeCloud.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Adobe.Cloud -e" -NoNewWindow -Wait
+    }
+    if ($checkboxPowerAutomate.Checked) {
+        Start-Process "winget" -ArgumentList "install --id PowerAutomate -e" -NoNewWindow -Wait
+    }
+    if ($checkboxVisio.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Visio -e" -NoNewWindow -Wait
+    }
+    if ($checkboxNetFrameworks.Checked) {
+        Start-Process "winget" -ArgumentList "install --id NetFrameworks -e" -NoNewWindow -Wait
     }
     [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
 })
@@ -196,12 +259,15 @@ $tabFix.Text = "Fix"
 $tabControl.Controls.Add($tabFix)
 
 # Create controls for the Fix tab
+
+# Teams section
 $sectionTeams = New-Object System.Windows.Forms.GroupBox
 $sectionTeams.Text = "Teams"
 $sectionTeams.Size = New-Object System.Drawing.Size(350, 150)
 $sectionTeams.Location = New-Object System.Drawing.Point(20, 20)
 $tabFix.Controls.Add($sectionTeams)
 
+# Create a button to fix the Teams Outlook Add-in
 $buttonFixOutlookAddin = New-Object System.Windows.Forms.Button
 $buttonFixOutlookAddin.Text = "Fix Outlook Addin"
 $buttonFixOutlookAddin.AutoSize = $true
