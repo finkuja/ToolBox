@@ -1,5 +1,4 @@
 # Ensure you run this script with administrator privileges
-# Import necessary .NET assemblies
 
 Write-Output " ______  _____  _____    _______          _   ____ 
 |  ____|/ ____|/ ____|  |__   __|        | | |  _ \             
@@ -12,7 +11,7 @@ Write-Output " ______  _____  _____    _______          _   ____
 
  === Created by: Carlos Alvarez Magariños ===
  "
-
+# Import necessary .NET assemblies
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
