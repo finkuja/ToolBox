@@ -78,41 +78,55 @@ $checkboxTeams = New-Object System.Windows.Forms.CheckBox
 $checkboxTeams.Text = "Microsoft Teams"
 $checkboxTeams.Name = "Microsoft.Teams"
 $checkboxTeams.AutoSize = $true
-$checkboxTeams.Location = New-Object System.Drawing.Point($column2X, 20)
+$checkboxTeams.Location = New-Object System.Drawing.Point($column1X, 140)
 $tabInstall.Controls.Add($checkboxTeams)
 
 $checkboxNetFrameworks = New-Object System.Windows.Forms.CheckBox
 $checkboxNetFrameworks.Text = ".NET Frameworks"
 $checkboxNetFrameworks.Name = "NetFrameworks"
 $checkboxNetFrameworks.AutoSize = $true
-$checkboxNetFrameworks.Location = New-Object System.Drawing.Point($column2X, 50)
+$checkboxNetFrameworks.Location = New-Object System.Drawing.Point($column1X, 170)
 $tabInstall.Controls.Add($checkboxNetFrameworks)
 
 $checkboxPowerAutomate = New-Object System.Windows.Forms.CheckBox
 $checkboxPowerAutomate.Text = "Power Automate"
 $checkboxPowerAutomate.Name = "PowerAutomate"
 $checkboxPowerAutomate.AutoSize = $true
-$checkboxPowerAutomate.Location = New-Object System.Drawing.Point($column2X, 80)
+$checkboxPowerAutomate.Location = New-Object System.Drawing.Point($column1X, 200)
 $tabInstall.Controls.Add($checkboxPowerAutomate)
 
 $checkboxPowerToys = New-Object System.Windows.Forms.CheckBox
 $checkboxPowerToys.Text = "PowerToys"
 $checkboxPowerToys.Name = "Microsoft.PowerToys"
 $checkboxPowerToys.AutoSize = $true
-$checkboxPowerToys.Location = New-Object System.Drawing.Point($column2X, 110)
+$checkboxPowerToys.Location = New-Object System.Drawing.Point($column2X, 20)
 $tabInstall.Controls.Add($checkboxPowerToys)
+
+$checkboxQuickAssist = New-Object System.Windows.Forms.CheckBox
+$checkboxQuickAssist.Text = "Quick Assist"
+$checkboxQuickAssist.Name = "QuickAssist"
+$checkboxQuickAssist.AutoSize = $true
+$checkboxQuickAssist.Location = New-Object System.Drawing.Point($column2X, 50)
+$tabInstall.Controls.Add($checkboxQuickAssist)
+
+$checkboxSurfaceDiagnosticToolkit = New-Object System.Windows.Forms.CheckBox
+$checkboxSurfaceDiagnosticToolkit.Text = "Surface Diagnostic Toolkit"
+$checkboxSurfaceDiagnosticToolkit.Name = "SurfaceDiagnosticToolkit"
+$checkboxSurfaceDiagnosticToolkit.AutoSize = $true
+$checkboxSurfaceDiagnosticToolkit.Location = New-Object System.Drawing.Point($column2X, 80)
+$tabInstall.Controls.Add($checkboxSurfaceDiagnosticToolkit)
 
 $checkboxVisio = New-Object System.Windows.Forms.CheckBox
 $checkboxVisio.Text = "Visio"
 $checkboxVisio.Name = "Visio"
 $checkboxVisio.AutoSize = $true
-$checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 140)
+$checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 110)
 $tabInstall.Controls.Add($checkboxVisio)
 
 # Create an Install button in the Install tab
 $buttonInstall = New-Object System.Windows.Forms.Button
 $buttonInstall.Text = "Install"
-$buttonInstall.Location = New-Object System.Drawing.Point(20, 160)
+$buttonInstall.Location = New-Object System.Drawing.Point(20, 230)
 $tabInstall.Controls.Add($buttonInstall)
 
 # Define the action for the Install button
@@ -156,6 +170,12 @@ $buttonInstall.Add_Click({
     if ($checkboxNetFrameworks.Checked) {
         Start-Process "winget" -ArgumentList "install --id NetFrameworks -e" -NoNewWindow -Wait
     }
+    if ($checkboxQuickAssist.Checked) {
+        Start-Process "winget" -ArgumentList "install --id QuickAssist -e" -NoNewWindow -Wait
+    }
+    if ($checkboxSurfaceDiagnosticToolkit.Checked) {
+        Start-Process "winget" -ArgumentList "install --id SurfaceDiagnosticToolkit -e" -NoNewWindow -Wait
+    }
     [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
 })
 
@@ -163,7 +183,7 @@ $buttonInstall.Add_Click({
 $buttonGetPackages = New-Object System.Windows.Forms.Button
 $buttonGetPackages.Text = "Get Installed"
 $buttonGetPackages.AutoSize = $true
-$buttonGetPackages.Location = New-Object System.Drawing.Point(120, 160)
+$buttonGetPackages.Location = New-Object System.Drawing.Point(120, 230)
 $tabInstall.Controls.Add($buttonGetPackages)
 
 # Define the action for the Get Packages button
