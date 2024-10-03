@@ -1187,7 +1187,9 @@ $linkRemoveOffice.Text = "Remove Office"
 $linkRemoveOffice.AutoSize = $true
 $linkRemoveOffice.Location = New-Object System.Drawing.Point($column2X, 30)
 $linkRemoveOffice.Add_LinkClicked({
-    # Inform the user that the removal process is starting
+   # Inform the user that the removal process is starting
+$result = [System.Windows.Forms.MessageBox]::Show("This action will close all running Office apps and remove all Office instances. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
     Write-Host "Removing Office..." -ForegroundColor Green
 
     # Step 1: Uninstall Office using the Office Removal Tool
@@ -1269,6 +1271,10 @@ $linkRemoveOffice.Add_LinkClicked({
     }
 
     Write-Host "Office removal process is complete." -ForegroundColor Green
+
+    # Prompt the user to reboot the computer
+    [System.Windows.Forms.MessageBox]::Show("The Office removal process is complete. Please reboot your computer to finalize the changes.", "Reboot Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+}
 })
 $sectionOfficeApps.Controls.Add($linkRemoveOffice)
 
