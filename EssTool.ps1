@@ -1,5 +1,6 @@
 # Ensure you run this script with administrator privileges
 
+
 Write-Output " ______  _____  _____    _______          _   ____ 
 |  ____|/ ____|/ ____|  |__   __|        | | |  _ \             
 | |__  | (___ | (___       | | ___   ___ | | | |_) | ___  __  __
@@ -16,12 +17,37 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 #Check if winget is installed
+Write-Host "Checking if Windows Package Manager (winget) is installed..."
 $winget = Get-Command winget -ErrorAction SilentlyContinue
 if ($null -eq $winget) {
     [System.Windows.Forms.MessageBox]::Show("Windows Package Manager (winget) is not installed. Please install it from https://github.com/microsoft/winget-cli/releases")
     Start-Process "https://github.com/microsoft/winget-cli/releases"
     exit
 }
+
+# Get the winget source list and find the 'msstore' source
+$wingetSource = & winget source list
+
+# Check if the 'msstore' source exists and if the source agreement is not accepted
+if ($wingetSource -and -not $wingetSource.Accepted) {
+    # Update the 'msstore' source and accept the source agreements
+    winget source update --name msstore --accept-source-agreements
+    Write-Host "MS Store Source Agreement has been accepted." -ForegroundColor Green
+} elseif (-not $wingetSource) {
+    Write-Host "MS Store source not found." -ForegroundColor Red
+} else {
+    Write-Host "MS Store Source Agreement is already accepted." -ForegroundColor Green
+}
+
+#Check if the script is running with administrator privileges
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+if (-not $isAdmin) {
+    [System.Windows.Forms.MessageBox]::Show("Please run this script with administrator privileges.")
+    exit
+}  else {
+    Write-Host "Running with administrator privileges." -ForegroundColor Green
+}
+
 # Create the form of the main GUI window
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "ESS Tool Box a.01"
