@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    This script is the ESSToolBox, a tool for system administration tasks.
+
+.DESCRIPTION
+    The ESSToolBox is a PowerShell script designed to perform various system administration tasks. It includes features such as repairing Windows Update, checking for the installation of Windows Package Manager (winget), and more.
+
+.PARAMETER None
+    This script does not accept any parameters.
+
+.NOTES
+    - This script must be run with administrator privileges.
+    - The script checks if Windows Package Manager (winget) is installed and prompts the user to install it if necessary.
+    - The script also checks for the 'msstore' source in the winget source list and accepts the source agreements if necessary.
+
+.LINK
+    GitHub Repository: https://github.com/finkuja/ToolBox
+#>
 # Ensure you run this script with administrator privileges
 
 
@@ -22,7 +40,7 @@ if (-not $isAdmin) {
     Write-Host "The ESSToolBox needs to run as Administrator, trying to elevate the permissions..." -ForegroundColor Yellow
     
     # Get the current script content
-    $scriptContent = (irm aka.ms/esstoolbox)
+    $scriptContent = (irm https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/main/EssTool.ps1)
     
     # Define a temporary file path
     $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox.ps1")
@@ -624,39 +642,48 @@ $tabControl.Controls.Add($tabTweak)
 
 # Create controls for the Tweak tab
 $checkboxRightClickEndTask = New-Object System.Windows.Forms.CheckBox
-$checkboxRightClickEndTask.Text = "Enable end task with right click"
+$checkboxRightClickEndTask.Text = "Enable End Task With Right Click"
 $checkboxRightClickEndTask.Name = "EnableRightClickEndTask"
 $checkboxRightClickEndTask.AutoSize = $true
-$checkboxRightClickEndTask.Location = New-Object System.Drawing.Point($column1X, 80)
+$checkboxRightClickEndTask.Location = New-Object System.Drawing.Point($column1X, 110)
 $tabTweak.Controls.Add($checkboxRightClickEndTask)
 
 $checkboxRunDiskCleanup = New-Object System.Windows.Forms.CheckBox
-$checkboxRunDiskCleanup.Text = "Run disk cleanup"
+$checkboxRunDiskCleanup.Text = "Run Disk Cleanup"
 $checkboxRunDiskCleanup.Name = "RunDiskCleanup"
 $checkboxRunDiskCleanup.AutoSize = $true
-$checkboxRunDiskCleanup.Location = New-Object System.Drawing.Point($column1X, 140)
+$checkboxRunDiskCleanup.Location = New-Object System.Drawing.Point($column1X, 170)
 $tabTweak.Controls.Add($checkboxRunDiskCleanup)
 
 $checkboxDetailedBSOD = New-Object System.Windows.Forms.CheckBox
-$checkboxDetailedBSOD.Text = "Enable detailed BSOD information"
+$checkboxDetailedBSOD.Text = "Enable Detailed BSOD Information"
 $checkboxDetailedBSOD.Name = "EnableDetailedBSOD"
 $checkboxDetailedBSOD.AutoSize = $true
-$checkboxDetailedBSOD.Location = New-Object System.Drawing.Point($column1X, 50)
+$checkboxDetailedBSOD.Location = New-Object System.Drawing.Point($column1X, 80)
 $tabTweak.Controls.Add($checkboxDetailedBSOD)
 
 $checkboxVerboseLogon = New-Object System.Windows.Forms.CheckBox
-$checkboxVerboseLogon.Text = "Enable verbose logon messages"
+$checkboxVerboseLogon.Text = "Enable Verbose Logon Messages"
 $checkboxVerboseLogon.Name = "EnableVerboseLogon"
 $checkboxVerboseLogon.AutoSize = $true
-$checkboxVerboseLogon.Location = New-Object System.Drawing.Point($column1X, 110)
+$checkboxVerboseLogon.Location = New-Object System.Drawing.Point($column1X, 140)
 $tabTweak.Controls.Add($checkboxVerboseLogon)
 
 $checkboxDeleteTempFiles = New-Object System.Windows.Forms.CheckBox
-$checkboxDeleteTempFiles.Text = "Delete temporary files"
+$checkboxDeleteTempFiles.Text = "Delete Temporary Files"
 $checkboxDeleteTempFiles.Name = "DeleteTempFiles"
 $checkboxDeleteTempFiles.AutoSize = $true
 $checkboxDeleteTempFiles.Location = New-Object System.Drawing.Point($column1X, 20)
 $tabTweak.Controls.Add($checkboxDeleteTempFiles)
+
+$checkboxClassicRightClickMenu = New-Object System.Windows.Forms.CheckBox
+$checkboxClassicRightClickMenu.Text = "Enable Classic Right Click Menu"
+$checkboxClassicRightClickMenu.Name = "EnableClassicRightClickMenu"
+$checkboxClassicRightClickMenu.AutoSize = $true
+$checkboxClassicRightClickMenu.Location = New-Object System.Drawing.Point($column1X, 50)
+$tabTweak.Controls.Add($checkboxClassicRightClickMenu)
+
+# Create Apply and Undo buttons in the Tweak tab
 
 $buttonApply = New-Object System.Windows.Forms.Button
 $buttonApply.Text = "Apply"
@@ -750,6 +777,16 @@ $buttonApply.Add_Click({
         }
 
     }
+    if ($checkboxClassicRightClickMenu.Checked) {
+        # Enable Classic Right Click Menu
+        New-Item -Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Name "InprocServer32" -Force -Value ""
+        Write-Host "Classic Right Click Menu has been enabled." -ForegroundColor Green
+
+        # Restart explorer.exe
+        Write-Host "Restarting explorer.exe ..." -ForegroundColor Green
+        $process = Get-Process -Name "explorer"
+        Stop-Process -InputObject $process
+    }
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks have been applied.")
 })
 
@@ -816,6 +853,16 @@ $buttonUndo.Add_Click({
         # Undo delete temporary files
         Write-Output "Nothing to do here..."
         # Add your code here
+    }
+    if ($checkboxClassicRightClickMenu.Checked) {
+        # Disable Classic Right Click Menu
+        Remove-Item -Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Recurse -Confirm:$false -Force
+        Write-Host "Classic Right Click Menu has been disabled." -ForegroundColor Green
+
+        # Restart explorer.exe
+        Write-Host "Restarting explorer.exe ..." -ForegroundColor Green
+        $process = Get-Process -Name "explorer"
+        Stop-Process -InputObject $process
     }
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks have been undone.")
 })
@@ -979,9 +1026,50 @@ $linkRebuildOST.Text = "Rebuild .OST file"
 $linkRebuildOST.AutoSize = $true
 $linkRebuildOST.Location = New-Object System.Drawing.Point($column1X, 30)
 $linkRebuildOST.Add_LinkClicked({
-    # Rebuild .OST file
-    Write-Output "Rebuilding .OST file..."
-    # Add your code here
+   # Prompt the user for confirmation
+$result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+    # Check if Outlook and Teams are running
+    $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
+    $teamsRunning = Get-Process -Name Teams -ErrorAction SilentlyContinue
+
+    # Terminate Outlook and Teams
+    if ($outlookRunning) {
+        Stop-Process -Name Outlook -Force
+    }
+    if ($teamsRunning) {
+        Stop-Process -Name Teams -Force
+    }
+
+    # Path to the Outlook .ost files
+    $ostPath = "$env:LOCALAPPDATA\Microsoft\Outlook"
+
+    # Check if the path exists
+    if (Test-Path $ostPath) {
+        # Remove all .ost files in the current user's AppData folder
+        $ostFiles = Get-ChildItem -Path $ostPath -Filter *.ost -Recurse -ErrorAction SilentlyContinue
+        if ($ostFiles) {
+            foreach ($file in $ostFiles) {
+                Remove-Item -Path $file.FullName -Force
+            }
+            Write-Host "All .ost files have been removed." -ForegroundColor Green
+        } else {
+            Write-Host "No .ost files found to rebuild." -ForegroundColor Red
+        }
+    } else {
+        Write-Host "The path to .ost files does not exist." -ForegroundColor Red
+    }
+
+    # Reopen Outlook and Teams if they were running before
+    if ($outlookRunning) {
+        Start-Process -Name Outlook
+    }
+    if ($teamsRunning) {
+        Start-Process -Name Teams
+    }
+
+    [System.Windows.Forms.MessageBox]::Show("The process is complete. Outlook and Teams have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+}
 })
 $sectionOfficeApps.Controls.Add($linkRebuildOST)
 
@@ -991,9 +1079,105 @@ $linkMissingTeamsAddIn.Text = "Missing Teams Add-In"
 $linkMissingTeamsAddIn.AutoSize = $true
 $linkMissingTeamsAddIn.Location = New-Object System.Drawing.Point($column1X, 60)
 $linkMissingTeamsAddIn.Add_LinkClicked({
-    # Fix Missing Teams Add-In
-    Write-Output "Fixing Missing Teams Add-In..."
-    # Add your code here
+    # Prompt the user for confirmation
+    $result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams please save any important work beofre proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+    if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+    # Check if Teams and Outlook are running
+    $teamsRunning = Get-Process -Name Teams -ErrorAction SilentlyContinue
+    $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
+
+    # Terminate Teams and Outlook
+    if ($teamsRunning) {
+        Stop-Process -Name Teams -Force
+        Write-Host "Teams has been terminated." -ForegroundColor Green
+    } else {
+        Write-Host "Teams was not running." -ForegroundColor Yellow
+    }
+
+    if ($outlookRunning) {
+        Stop-Process -Name Outlook -Force
+        Write-Host "Outlook has been terminated." -ForegroundColor Green
+    } else {
+        Write-Host "Outlook was not running." -ForegroundColor Yellow
+    }   
+
+    # Step 1: Remove SquirrelTemp and Teams folders
+    try {
+        Remove-Item -Recurse -Force -Path "$env:LOCALAPPDATA\SquirrelTemp"
+        Write-Host "SquirrelTemp folder has been removed." -ForegroundColor Green
+    } catch {
+        Write-Host "Failed to remove SquirrelTemp folder." -ForegroundColor Red
+    }
+
+    try {
+        Remove-Item -Recurse -Force -Path "$env:LOCALAPPDATA\Microsoft\Teams"
+        Write-Host "Teams folder has been removed." -ForegroundColor Green
+    } catch {
+        Write-Host "Failed to remove Teams folder." -ForegroundColor Red
+    }
+
+    # Step 2: Rename tma_settings.json
+    $tmaSettingsPath = "$env:LOCALAPPDATA\Publishers\8wekyb3d8bbwe\TeamsSharedConfig\tma_settings.json"
+    if (Test-Path $tmaSettingsPath) {
+        try {
+            Rename-Item -Path $tmaSettingsPath -NewName "tma_settings.json.old"
+            Write-Host "tma_settings.json has been renamed." -ForegroundColor Green
+        } catch {
+            Write-Host "Failed to rename tma_settings.json." -ForegroundColor Red
+        }
+    } else {
+        Write-Host "tma_settings.json not found." -ForegroundColor Yellow
+    }
+
+    # Step 3: Re-register Microsoft.Teams.AddinLoader.dll
+    try {
+        if ([Environment]::Is64BitOperatingSystem) {
+            & "$env:SystemRoot\System32\regsvr32.exe" /n /i:user "$env:LOCALAPPDATA\Microsoft\TeamsMeetingAddin\1.0.18012.2\x64\Microsoft.Teams.AddinLoader.dll"
+        } else {
+            & "$env:SystemRoot\SysWOW64\regsvr32.exe" /n /i:user "$env:LOCALAPPDATA\Microsoft\TeamsMeetingAddin\1.0.18012.2\x86\Microsoft.Teams.AddinLoader.dll"
+        }
+        Write-Host "Microsoft.Teams.AddinLoader.dll has been re-registered." -ForegroundColor Green
+    } catch {
+        Write-Host "Failed to re-register Microsoft.Teams.AddinLoader.dll." -ForegroundColor Red
+    }
+
+    # Step 4: Check and set LoadBehavior in the registry
+    $regPath = "HKCU:\Software\Microsoft\Office\Outlook\Addins\TeamsAddin.FastConnect"
+    if (Test-Path $regPath) {
+        try {
+            $loadBehavior = Get-ItemProperty -Path $regPath -Name LoadBehavior
+            if ($loadBehavior.LoadBehavior -ne 3) {
+                Set-ItemProperty -Path $regPath -Name LoadBehavior -Value 3
+            }
+            Write-Host "LoadBehavior has been set to 3." -ForegroundColor Green
+        } catch {
+            Write-Host "Failed to set LoadBehavior." -ForegroundColor Red
+        }
+    } else {
+        Write-Host "Registry path for LoadBehavior not found." -ForegroundColor Yellow
+    }
+
+    # Step 5: Reset Teams UWP app
+    try {
+        Get-AppxPackage -Name "MicrosoftTeams" | Reset-AppxPackage
+        Write-Host "Teams UWP app has been reset." -ForegroundColor Green
+    } catch {
+        Write-Host "Failed to reset Teams UWP app." -ForegroundColor Red
+    }
+
+    # Reopen Teams and Outlook if they were running before
+    if ($teamsRunning) {
+        Start-Process -Name Teams
+        Write-Host "Teams has been restarted." -ForegroundColor Green
+    }
+
+    if ($outlookRunning) {
+        Start-Process -Name Outlook
+        Write-Host "Outlook has been restarted." -ForegroundColor Green
+    }
+
+        [System.Windows.Forms.MessageBox]::Show("The process is complete. Teams and Outlook have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    }
 })
 $sectionOfficeApps.Controls.Add($linkMissingTeamsAddIn)
 
@@ -1003,12 +1187,90 @@ $linkRemoveOffice.Text = "Remove Office"
 $linkRemoveOffice.AutoSize = $true
 $linkRemoveOffice.Location = New-Object System.Drawing.Point($column2X, 30)
 $linkRemoveOffice.Add_LinkClicked({
-    # Remove Office
-    Write-Output "Removing Office..."
-    # Add your code here
+    # Inform the user that the removal process is starting
+    Write-Host "Removing Office..." -ForegroundColor Green
+
+    # Step 1: Uninstall Office using the Office Removal Tool
+    try {
+        $officeRemovalToolPath = "$env:TEMP\OfficeRemovalTool.exe"
+        Invoke-WebRequest -Uri "https://aka.ms/SaRA-officeUninstallFromPC" -OutFile $officeRemovalToolPath
+        Start-Process -FilePath $officeRemovalToolPath -ArgumentList "/quiet" -Wait
+        Write-Host "Office has been uninstalled." -ForegroundColor Green
+    } catch {
+        Write-Host "Failed to uninstall Office using the Office Removal Tool." -ForegroundColor Red
+    }
+
+    # Step 2: Remove Office-related folders
+    $officeFolders = @(
+        "$env:ProgramFiles\Microsoft Office",
+        "$env:ProgramFiles (x86)\Microsoft Office",
+        "$env:ProgramData\Microsoft\Office",
+        "$env:LOCALAPPDATA\Microsoft\Office",
+        "$env:APPDATA\Microsoft\Office"
+    )
+    foreach ($folder in $officeFolders) {
+        try {
+            Remove-Item -Recurse -Force -Path $folder
+            Write-Host "Removed folder: $folder" -ForegroundColor Green
+        } catch {
+            Write-Host "Failed to remove folder: $folder" -ForegroundColor Red
+        }
+    }
+
+    # Step 3: Remove Office-related registry entries
+    $officeRegistryPaths = @(
+        "HKCU:\Software\Microsoft\Office",
+        "HKCU:\Software\Microsoft\Office\16.0",
+        "HKCU:\Software\Microsoft\Office\15.0",
+        "HKCU:\Software\Microsoft\Office\14.0",
+        "HKCU:\Software\Microsoft\Office\13.0",
+        "HKCU:\Software\Microsoft\Office\12.0",
+        "HKCU:\Software\Microsoft\Office\11.0",
+        "HKLM:\Software\Microsoft\Office",
+        "HKLM:\Software\Wow6432Node\Microsoft\Office"
+    )
+    foreach ($regPath in $officeRegistryPaths) {
+        try {
+            Remove-Item -Recurse -Force -Path $regPath
+            Write-Host "Removed registry path: $regPath" -ForegroundColor Green
+        } catch {
+            Write-Host "Failed to remove registry path: $regPath" -ForegroundColor Red
+        }
+    }
+
+    # Step 4: Remove Office shortcuts
+    $officeShortcuts = @(
+        "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Office",
+        "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Office"
+    )
+    foreach ($shortcut in $officeShortcuts) {
+        try {
+            Remove-Item -Recurse -Force -Path $shortcut
+            Write-Host "Removed shortcut: $shortcut" -ForegroundColor Green
+        } catch {
+            Write-Host "Failed to remove shortcut: $shortcut" -ForegroundColor Red
+        }
+    }
+
+    # Step 5: Remove Office temp files and cache files
+    $officeTempFiles = @(
+        "$env:TEMP\*Office*",
+        "$env:TEMP\*MSO*",
+        "$env:LOCALAPPDATA\Temp\*Office*",
+        "$env:LOCALAPPDATA\Temp\*MSO*"
+    )
+    foreach ($tempFile in $officeTempFiles) {
+        try {
+            Remove-Item -Recurse -Force -Path $tempFile
+            Write-Host "Removed temp file: $tempFile" -ForegroundColor Green
+        } catch {
+            Write-Host "Failed to remove temp file: $tempFile" -ForegroundColor Red
+        }
+    }
+
+    Write-Host "Office removal process is complete." -ForegroundColor Green
 })
 $sectionOfficeApps.Controls.Add($linkRemoveOffice)
-
 
 # ...
 
