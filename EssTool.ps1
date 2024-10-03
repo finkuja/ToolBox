@@ -16,6 +16,40 @@ Write-Output " ______  _____  _____    _______          _   ____
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+# Check if the script is running with administrator privileges
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+if (-not $isAdmin) {
+    Write-Host "The ESSToolBox needs to run as Administrator, trying to elevate the permissions..." -ForegroundColor Yellow
+    
+    # Get the current script content
+    $scriptContent = (irm aka.ms/esstoolbox)
+    
+    # Define a temporary file path
+    $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox.ps1")
+    
+    # Save the script content to the temporary file
+    [System.IO.File]::WriteAllText($tempFilePath, $scriptContent)
+    
+    # Create a new process to run the script with administrator privileges
+    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $startInfo.FileName = "powershell.exe"
+    $startInfo.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$tempFilePath`""
+    $startInfo.Verb = "runas"
+    
+    try {
+        # Start the new process
+        $process = [System.Diagnostics.Process]::Start($startInfo)
+        $process.WaitForExit()
+    } catch {
+        [System.Windows.Forms.MessageBox]::Show("Failed to run the script with administrator privileges. Please run this script with administrator privileges manually.")
+    }
+    
+    # Exit the current script
+    exit
+} else {
+    Write-Host "Running with administrator privileges." -ForegroundColor Green
+}
+
 #Check if winget is installed
 Write-Host "Checking if Windows Package Manager (winget) is installed..."
 $winget = Get-Command winget -ErrorAction SilentlyContinue
@@ -26,26 +60,19 @@ if ($null -eq $winget) {
 }
 
 # Get the winget source list and find the 'msstore' source
-$wingetSource = & winget source list
+$wingetSource = & winget source list | Where-Object { $_.Name -eq 'msstore' }
 
 # Check if the 'msstore' source exists and if the source agreement is not accepted
-if ($wingetSource -and -not $wingetSource.Accepted) {
-    # Update the 'msstore' source and accept the source agreements
-    winget source update --name msstore --accept-source-agreements
-    Write-Host "MS Store Source Agreement has been accepted." -ForegroundColor Green
-} elseif (-not $wingetSource) {
-    Write-Host "MS Store source not found." -ForegroundColor Red
+if ($wingetSource) {
+    if (-not $wingetSource.Accepted) {
+        # Update the 'msstore' source and accept the source agreements
+        Start-Process "winget" -ArgumentList "source update --name msstore" -NoNewWindow -Wait
+        Write-Host "MS Store Source Agreement has been accepted." -ForegroundColor Green
+    } else {
+        Write-Host "MS Store Source Agreement is already accepted." -ForegroundColor Green
+    }
 } else {
-    Write-Host "MS Store Source Agreement is already accepted." -ForegroundColor Green
-}
-
-#Check if the script is running with administrator privileges
-$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-if (-not $isAdmin) {
-    [System.Windows.Forms.MessageBox]::Show("Please run this script with administrator privileges.")
-    exit
-}  else {
-    Write-Host "Running with administrator privileges." -ForegroundColor Green
+    Write-Host "MS Store source not found." -ForegroundColor Yellow
 }
 
 # Create the form of the main GUI window
@@ -72,7 +99,7 @@ $column2X = 200
 # Create checkboxes for packages in the Install tab
 
 $checkboxAdobe = New-Object System.Windows.Forms.CheckBox
-$checkboxAdobe.Text = "Adobe"
+$checkboxAdobe.Text = "Adobe Reader"
 $checkboxAdobe.Name = "Adobe"
 $checkboxAdobe.AutoSize = $true
 $checkboxAdobe.Location = New-Object System.Drawing.Point($column1X, 20)
@@ -286,7 +313,7 @@ $tabControl.Controls.Add($tabTweak)
 
 # Create controls for the Tweak tab
 $checkboxRightClickEndTask = New-Object System.Windows.Forms.CheckBox
-$checkboxRightClickEndTask.Text = "Enable right click end task"
+$checkboxRightClickEndTask.Text = "Enable end task with right click"
 $checkboxRightClickEndTask.Name = "EnableRightClickEndTask"
 $checkboxRightClickEndTask.AutoSize = $true
 $checkboxRightClickEndTask.Location = New-Object System.Drawing.Point(20, 20)
@@ -347,22 +374,82 @@ $buttonApply.Add_Click({
     if ($checkboxRunDiskCleanup.Checked) {
         # Run disk cleanup
         Start-Process "cleanmgr.exe" -ArgumentList "/sagerun:1" -NoNewWindow -Wait
-        Start-Process "dism.exe" -ArgumentList "/Online /Cleanup-Image /ResetBase" -NoNewWindow -Wait
+        
+        # Check the Windows version
+        $osVersion = [System.Environment]::OSVersion.Version
+        $majorVersion = $osVersion.Major
+        #$minorVersion = $osVersion.Minor
+        $buildNumber = $osVersion.Build
+    
+        # Run DISM command with appropriate arguments based on Windows version
+        if ($majorVersion -ge 10 -and $buildNumber -ge 14393) {
+            # Windows 10 version 1607 (Anniversary Update) or later
+            Start-Process "dism.exe" -ArgumentList "/Online /Cleanup-Image /ResetBase" -NoNewWindow -Wait
+        } else {
+            # Older versions of Windows
+            Start-Process "dism.exe" -ArgumentList "/Online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
+        }
     }
     if ($checkboxDetailedBSOD.Checked) {
         # Enable detailed BSOD information
-        Write-Output "Enabling detailed BSOD information..."
-        # Add your code here
+        Write-Host "Enabling detailed BSOD information..." -ForegroundColor Green
+        
+        try {
+            # Define the registry path
+            $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl"
+            
+            # Check if the registry path exists, and create it if it does not
+            if (-not (Test-Path $registryPath)) {
+                New-Item -Path $registryPath -Force
+                Write-Output "Created registry path: $registryPath"
+            }
+            
+            # Set the registry key to enable detailed BSOD information
+            Set-ItemProperty -Path $registryPath -Name "DisplayParameters" -Value 1 -Force
+            Write-Host "Detailed BSOD information has been enabled." -ForegroundColor Green
+        } catch {
+            Write-Host "Failed to enable detailed BSOD information: $_" -ForegroundColor Red
+        }
     }
     if ($checkboxVerboseLogon.Checked) {
         # Enable verbose logon messages
         Write-Output "Enabling verbose logon messages..."
         # Add your code here
+        try {
+            # Define the registry path
+            $registryPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
+            
+            # Check if the registry path exists, and create it if it does not
+            if (-not (Test-Path $registryPath)) {
+                New-Item -Path $registryPath -Force
+                Write-Output "Created registry path: $registryPath"
+            }
+            
+            # Set the registry key to enable verbose logon messages
+            Set-ItemProperty -Path $registryPath -Name "VerboseStatus" -Value 1 -Force
+            Write-Host "Verbose logon messages have been enabled." -ForegroundColor Green
+        } catch {
+            Write-Host "Failed to enable verbose logon messages: $_" -ForegroundColor Red
+        }
     }
     if ($checkboxDeleteTempFiles.Checked) {
         # Delete temporary files
-        Write-Output "Deleting temporary files..."
-        # Add your code here
+        Write-Host "Deleting temporary files..." -ForegroundColor Green
+
+        # Check if the C:\Windows\Temp path exists
+        if (Test-Path "C:\Windows\Temp") {
+            Get-ChildItem -Path "C:\Windows\Temp" *.* -Recurse | Remove-Item -Force -Recurse
+        } else {
+            Write-Host "Path C:\Windows\Temp does not exist." -ForegroundColor Red
+        }
+
+        # Check if the $env:TEMP path exists
+        if (Test-Path $env:TEMP) {
+            Get-ChildItem -Path $env:TEMP *.* -Recurse | Remove-Item -Force -Recurse
+        } else {
+            Write-Host "Path $env:TEMP does not exist." -ForegroundColor Red
+        }
+
     }
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks have been applied.")
 })
@@ -387,14 +474,44 @@ $buttonUndo.Add_Click({
         Write-Output "Nothing to do here..."
     }
     if ($checkboxDetailedBSOD.Checked) {
-        # Disable detailed BSOD information
-        Write-Output "Disabling detailed BSOD information..."
-        # Add your code here
+       # Disable detailed BSOD information
+    Write-Host "Disabling detailed BSOD information..." -ForegroundColor Green
+    
+        try {
+            # Define the registry path
+         $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl"
+        
+            # Check if the registry path exists
+            if (Test-Path $registryPath) {
+                # Set the registry key to disable detailed BSOD information
+                Set-ItemProperty -Path $registryPath -Name "DisplayParameters" -Value 0 -Force
+                Write-Host "Detailed BSOD information has been disabled." -ForegroundColor Green
+            } else {
+                Write-Host "Registry path does not exist: $registryPath" -ForegroundColor Red
+            }
+        } catch {
+        Write-Host "Failed to disable detailed BSOD information: $_" -ForegroundColor Red
+        }
     }
     if ($checkboxVerboseLogon.Checked) {
         # Disable verbose logon messages
         Write-Output "Disabling verbose logon messages..."
         # Add your code here
+        try {
+            # Define the registry path
+            $registryPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
+            
+            # Check if the registry path exists
+            if (Test-Path $registryPath) {
+                # Remove the registry key to disable verbose logon messages
+                Remove-ItemProperty -Path $registryPath -Name "VerboseStatus" -Force
+                Write-Host "Verbose logon messages have been disabled." -ForegroundColor Green
+            } else {
+                Write-Host "Registry path does not exist: $registryPath" -ForegroundColor Red
+            }
+        } catch {
+            Write-Host "Failed to disable verbose logon messages: $_" -ForegroundColor Red
+        }
     }
     if ($checkboxDeleteTempFiles.Checked) {
         # Undo delete temporary files
