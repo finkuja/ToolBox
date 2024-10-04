@@ -30,10 +30,6 @@ Write-Output " ______  _____  _____    _______          _   ____
 
  === Created by: Carlos Alvarez Magariños ===
  "
-# Import necessary .NET assemblies
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-
 # Check if the script is running with administrator privileges
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 if (-not $isAdmin) {
@@ -77,24 +73,30 @@ if ($null -eq $winget) {
     exit
 }
 
-# Get the winget source list and find the 'msstore' source
-$wingetSource = & winget source list | Where-Object { $_.Name -eq 'msstore' }
-
-# Check if the 'msstore' source exists and if the source agreement is not accepted
-if ($wingetSource) {
-    if (-not $wingetSource.Accepted) {
-        # Update the 'msstore' source and accept the source agreements
-        Start-Process "winget" -ArgumentList "source update --name msstore" -NoNewWindow -Wait
-        Write-Host "MS Store Source Agreement has been accepted." -ForegroundColor Green
-    } else {
-        Write-Host "MS Store Source Agreement is already accepted." -ForegroundColor Green
+#Check if winget module is istallend if not Install and Import the winget module
+if (-not (Get-Module -Name Microsoft.WinGet.Client -ListAvailable -ErrorAction SilentlyContinue)) {
+    Write-Host "Installing the Microsoft.WinGet.Client module..." -ForegroundColor Yellow
+    try {
+        Install-Module -Name Microsoft.WinGet.Client -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
+        Write-Host "Microsoft.WinGet.Client module installed successfully." -ForegroundColor Green
+    } catch {
+        Write-Warning "Failed to install the Microsoft.WinGet.Client module. The Install Tab will not work properly."
     }
 } else {
-    Write-Host "MS Store source not found." -ForegroundColor Yellow
+    Write-Host "Microsoft.WinGet.Client module is already installed. Importing Module..." -ForegroundColor Yellow
+}
+try {
+    Import-Module -Name Microsoft.WinGet.Client -ErrorAction Stop
+    Write-Host "Microsoft.WinGet.Client module is imported." -ForegroundColor Green
+} catch {
+    Write-Warning "Failed to import the Microsoft.WinGet.Client module. The Install Tab will not work properly."
 }
 
+# Import necessary .NET assemblies
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
-# ----------------- Declaration of Functions for Cemplex Fix and Tweak Scenarios------------------
+# ----------------- Declaration of Functions for  Winget Package Management Fix and Tweak Scenarios------------------
 #___________________________________________________________________________________________________
 
 
@@ -396,6 +398,60 @@ function Invoke-FixesWUpdate {
 #__________________________________________________________________________________________________________________________________
 
 
+# ---------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------- Create a function to uninstall packages ------------------------------------------------------
+#__________________________________________________________________________________________________________________________________
+
+# .SYNOPSIS
+# Uninstalls a package by its name using WinGet.
+#
+# .DESCRIPTION
+# The Uninstall-PackageByName function retrieves the list of installed packages using WinGet,
+# searches for packages that match the provided name, and uninstalls them.
+#
+# .PARAMETER packageName
+# The name of the package to uninstall. This can be a partial name, and the function will
+# match any installed packages that contain this string.
+#
+# .EXAMPLE
+# Uninstall-PackageByName -packageName "Visual Studio Code"
+# This command will uninstall any installed packages that have "Visual Studio Code" in their name.
+#
+# .NOTES
+# This function requires WinGet to be installed and available in the system's PATH.
+#
+# .OUTPUTS
+# Outputs the status of the uninstallation process to the console.
+# Function to uninstall a package by name
+function Uninstall-PackageByName {
+    param (
+        [string]$packageName
+    )
+
+    # Special Package exceptions
+    if ($packageName -eq "Power Automate") {
+        Write-Output "Uninstalling Power Automate..."
+        Start-Process -FilePath "winget" -ArgumentList "uninstall --id 9NFTCH6J7FHV -e" -NoNewWindow -Wait
+    }
+
+    # Get the list of installed packages as an object
+    $installedPackages = Get-WinGetPackage
+
+    # Find the correct package(s) matching the packageName
+    $matchingPackages = $installedPackages | Where-Object { $_.Name -like "*$packageName*" }
+
+    if ($matchingPackages) {
+        foreach ($package in $matchingPackages) {
+            $packageId = $package.Id
+            Write-Output "Uninstalling package: $packageName with ID: $packageId"
+            Start-Process -FilePath "winget" -ArgumentList "uninstall --id $packageId -e" -NoNewWindow -Wait
+        }
+    } else {
+        Write-Output "Package $packageName not found."
+    }
+}
+
+
 # Create the form of the main GUI window
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "ESS Tool Box (Beta) v0.1"
@@ -420,7 +476,7 @@ $tabControl.Controls.Add($tabInstall)
 # Define column positions
 $column1X = 20
 $column2X = 200
-#$column3X = 380
+$column3X = 380
 #Define Section Length
 $sectionLength = 520
 #Define Install and Tweak Tab Buttons y position
@@ -429,80 +485,88 @@ $buttonY = 340
 # Create checkboxes for packages in the Install tab
 $checkboxAdobe = New-Object System.Windows.Forms.CheckBox
 $checkboxAdobe.Text = "Adobe Reader"
-$checkboxAdobe.Name = "Adobe"
+$checkboxAdobe.Name = "Adobe Acrobat Reader 64-Bit"
 $checkboxAdobe.AutoSize = $true
 $checkboxAdobe.Location = New-Object System.Drawing.Point($column1X, 20)
 $tabInstall.Controls.Add($checkboxAdobe)
 
 $checkboxAdobeCloud = New-Object System.Windows.Forms.CheckBox
 $checkboxAdobeCloud.Text = "Adobe Creative Cloud"
-$checkboxAdobeCloud.Name = "Adobe.Cloud"
+$checkboxAdobeCloud.Name = "Adobe Creative Cloud"
 $checkboxAdobeCloud.AutoSize = $true
 $checkboxAdobeCloud.Location = New-Object System.Drawing.Point($column1X, 50)
 $tabInstall.Controls.Add($checkboxAdobeCloud)
 
 $checkboxOffice = New-Object System.Windows.Forms.CheckBox
 $checkboxOffice.Text = "Microsoft Office 365"
-$checkboxOffice.Name = "Microsoft.Office"
+$checkboxOffice.Name = "Microsoft 365 Apps for Enterprise"
 $checkboxOffice.AutoSize = $true
 $checkboxOffice.Location = New-Object System.Drawing.Point($column1X, 80)
 $tabInstall.Controls.Add($checkboxOffice)
 
 $checkboxOneNote = New-Object System.Windows.Forms.CheckBox
-$checkboxOneNote.Text = "Microsoft OneNote"
-$checkboxOneNote.Name = "Microsoft.OneNote"
+$checkboxOneNote.Text = "Microsoft OneNote UWP (msstore)"
+$checkboxOneNote.Name = "Microsfot OneNote"
 $checkboxOneNote.AutoSize = $true
 $checkboxOneNote.Location = New-Object System.Drawing.Point($column1X, 110)
 $tabInstall.Controls.Add($checkboxOneNote)
 
 $checkboxTeams = New-Object System.Windows.Forms.CheckBox
 $checkboxTeams.Text = "Microsoft Teams"
-$checkboxTeams.Name = "Microsoft.Teams"
+$checkboxTeams.Name = "Microsoft Teams"
 $checkboxTeams.AutoSize = $true
 $checkboxTeams.Location = New-Object System.Drawing.Point($column1X, 140)
 $tabInstall.Controls.Add($checkboxTeams)
 
 $checkboxNetFrameworks = New-Object System.Windows.Forms.CheckBox
-$checkboxNetFrameworks.Text = ".NET Frameworks"
-$checkboxNetFrameworks.Name = "NetFrameworks"
+$checkboxNetFrameworks.Text = ".NET All Versions"
+$checkboxNetFrameworks.Name = "Microsoft .Net Runtime"
 $checkboxNetFrameworks.AutoSize = $true
 $checkboxNetFrameworks.Location = New-Object System.Drawing.Point($column1X, 170)
 $tabInstall.Controls.Add($checkboxNetFrameworks)
 
 $checkboxPowerAutomate = New-Object System.Windows.Forms.CheckBox
 $checkboxPowerAutomate.Text = "Power Automate"
-$checkboxPowerAutomate.Name = "PowerAutomate"
+$checkboxPowerAutomate.Name = "Power Automate"
 $checkboxPowerAutomate.AutoSize = $true
 $checkboxPowerAutomate.Location = New-Object System.Drawing.Point($column1X, 200)
 $tabInstall.Controls.Add($checkboxPowerAutomate)
 
 $checkboxPowerToys = New-Object System.Windows.Forms.CheckBox
 $checkboxPowerToys.Text = "PowerToys"
-$checkboxPowerToys.Name = "Microsoft.PowerToys"
+$checkboxPowerToys.Name = "PowerToys"
 $checkboxPowerToys.AutoSize = $true
 $checkboxPowerToys.Location = New-Object System.Drawing.Point($column1X, 230)
 $tabInstall.Controls.Add($checkboxPowerToys)
 
 $checkboxQuickAssist = New-Object System.Windows.Forms.CheckBox
 $checkboxQuickAssist.Text = "Quick Assist"
-$checkboxQuickAssist.Name = "QuickAssist"
+$checkboxQuickAssist.Name = "Quick Assist"
 $checkboxQuickAssist.AutoSize = $true
 $checkboxQuickAssist.Location = New-Object System.Drawing.Point($column1X, 260)
 $tabInstall.Controls.Add($checkboxQuickAssist)
 
 $checkboxSurfaceDiagnosticToolkit = New-Object System.Windows.Forms.CheckBox
 $checkboxSurfaceDiagnosticToolkit.Text = "Surface Diagnostic Toolkit"
-$checkboxSurfaceDiagnosticToolkit.Name = "SurfaceDiagnosticToolkit"
+$checkboxSurfaceDiagnosticToolkit.Name = "Surface Diagnostic Toolkit"
 $checkboxSurfaceDiagnosticToolkit.AutoSize = $true
 $checkboxSurfaceDiagnosticToolkit.Location = New-Object System.Drawing.Point($column2X, 20)
 $tabInstall.Controls.Add($checkboxSurfaceDiagnosticToolkit)
 
 $checkboxVisio = New-Object System.Windows.Forms.CheckBox
-$checkboxVisio.Text = "Visio"
-$checkboxVisio.Name = "Visio"
+$checkboxVisio.Text = "Visio Viewer 2016"
+$checkboxVisio.Name = "Microsoft VisioViewer"
 $checkboxVisio.AutoSize = $true
 $checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 50)
 $tabInstall.Controls.Add($checkboxVisio)
+
+# Create a checkbox to show in the command promt all pacakges installed
+$checkboxShowInstalled = New-Object System.Windows.Forms.CheckBox
+$checkboxShowInstalled.Text = "Show Installed Packages"
+$checkboxShowInstalled.Name = "ShowInstalled"
+$checkboxShowInstalled.AutoSize = $true
+$checkboxShowInstalled.Location = New-Object System.Drawing.Point($column3X, $buttonY)
+$tabInstall.Controls.Add($checkboxShowInstalled)
 
 # Create an Install button in the Install tab
 $buttonInstall = New-Object System.Windows.Forms.Button
@@ -514,49 +578,41 @@ $tabInstall.Controls.Add($buttonInstall)
 # Define the action for the Install button
 $buttonInstall.Add_Click({
     if ($checkboxOffice.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.Office -e" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.Office -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
     }
     if ($checkboxPowerToys.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
     }
     if ($checkboxTeams.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
     }
     if ($checkboxOneNote.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.OneNote -e" -NoNewWindow -Wait
-    }
-    if ($checkboxOffice.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.Office -e" -NoNewWindow -Wait
-    }
-    if ($checkboxPowerToys.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e" -NoNewWindow -Wait
-    }
-    if ($checkboxTeams.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e" -NoNewWindow -Wait
-    }
-    if ($checkboxOneNote.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.OneNote -e" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id XPFFZHVGQWWLHB -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
     }
     if ($checkboxAdobe.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Adobe -e" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Adobe.Acrobat.Reader.64-Bit -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
     }
     if ($checkboxAdobeCloud.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Adobe.Cloud -e" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Adobe.CreativeCloud -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
     }
     if ($checkboxPowerAutomate.Checked) {
-        Start-Process "winget" -ArgumentList "install --id PowerAutomate -e" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id 9NFTCH6J7FHV -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
     }
     if ($checkboxVisio.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Visio -e" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.VisioViewer -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
     }
     if ($checkboxNetFrameworks.Checked) {
-        Start-Process "winget" -ArgumentList "install --id NetFrameworks -e" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.3_1 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.6 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.7 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.8 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
     }
     if ($checkboxQuickAssist.Checked) {
-        Start-Process "winget" -ArgumentList "install --id QuickAssist -e" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id 9P7BP5VNWKX5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
     }
     if ($checkboxSurfaceDiagnosticToolkit.Checked) {
-        Start-Process "winget" -ArgumentList "install --id SurfaceDiagnosticToolkit -e" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id 9NF1MR6C60ZF -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
     }
     [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
 })
@@ -570,39 +626,18 @@ $tabInstall.Controls.Add($buttonUninstall)
 
 # Define the action for the Uninstall button
 $buttonUninstall.Add_Click({
-    if ($checkboxOffice.Checked) {
-        Start-Process "winget" -ArgumentList "uninstall --id Microsoft.Office -e" -NoNewWindow -Wait
+
+    # Loop through each package and uninstall it
+    $packagesToUninstall = @()
+    foreach ($control in $tabInstall.Controls) {
+        if ($control -is [System.Windows.Forms.CheckBox] -and $control.Checked) {
+            $packagesToUninstall += $control.Name
+        }
     }
-    if ($checkboxPowerToys.Checked) {
-        Start-Process "winget" -ArgumentList "uninstall --id Microsoft.PowerToys -e" -NoNewWindow -Wait
+    foreach ($package in $packagesToUninstall) {
+        Uninstall-PackageByName -packageName $package
     }
-    if ($checkboxTeams.Checked) {
-        Start-Process "winget" -ArgumentList "uninstall --id Microsoft.Teams -e" -NoNewWindow -Wait
-    }
-    if ($checkboxOneNote.Checked) {
-        Start-Process "winget" -ArgumentList "uninstall --id Microsoft.OneNote -e" -NoNewWindow -Wait
-    }
-    if ($checkboxAdobe.Checked) {
-        Start-Process "winget" -ArgumentList "uninstall --id Adobe -e" -NoNewWindow -Wait
-    }
-    if ($checkboxAdobeCloud.Checked) {
-        Start-Process "winget" -ArgumentList "uninstall --id Adobe.Cloud -e" -NoNewWindow -Wait
-    }
-    if ($checkboxPowerAutomate.Checked) {
-        Start-Process "winget" -ArgumentList "uninstall --id PowerAutomate -e" -NoNewWindow -Wait
-    }
-    if ($checkboxVisio.Checked) {
-        Start-Process "winget" -ArgumentList "uninstall --id Visio -e" -NoNewWindow -Wait
-    }
-    if ($checkboxNetFrameworks.Checked) {
-        Start-Process "winget" -ArgumentList "uninstall --id NetFrameworks -e" -NoNewWindow -Wait
-    }
-    if ($checkboxQuickAssist.Checked) {
-        Start-Process "winget" -ArgumentList "uninstall --id QuickAssist -e" -NoNewWindow -Wait
-    }
-    if ($checkboxSurfaceDiagnosticToolkit.Checked) {
-        Start-Process "winget" -ArgumentList "uninstall --id SurfaceDiagnosticToolkit -e" -NoNewWindow -Wait
-    }
+
     [System.Windows.Forms.MessageBox]::Show("Selected packages have been uninstalled.")
 })
 
@@ -615,12 +650,18 @@ $tabInstall.Controls.Add($buttonGetPackages)
 
 # Define the action for the Get Packages button
 $buttonGetPackages.Add_Click({
+    # Check if the showInstalled checkbox is checked
+
+    $showInstalledCheckbox = $tabInstall.Controls | Where-Object { $_.Name -eq "showInstalled" -and $_.Checked }
+    if ($showInstalledCheckbox) {
+       Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
+    }
+
     # Run the winget list command and capture the output directly
     $output = & winget list
-    
     # Split the output into lines and skip the first two lines (headers)
     $outputLines = $output -split '\r?\n'
-    
+
     # Iterate through each control in the install tab
     foreach ($control in $tabInstall.Controls) {
         if ($control -is [System.Windows.Forms.CheckBox]) {
