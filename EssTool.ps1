@@ -579,6 +579,7 @@ if ($lockedFolders.Count -gt 0) {
 } else {
     Write-Host "All Adobe Reader-related folders were successfully deleted." -ForegroundColor Green
 } 
+}
 
 ###########################################
 # Check Install Update and Import Modules #
