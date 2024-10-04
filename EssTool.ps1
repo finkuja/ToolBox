@@ -1,3 +1,4 @@
+
 <#
 .SYNOPSIS
     This script is the ESSToolBox, a tool for system administration tasks.
@@ -683,7 +684,7 @@ $tabControl.Controls.Add($tabInstall)
 # Create checkboxes for packages in the Install tab
 $checkboxAdobe = New-Object System.Windows.Forms.CheckBox
 $checkboxAdobe.Text = "Adobe Reader DC 64-Bit"
-$checkboxAdobe.Name = "Adobe Acrobat Reader DC"
+$checkboxAdobe.Name = "Adobe Acrobat"
 $checkboxAdobe.AutoSize = $true
 $checkboxAdobe.Location = New-Object System.Drawing.Point($column1X, 20)
 $tabInstall.Controls.Add($checkboxAdobe)
