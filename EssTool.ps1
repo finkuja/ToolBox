@@ -390,10 +390,6 @@ function Invoke-FixesWUpdate {
     Write-Progress -Id 10 -Activity "Forcing discovery" -Completed
 }
 
-
-
-
-
 # Funtion to uninstall Winget Packages
 #---------------------------------------
 
@@ -522,78 +518,67 @@ function Add-PublisherToTrustedList {
 function Remove-AdobeReader {
     Write-Host "Removing Adobe Reader..."
         
-    # Step 1: Uninstall Adobe Reader using the Adobe Reader removal tool
-    try {
-        $adobeRemovalToolPath = "$env:TEMP\AdobeAcroCleaner_DC2021.exe"
-        if (-not (Test-Path $adobeRemovalToolPath)) {
-            Write-Host "Downloading the Adobe Reader removal tool..." -ForegroundColor Yellow
-            Invoke-WebRequest -Uri "https://www.adobe.com/support/downloads/product.jsp?product=1&platform=Windows" -OutFile $adobeRemovalToolPath
-        }
-        Write-Host "Running the Adobe Reader removal tool..." -ForegroundColor Yellow
-        Start-Process -FilePath $adobeRemovalToolPath -ArgumentList "/silent" -NoNewWindow -Wait
-        Write-Host "Adobe Reader removal tool has completed." -ForegroundColor Green
+# Step 1: Uninstall Adobe Reader using the Adobe AcroCleaner tool
+try {
+    $acroCleanerToolPath = "$env:TEMP\AcroCleaner_DC2021.exe"
+    if (-not (Test-Path $acroCleanerToolPath)) {
+        Write-Host "Downloading the Adobe AcroCleaner tool..." -ForegroundColor Yellow
+        Invoke-WebRequest -Uri "https://www.adobe.com/support/downloads/detail.jsp?ftpID=5518" -OutFile $acroCleanerToolPath
     }
-    catch {
-        Write-Host "Failed to run the Adobe Reader removal tool." -ForegroundColor Red
-    }
-        
-    # Step 2: Uninstall Adobe Reader using Get-WinGetPackage
-    try {
-        # Get all installed Adobe Reader packages
-        $adobePackages = Get-WinGetPackage | Where-Object { $_.Name -like "*Adobe Acrobat Reader*" }
-        if ($adobePackages) {
-            foreach ($package in $adobePackages) {
-                $packageId = $package.Id
-                Write-Host "Uninstalling Adobe Reader package: $packageId"
-                Start-Process -FilePath "winget" -ArgumentList "uninstall --id $packageId -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-            }
-            Write-Host "All versions of Adobe Reader have been uninstalled using winget." -ForegroundColor Green
-        }
-        else {
-            Write-Host "No Adobe Reader packages found to uninstall using winget." -ForegroundColor Yellow
-        }
-    }
-    catch {
-        Write-Host "Failed to uninstall Adobe Reader using winget." -ForegroundColor Red
-    }
-        
-    # Step 3: Remove Adobe Reader-related folders
-    $adobeReaderFolders = @(
-        "$env:ProgramFiles\Adobe\Acrobat Reader DC",
-        "$env:ProgramFiles (x86)\Adobe\Acrobat Reader DC",
-        "$env:ProgramData\Adobe\Acrobat",
-        "$env:LOCALAPPDATA\Adobe\Acrobat",
-        "$env:APPDATA\Adobe\Acrobat"
-    )
-    foreach ($folder in $adobeReaderFolders) {
-        try {
-            Remove-Item -Recurse -Force -Path $folder
-            Write-Host "Removed folder: $folder" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "Failed to remove folder: $folder" -ForegroundColor Red
-        }
-    }
-        
-    # Step 4: Remove Adobe Reader-related registry entries
-    $adobeReaderRegistryPaths = @(
-        "HKCU:\Software\Adobe\Acrobat Reader",
-        "HKCU:\Software\Adobe\Acrobat Reader DC",
-        "HKLM:\Software\Adobe\Acrobat Reader",
-        "HKLM:\Software\Wow6432Node\Adobe\Acrobat Reader"
-    )
-    foreach ($regPath in $adobeReaderRegistryPaths) {
-        try {
-            Remove-Item -Recurse -Force -Path $regPath
-            Write-Host "Removed registry path: $regPath" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "Failed to remove registry path: $regPath" -ForegroundColor Red
-        }
-    }
+    Write-Host "Running the Adobe AcroCleaner tool..." -ForegroundColor Yellow
+    Start-Process -FilePath $acroCleanerToolPath -ArgumentList "/silent" -NoNewWindow -Wait
+    Write-Host "Adobe AcroCleaner tool has completed." -ForegroundColor Green
+}
+catch {
+    Write-Host "Failed to run the Adobe AcroCleaner tool." -ForegroundColor Red
+}
 
-    Write-Host "Adobe Reader removal process is complete." -ForegroundColor Green
-}  
+# Step 2: Uninstall Adobe Reader using Get-WinGetPackage
+try {
+    # Get all installed Adobe Reader packages
+    $adobePackages = Get-WinGetPackage | Where-Object { $_.Name -like "*Adobe Acrobat Reader*" }
+    if ($adobePackages) {
+        foreach ($package in $adobePackages) {
+            $packageId = $package.Id
+            Write-Host "Uninstalling Adobe Reader package: $packageId"
+            Start-Process -FilePath "winget" -ArgumentList "uninstall --id $packageId -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        Write-Host "All versions of Adobe Reader have been uninstalled using winget." -ForegroundColor Green
+    }
+    else {
+        Write-Host "No Adobe Reader packages found to uninstall using winget." -ForegroundColor Yellow
+    }
+}
+catch {
+    Write-Host "Failed to uninstall Adobe Reader using winget." -ForegroundColor Red
+}
+
+# Step 3: Remove Adobe Reader-related folders
+$adobeReaderFolders = @(
+    "$env:ProgramFiles\Adobe\Acrobat Reader DC",
+    "$env:ProgramFiles (x86)\Adobe\Acrobat Reader DC",
+    "$env:ProgramData\Adobe\Acrobat",
+    "$env:LOCALAPPDATA\Adobe\Acrobat",
+    "$env:APPDATA\Adobe\Acrobat"
+)
+$lockedFolders = @()
+foreach ($folder in $adobeReaderFolders) {
+    try {
+        Remove-Item -Recurse -Force -Path $folder
+        Write-Host "Removed folder: $folder" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Failed to remove folder: $folder" -ForegroundColor Red
+        $lockedFolders += $folder
+    }
+}
+
+if ($lockedFolders.Count -gt 0) {
+    Write-Host "The following folders were not deleted because they are in use:" -ForegroundColor Yellow
+    $lockedFolders | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+} else {
+    Write-Host "All Adobe Reader-related folders were successfully deleted." -ForegroundColor Green
+} 
 
 ###########################################
 # Check Install Update and Import Modules #
