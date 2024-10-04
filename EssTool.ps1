@@ -1044,23 +1044,39 @@ $buttonApply.Add_Click({
         if ($checkboxDeleteTempFiles.Checked) {
             # Delete temporary files
             Write-Host "Deleting temporary files..." -ForegroundColor Green
-
-            # Check if the C:\Windows\Temp path exists
-            if (Test-Path "C:\Windows\Temp") {
-                Get-ChildItem -Path "C:\Windows\Temp" *.* -Recurse | Remove-Item -Force -Recurse
+        
+            $lockedFiles = @()
+        
+            function Remove-Files {
+                param (
+                    [string]$path
+                )
+        
+                if (Test-Path $path) {
+                    Get-ChildItem -Path $path -Recurse -Force | ForEach-Object {
+                        try {
+                            Remove-Item -Path $_.FullName -Force -Recurse
+                        } catch {
+                            $lockedFiles += $_.FullName
+                        }
+                    }
+                } else {
+                    Write-Host "Path $path does not exist." -ForegroundColor Red
+                }
             }
-            else {
-                Write-Host "Path C:\Windows\Temp does not exist." -ForegroundColor Red
+        
+            # Remove files from C:\Windows\Temp
+            Remove-Files -path "C:\Windows\Temp"
+        
+            # Remove files from $env:TEMP
+            Remove-Files -path $env:TEMP
+        
+            if ($lockedFiles.Count -gt 0) {
+                Write-Host "The following files were not deleted because they are in use:" -ForegroundColor Yellow
+                $lockedFiles | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+            } else {
+                Write-Host "All temporary files were successfully deleted." -ForegroundColor Green
             }
-
-            # Check if the $env:TEMP path exists
-            if (Test-Path $env:TEMP) {
-                Get-ChildItem -Path $env:TEMP *.* -Recurse | Remove-Item -Force -Recurse
-            }
-            else {
-                Write-Host "Path $env:TEMP does not exist." -ForegroundColor Red
-            }
-
         }
         if ($checkboxClassicRightClickMenu.Checked) {
             # Enable Classic Right Click Menu
