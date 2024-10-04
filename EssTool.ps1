@@ -1117,8 +1117,14 @@ $buttonApply.Add_Click({
             Write-Host "Optimizing drives..." -ForegroundColor Green
             Get-Volume | Where-Object { $_.DriveLetter } | ForEach-Object { 
                 try {
-                    Optimize-Volume -DriveLetter $_.DriveLetter -ReTrim -Verbose
-                    Write-Host "Drive $($_.DriveLetter) has been optimized." -ForegroundColor Green
+                    $mediaType = (Get-PhysicalDisk | Where-Object { $_.DeviceID -eq $_.DriveLetter }).MediaType
+                    if ($mediaType -eq 'SSD') {
+                        Optimize-Volume -DriveLetter $_.DriveLetter -ReTrim -Verbose
+                        Write-Host "SSD Drive $($_.DriveLetter) has been optimized with ReTrim." -ForegroundColor Green
+                    } else {
+                        Optimize-Volume -DriveLetter $_.DriveLetter -Defrag -Verbose
+                        Write-Host "Drive $($_.DriveLetter) has been optimized with Defrag." -ForegroundColor Green
+                    }
                 }
                 catch {
                     Write-Host "Failed to optimize drive $($_.DriveLetter). Error: $_" -ForegroundColor Yellow
