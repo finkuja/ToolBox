@@ -19,6 +19,10 @@
 # Ensure you run this script with administrator privileges
 
 
+########################################################
+# ESSToolBox - A PowerShell System Administration Tool #
+########################################################
+
 Write-Output " ______  _____  _____    _______          _   ____ 
 |  ____|/ ____|/ ____|  |__   __|        | | |  _ \             
 | |__  | (___ | (___       | | ___   ___ | | | |_) | ___  __  __
@@ -54,13 +58,15 @@ if (-not $isAdmin) {
         # Start the new process
         $process = [System.Diagnostics.Process]::Start($startInfo)
         $process.WaitForExit()
-    } catch {
+    }
+    catch {
         [System.Windows.Forms.MessageBox]::Show("Failed to run the script with administrator privileges. Please run this script with administrator privileges manually.")
     }
     
     # Exit the current script
     exit
-} else {
+}
+else {
     Write-Host "Running with administrator privileges." -ForegroundColor Green
 }
 
@@ -72,38 +78,17 @@ if ($null -eq $winget) {
     Start-Process "https://github.com/microsoft/winget-cli/releases"
     exit
 }
-
-#Check if winget module is istallend if not Install and Import the winget module
-if (-not (Get-Module -Name Microsoft.WinGet.Client -ListAvailable -ErrorAction SilentlyContinue)) {
-    Write-Host "Installing the Microsoft.WinGet.Client module..." -ForegroundColor Yellow
-    try {
-        Install-Module -Name Microsoft.WinGet.Client -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
-        Write-Host "Microsoft.WinGet.Client module installed successfully." -ForegroundColor Green
-    } catch {
-        Write-Warning "Failed to install the Microsoft.WinGet.Client module. The Install Tab will not work properly."
-    }
-} else {
-    Write-Host "Microsoft.WinGet.Client module is already installed. Importing Module..." -ForegroundColor Yellow
-}
-try {
-    Import-Module -Name Microsoft.WinGet.Client -ErrorAction Stop
-    Write-Host "Microsoft.WinGet.Client module is imported." -ForegroundColor Green
-} catch {
-    Write-Warning "Failed to import the Microsoft.WinGet.Client module. The Install Tab will not work properly."
+else {
+    Write-Host "Windows Package Manager (winget) is installed." -ForegroundColor Green
 }
 
-# Import necessary .NET assemblies
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
+###############################
+# PRIVATE FUNCTION DEFINITIONS#
+###############################
 
-# ----------------- Declaration of Functions for  Winget Package Management Fix and Tweak Scenarios------------------
-#___________________________________________________________________________________________________
-
-
-# Function from Chris Titus Tech winutils.ps1 script github.com/christitus/winutils
-function Invoke-FixesWUpdate {
-
-    <#
+# Function from Chris Titus Tech winutils.ps1 script github.com/christitus/winutils to Fix Windows Update
+#---------------------------------------------------------------------------------------------------------
+<#
 
     .SYNOPSIS
         Performs various tasks in an attempt to repair Windows Update
@@ -141,6 +126,7 @@ function Invoke-FixesWUpdate {
         If specified, the script will take additional steps to repair Windows Update that are more dangerous, take a significant amount of time, or are generally unnecessary
 
     #>
+function Invoke-FixesWUpdate {
 
     param($Aggressive = $false)
 
@@ -161,14 +147,17 @@ function Invoke-FixesWUpdate {
             $index = $_.IndexOf("Total:")
             if (
                 # If the percent is found
-                ($percent = try {(
-                    $_.Substring(
-                        $index + 6,
-                        $_.IndexOf("%", $index) - $index - 6
-                    )
-                ).Trim()} catch {0}) `
-                <# And the current percentage is greater than the previous one #>`
-                -and $percent -gt $oldpercent
+                ($percent = try {
+                    (
+                        $_.Substring(
+                            $index + 6,
+                            $_.IndexOf("%", $index) - $index - 6
+                        )
+                    ).Trim()
+                }
+                catch { 0 }) `
+                    <# And the current percentage is greater than the previous one #>`
+                    -and $percent -gt $oldpercent
             ) {
                 # Update the progress bar
                 $oldpercent = $percent
@@ -187,14 +176,17 @@ function Invoke-FixesWUpdate {
             if (
                 (
                     # Use a different method to get the percentage that accounts for SFC's Unicode output
-                    [int]$percent = try {(
+                    [int]$percent = try {
                         (
-                            $_.Substring(
-                                $_.IndexOf("n") + 2,
-                                $_.IndexOf("%") - $_.IndexOf("n") - 2
-                            ).ToCharArray() | Where-Object {$_}
-                        ) -join ''
-                    ).TrimStart()} catch {0}
+                            (
+                                $_.Substring(
+                                    $_.IndexOf("n") + 2,
+                                    $_.IndexOf("%") - $_.IndexOf("n") - 2
+                                ).ToCharArray() | Where-Object { $_ }
+                            ) -join ''
+                        ).TrimStart()
+                    }
+                    catch { 0 }
                 ) -and $percent -gt $oldpercent
             ) {
                 # Update the progress bar
@@ -213,8 +205,9 @@ function Invoke-FixesWUpdate {
             if (
                 ($percent = try {
                     [int]($_ -replace "\[" -replace "=" -replace " " -replace "%" -replace "\]")
-                } catch {0}) `
-                -and $percent -gt $oldpercent
+                }
+                catch { 0 }) `
+                    -and $percent -gt $oldpercent
             ) {
                 # Update the progress bar
                 $oldpercent = $percent
@@ -231,14 +224,17 @@ function Invoke-FixesWUpdate {
             # Filter for lines that contain a percentage that is greater than the previous one
             if (
                 (
-                    [int]$percent = try {(
+                    [int]$percent = try {
                         (
-                            $_.Substring(
-                                $_.IndexOf("n") + 2,
-                                $_.IndexOf("%") - $_.IndexOf("n") - 2
-                            ).ToCharArray() | Where-Object {$_}
-                        ) -join ''
-                    ).TrimStart()} catch {0}
+                            (
+                                $_.Substring(
+                                    $_.IndexOf("n") + 2,
+                                    $_.IndexOf("%") - $_.IndexOf("n") - 2
+                                ).ToCharArray() | Where-Object { $_ }
+                            ) -join ''
+                        ).TrimStart()
+                    }
+                    catch { 0 }
                 ) -and $percent -gt $oldpercent
             ) {
                 # Update the progress bar
@@ -394,35 +390,34 @@ function Invoke-FixesWUpdate {
     Write-Progress -Id 10 -Activity "Forcing discovery" -Completed
 }
 
-#----------------------------------------------------------------------------------------------------------------------------------
-#__________________________________________________________________________________________________________________________________
 
 
-# ---------------------------------------------------------------------------------------------------------------------------------
-# ---------------------------------- Create a function to uninstall packages ------------------------------------------------------
-#__________________________________________________________________________________________________________________________________
 
-# .SYNOPSIS
-# Uninstalls a package by its name using WinGet.
-#
-# .DESCRIPTION
-# The Uninstall-PackageByName function retrieves the list of installed packages using WinGet,
-# searches for packages that match the provided name, and uninstalls them.
-#
-# .PARAMETER packageName
-# The name of the package to uninstall. This can be a partial name, and the function will
-# match any installed packages that contain this string.
-#
-# .EXAMPLE
-# Uninstall-PackageByName -packageName "Visual Studio Code"
-# This command will uninstall any installed packages that have "Visual Studio Code" in their name.
-#
-# .NOTES
-# This function requires WinGet to be installed and available in the system's PATH.
-#
-# .OUTPUTS
-# Outputs the status of the uninstallation process to the console.
-# Function to uninstall a package by name
+
+# Funtion to uninstall Winget Packages
+#---------------------------------------
+
+<# .SYNOPSIS
+    Uninstalls a package by its name using WinGet.
+
+.DESCRIPTION
+    The Uninstall-PackageByName function retrieves the list of installed packages using WinGet,
+    searches for packages that match the provided name, and uninstalls them.
+
+.PARAMETER packageName
+    The name of the package to uninstall. This can be a partial name, and the function will
+    match any installed packages that contain this string.
+
+.EXAMPLE
+    Uninstall-PackageByName -packageName "Visual Studio Code"
+    This command will uninstall any installed packages that have "Visual Studio Code" in their name.
+
+.NOTES
+    This function requires WinGet to be installed and available in the system's PATH.
+
+.OUTPUTS
+    Outputs the status of the uninstallation process to the console.
+    Function to uninstall a package by name#>
 function Uninstall-PackageByName {
     param (
         [string]$packageName
@@ -446,11 +441,215 @@ function Uninstall-PackageByName {
             Write-Output "Uninstalling package: $packageName with ID: $packageId"
             Start-Process -FilePath "winget" -ArgumentList "uninstall --id $packageId -e" -NoNewWindow -Wait
         }
-    } else {
+    }
+    else {
         Write-Output "Package $packageName not found."
     }
 }
 
+# Function to add the publisher to the trusted list 
+#--------------------------------------------------
+<# .SYNOPSIS
+    Adds a specified publisher to the trusted list.
+
+.DESCRIPTION
+    The Add-PublisherToTrustedList function checks the current execution policy and sets it to RemoteSigned if it is not already Unrestricted or RemoteSigned.
+    It then checks if the specified publisher is already in the trusted list and adds it if not. This ensures that scripts from the specified publisher can run without prompts.
+
+.PARAMETER publisher
+    The distinguished name (DN) of the publisher to add to the trusted list. This should include details such as CN, O, L, S, and C.
+
+.EXAMPLE
+    Add-PublisherToTrustedList -publisher "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
+    This command will add Microsoft Corporation to the trusted list, allowing scripts signed by this publisher to run without prompts.
+
+.NOTES
+    This function requires that the publisher's certificate is installed in the user's personal certificate store (Cert:\CurrentUser\My).
+    The function will import the certificate to the TrustedPublisher store (Cert:\CurrentUser\TrustedPublisher).
+
+.OUTPUTS
+    Outputs the status of the operation to the console.
+#>
+
+function Add-PublisherToTrustedList {
+    param (
+        [string]$publisher
+    )
+
+    $executionPolicy = Get-ExecutionPolicy -Scope CurrentUser
+    if ($executionPolicy -ne 'Unrestricted' -and $executionPolicy -ne 'RemoteSigned') {
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+    }
+
+    $trustedPublisher = Get-ChildItem Cert:\CurrentUser\TrustedPublisher | Where-Object { $_.Subject -eq $publisher }
+    if (-not $trustedPublisher) {
+        Write-Host "Adding publisher to the trusted list..." -ForegroundColor Yellow
+        $cert = Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -eq $publisher }
+        if ($cert) {
+            Import-Certificate -FilePath $cert.PSPath -CertStoreLocation Cert:\CurrentUser\TrustedPublisher
+            Write-Host "Publisher added to the trusted list." -ForegroundColor Green
+        }
+        else {
+            Write-Warning "Publisher certificate not found. Please ensure the publisher certificate is installed."
+        }
+    }
+    else {
+        Write-Host "Publisher is already in the trusted list." -ForegroundColor Green
+    }
+}
+
+# Function to fully remove all Adobe Reader instances
+#----------------------------------------------------
+<# .SYNOPSIS
+    Fully removes all instances of Adobe Reader from the system.
+
+.DESCRIPTION
+    The Remove-AdobeReader function performs a thorough removal of all Adobe Reader instances from the system. 
+    It uses the Adobe Reader removal tool to uninstall all versions, followed by using Get-WinGetPackage to uninstall any remaining instances.
+    Additionally, it removes related folders and registry entries to ensure a clean uninstallation.
+
+.EXAMPLE
+    Remove-AdobeReader
+    This command will remove all instances of Adobe Reader from the system, including related folders and registry entries.
+
+.NOTES
+    This function requires an internet connection to download the Adobe Reader removal tool if it is not already present in the TEMP directory.
+    It also requires the Microsoft.WinGet.Client module to be installed and imported.
+
+.OUTPUTS
+    Outputs the status of the operation to the console.
+#>
+function Remove-AdobeReader {
+    Write-Host "Removing Adobe Reader..."
+        
+    # Step 1: Uninstall Adobe Reader using the Adobe Reader removal tool
+    try {
+        $adobeRemovalToolPath = "$env:TEMP\AdobeAcroCleaner_DC2021.exe"
+        if (-not (Test-Path $adobeRemovalToolPath)) {
+            Write-Host "Downloading the Adobe Reader removal tool..." -ForegroundColor Yellow
+            Invoke-WebRequest -Uri "https://www.adobe.com/support/downloads/product.jsp?product=1&platform=Windows" -OutFile $adobeRemovalToolPath
+        }
+        Write-Host "Running the Adobe Reader removal tool..." -ForegroundColor Yellow
+        Start-Process -FilePath $adobeRemovalToolPath -ArgumentList "/silent" -NoNewWindow -Wait
+        Write-Host "Adobe Reader removal tool has completed." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Failed to run the Adobe Reader removal tool." -ForegroundColor Red
+    }
+        
+    # Step 2: Uninstall Adobe Reader using Get-WinGetPackage
+    try {
+        # Get all installed Adobe Reader packages
+        $adobePackages = Get-WinGetPackage | Where-Object { $_.Name -like "*Adobe Acrobat Reader*" }
+        if ($adobePackages) {
+            foreach ($package in $adobePackages) {
+                $packageId = $package.Id
+                Write-Host "Uninstalling Adobe Reader package: $packageId"
+                Start-Process -FilePath "winget" -ArgumentList "uninstall --id $packageId -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            }
+            Write-Host "All versions of Adobe Reader have been uninstalled using winget." -ForegroundColor Green
+        }
+        else {
+            Write-Host "No Adobe Reader packages found to uninstall using winget." -ForegroundColor Yellow
+        }
+    }
+    catch {
+        Write-Host "Failed to uninstall Adobe Reader using winget." -ForegroundColor Red
+    }
+        
+    # Step 3: Remove Adobe Reader-related folders
+    $adobeReaderFolders = @(
+        "$env:ProgramFiles\Adobe\Acrobat Reader DC",
+        "$env:ProgramFiles (x86)\Adobe\Acrobat Reader DC",
+        "$env:ProgramData\Adobe\Acrobat",
+        "$env:LOCALAPPDATA\Adobe\Acrobat",
+        "$env:APPDATA\Adobe\Acrobat"
+    )
+    foreach ($folder in $adobeReaderFolders) {
+        try {
+            Remove-Item -Recurse -Force -Path $folder
+            Write-Host "Removed folder: $folder" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to remove folder: $folder" -ForegroundColor Red
+        }
+    }
+        
+    # Step 4: Remove Adobe Reader-related registry entries
+    $adobeReaderRegistryPaths = @(
+        "HKCU:\Software\Adobe\Acrobat Reader",
+        "HKCU:\Software\Adobe\Acrobat Reader DC",
+        "HKLM:\Software\Adobe\Acrobat Reader",
+        "HKLM:\Software\Wow6432Node\Adobe\Acrobat Reader"
+    )
+    foreach ($regPath in $adobeReaderRegistryPaths) {
+        try {
+            Remove-Item -Recurse -Force -Path $regPath
+            Write-Host "Removed registry path: $regPath" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to remove registry path: $regPath" -ForegroundColor Red
+        }
+    }
+
+    Write-Host "Adobe Reader removal process is complete." -ForegroundColor Green
+}  
+
+###########################################
+# Check Install Update and Import Modules #
+###########################################
+
+# Check if winget module is installed and up to date, if not install or update it
+$moduleName = "Microsoft.WinGet.Client"
+$module = Get-Module -Name $moduleName -ListAvailable -ErrorAction SilentlyContinue
+
+if (-not $module) {
+    Write-Host "Installing the $moduleName module..." -ForegroundColor Yellow
+    try {
+        Install-Module -Name $moduleName -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
+        Write-Host "$moduleName module installed successfully." -ForegroundColor Green
+    }
+    catch {
+        Write-Warning "Failed to install the $moduleName module"
+    }
+}
+else {
+    Write-Host "$moduleName module is already installed. Checking for updates..." -ForegroundColor Yellow
+    try {
+        $updateAvailable = Find-Module -Name $moduleName | Where-Object { $_.Version -gt $module.Version }
+        if ($updateAvailable) {
+            Write-Host "Updating the $moduleName module to the latest version..." -ForegroundColor Yellow
+            Update-Module -Name $moduleName -Force -ErrorAction Stop
+            Write-Host "$moduleName module updated successfully." -ForegroundColor Green
+        }
+        else {
+            Write-Host "$moduleName module is up to date." -ForegroundColor Green
+        }
+    }
+    catch {
+        Write-Warning "Failed to check for updates or update the $moduleName module."
+    }
+}
+
+# Add Microsoft Corporation to the trusted list
+Add-PublisherToTrustedList -publisher "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
+
+# Import the winget module
+try {
+    Import-Module -Name Microsoft.WinGet.Client -ErrorAction Stop
+    Write-Host "Microsoft.WinGet.Client module is imported." -ForegroundColor Green
+}
+catch {
+    Write-Warning "Failed to import the Microsoft.WinGet.Client module. The Install Tab will not work properly."
+}
+
+##################################
+# GUI Creation and Functionality #
+##################################
+
+# Import necessary .NET assemblies
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
 # Create the form of the main GUI window
 $form = New-Object System.Windows.Forms.Form
@@ -467,11 +666,6 @@ $tabControl.Size = New-Object System.Drawing.Size(550, 410)
 $tabControl.Location = New-Object System.Drawing.Point(10, 10)
 $form.Controls.Add($tabControl)
 
-# Create the Install tab
-$tabInstall = New-Object System.Windows.Forms.TabPage
-$tabInstall.Text = "Install / Update"
-$tabControl.Controls.Add($tabInstall)
-
 # Define Visual Elements for All Tabs
 # Define column positions
 $column1X = 20
@@ -481,6 +675,15 @@ $column3X = 380
 $sectionLength = 520
 #Define Install and Tweak Tab Buttons y position
 $buttonY = 340
+
+###################################################
+# Install / Update Tab Creation and Functionality #
+###################################################
+
+# Create the Install tab
+$tabInstall = New-Object System.Windows.Forms.TabPage
+$tabInstall.Text = "Install / Update"
+$tabControl.Controls.Add($tabInstall)
 
 # Create checkboxes for packages in the Install tab
 $checkboxAdobe = New-Object System.Windows.Forms.CheckBox
@@ -557,8 +760,15 @@ $checkboxVisio = New-Object System.Windows.Forms.CheckBox
 $checkboxVisio.Text = "Visio Viewer 2016"
 $checkboxVisio.Name = "Microsoft VisioViewer"
 $checkboxVisio.AutoSize = $true
-$checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 50)
+$checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 80)
 $tabInstall.Controls.Add($checkboxVisio)
+
+$checkboxRemoteDesktop = New-Object System.Windows.Forms.CheckBox
+$checkboxRemoteDesktop.Text = "Remote Desktop"
+$checkboxRemoteDesktop.Name = "Microsoft Remote Desktop"
+$checkboxRemoteDesktop.AutoSize = $true
+$checkboxRemoteDesktop.Location = New-Object System.Drawing.Point($column2X, 50)
+$tabInstall.Controls.Add($checkboxRemoteDesktop)
 
 # Create a checkbox to show in the command promt all pacakges installed
 $checkboxShowInstalled = New-Object System.Windows.Forms.CheckBox
@@ -577,45 +787,48 @@ $tabInstall.Controls.Add($buttonInstall)
 
 # Define the action for the Install button
 $buttonInstall.Add_Click({
-    if ($checkboxOffice.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.Office -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxPowerToys.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxTeams.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxOneNote.Checked) {
-        Start-Process "winget" -ArgumentList "install --id XPFFZHVGQWWLHB -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxAdobe.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Adobe.Acrobat.Reader.64-Bit -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxAdobeCloud.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Adobe.CreativeCloud -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxPowerAutomate.Checked) {
-        Start-Process "winget" -ArgumentList "install --id 9NFTCH6J7FHV -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxVisio.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.VisioViewer -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxNetFrameworks.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.3_1 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.6 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.7 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.8 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxQuickAssist.Checked) {
-        Start-Process "winget" -ArgumentList "install --id 9P7BP5VNWKX5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxSurfaceDiagnosticToolkit.Checked) {
-        Start-Process "winget" -ArgumentList "install --id 9NF1MR6C60ZF -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
-})
+        if ($checkboxOffice.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.Office -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxPowerToys.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxTeams.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxOneNote.Checked) {
+            Start-Process "winget" -ArgumentList "install --id XPFFZHVGQWWLHB -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxAdobe.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Adobe.Acrobat.Reader.64-Bit -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxAdobeCloud.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Adobe.CreativeCloud -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxPowerAutomate.Checked) {
+            Start-Process "winget" -ArgumentList "install --id 9NFTCH6J7FHV -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxVisio.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.VisioViewer -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxNetFrameworks.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.3_1 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.6 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.7 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.8 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxQuickAssist.Checked) {
+            Start-Process "winget" -ArgumentList "install --id 9P7BP5VNWKX5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxSurfaceDiagnosticToolkit.Checked) {
+            Start-Process "winget" -ArgumentList "install --id 9NF1MR6C60ZF -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if($checkboxRemoteDesktop.Checked){
+            Start-Process "winget" -ArgumentList "install --id 9WZDNCRFJ3PS -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
+    })
 
 # Create an Uninstall button in the Install tab
 $buttonUninstall = New-Object System.Windows.Forms.Button
@@ -627,19 +840,19 @@ $tabInstall.Controls.Add($buttonUninstall)
 # Define the action for the Uninstall button
 $buttonUninstall.Add_Click({
 
-    # Loop through each package and uninstall it
-    $packagesToUninstall = @()
-    foreach ($control in $tabInstall.Controls) {
-        if ($control -is [System.Windows.Forms.CheckBox] -and $control.Checked) {
-            $packagesToUninstall += $control.Name
+        # Loop through each package and uninstall it
+        $packagesToUninstall = @()
+        foreach ($control in $tabInstall.Controls) {
+            if ($control -is [System.Windows.Forms.CheckBox] -and $control.Checked) {
+                $packagesToUninstall += $control.Name
+            }
         }
-    }
-    foreach ($package in $packagesToUninstall) {
-        Uninstall-PackageByName -packageName $package
-    }
+        foreach ($package in $packagesToUninstall) {
+            Uninstall-PackageByName -packageName $package
+        }
 
-    [System.Windows.Forms.MessageBox]::Show("Selected packages have been uninstalled.")
-})
+        [System.Windows.Forms.MessageBox]::Show("Selected packages have been uninstalled.")
+    })
 
 # Create a Get Installed Packages button in the Install tab
 $buttonGetPackages = New-Object System.Windows.Forms.Button
@@ -650,31 +863,36 @@ $tabInstall.Controls.Add($buttonGetPackages)
 
 # Define the action for the Get Packages button
 $buttonGetPackages.Add_Click({
-    # Check if the showInstalled checkbox is checked
+        # Check if the showInstalled checkbox is checked
 
-    $showInstalledCheckbox = $tabInstall.Controls | Where-Object { $_.Name -eq "showInstalled" -and $_.Checked }
-    if ($showInstalledCheckbox) {
-       Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
-    }
+        $showInstalledCheckbox = $tabInstall.Controls | Where-Object { $_.Name -eq "showInstalled" -and $_.Checked }
+        if ($showInstalledCheckbox) {
+            Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
+        }
 
-    # Run the winget list command and capture the output directly
-    $output = & winget list
-    # Split the output into lines and skip the first two lines (headers)
-    $outputLines = $output -split '\r?\n'
+        # Run the winget list command and capture the output directly
+        $output = & winget list
+        # Split the output into lines and skip the first two lines (headers)
+        $outputLines = $output -split '\r?\n'
 
-    # Iterate through each control in the install tab
-    foreach ($control in $tabInstall.Controls) {
-        if ($control -is [System.Windows.Forms.CheckBox]) {
-            $checkboxName = $control.Name
-            # Check if the checkbox name is present in the output lines
-            if ($outputLines -match $checkboxName) {
-                $control.Checked = $true
-            } else {
-                $control.Checked = $false
+        # Iterate through each control in the install tab
+        foreach ($control in $tabInstall.Controls) {
+            if ($control -is [System.Windows.Forms.CheckBox]) {
+                $checkboxName = $control.Name
+                # Check if the checkbox name is present in the output lines
+                if ($outputLines -match $checkboxName) {
+                    $control.Checked = $true
+                }
+                else {
+                    $control.Checked = $false
+                }
             }
         }
-    }
-})
+    })
+
+#######################################
+# Tweak Tab Creation and Functionality #
+#######################################
 
 # Create the Tweak tab
 $tabTweak = New-Object System.Windows.Forms.TabPage
@@ -693,7 +911,7 @@ $checkboxRunDiskCleanup = New-Object System.Windows.Forms.CheckBox
 $checkboxRunDiskCleanup.Text = "Run Disk Cleanup"
 $checkboxRunDiskCleanup.Name = "RunDiskCleanup"
 $checkboxRunDiskCleanup.AutoSize = $true
-$checkboxRunDiskCleanup.Location = New-Object System.Drawing.Point($column1X, 170)
+$checkboxRunDiskCleanup.Location = New-Object System.Drawing.Point($column1X, 230)
 $tabTweak.Controls.Add($checkboxRunDiskCleanup)
 
 $checkboxDetailedBSOD = New-Object System.Windows.Forms.CheckBox
@@ -707,7 +925,7 @@ $checkboxVerboseLogon = New-Object System.Windows.Forms.CheckBox
 $checkboxVerboseLogon.Text = "Enable Verbose Logon Messages"
 $checkboxVerboseLogon.Name = "EnableVerboseLogon"
 $checkboxVerboseLogon.AutoSize = $true
-$checkboxVerboseLogon.Location = New-Object System.Drawing.Point($column1X, 140)
+$checkboxVerboseLogon.Location = New-Object System.Drawing.Point($column1X, 170)
 $tabTweak.Controls.Add($checkboxVerboseLogon)
 
 $checkboxDeleteTempFiles = New-Object System.Windows.Forms.CheckBox
@@ -724,198 +942,293 @@ $checkboxClassicRightClickMenu.AutoSize = $true
 $checkboxClassicRightClickMenu.Location = New-Object System.Drawing.Point($column1X, 50)
 $tabTweak.Controls.Add($checkboxClassicRightClickMenu)
 
-# Create Apply and Undo buttons in the Tweak tab
+$checkboxGodMode = New-Object System.Windows.Forms.CheckBox
+$checkboxGodMode.Text = "Enable God Mode"
+$checkboxGodMode.Name = "EnableGodMode"
+$checkboxGodMode.AutoSize = $true
+$checkboxGodMode.Location = New-Object System.Drawing.Point($column1X, 140)
+$tabTweak.Controls.Add($checkboxGodMode)
 
+$checkboxOptimizeDrives = New-Object System.Windows.Forms.CheckBox
+$checkboxOptimizeDrives.Text = "Optimize Drives"
+$checkboxOptimizeDrives.Name = "OptimizeDrives"
+$checkboxOptimizeDrives.AutoSize = $true
+$checkboxOptimizeDrives.Location = New-Object System.Drawing.Point($column1X, 200)
+$tabTweak.Controls.Add($checkboxOptimizeDrives)
+
+# Create Apply and Undo buttons in the Tweak tab
 $buttonApply = New-Object System.Windows.Forms.Button
 $buttonApply.Text = "Apply"
+$buttonApply.AutoSize = $true
 $buttonApply.Location = New-Object System.Drawing.Point(20, $buttonY)
 $tabTweak.Controls.Add($buttonApply)
 
 $buttonUndo = New-Object System.Windows.Forms.Button
 $buttonUndo.Text = "Undo"
+$buttonUndo.AutoSize = $true
 $buttonUndo.Location = New-Object System.Drawing.Point(120, $buttonY)
 $tabTweak.Controls.Add($buttonUndo)
 
+#Create a System Performance Button
+$buttonSystemPerformance = New-Object System.Windows.Forms.Button  
+$buttonSystemPerformance.Text = "System Performance"
+$buttonSystemPerformance.AutoSize = $true
+$buttonSystemPerformance.Location = New-Object System.Drawing.Point(220, $buttonY)
+$tabTweak.Controls.Add($buttonSystemPerformance)
+
 # Define the action for the Apply button
 $buttonApply.Add_Click({
-    if ($checkboxRightClickEndTask.Checked) {
-        # Add registry key to enable right click end task
-        $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
-        $regName = "TaskbarEndTask"
-        $regValue = 1
-        #Ensure the registry path exists
-        if (-not (Test-Path $regPath)) {
-            New-Item -Path $regPath -Force | Out-Null
-        }
-        #Set the registry value, creating it if it doesn't exist
-        New-ItemProperty -Path $regPath -Name $regName -Value $regValue -Force | Out-Null
-    }
-    if ($checkboxRunDiskCleanup.Checked) {
-        # Run disk cleanup
-        Start-Process "cleanmgr.exe" -ArgumentList "/sagerun:1" -NoNewWindow -Wait
-        
-        # Run DISM command with /StartComponentCleanup
-        Start-Process "dism.exe" -ArgumentList "/Online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
-    }
-    if ($checkboxDetailedBSOD.Checked) {
-        # Enable detailed BSOD information
-        Write-Host "Enabling detailed BSOD information..." -ForegroundColor Green
-        
-        try {
-            # Define the registry path
-            $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl"
-            
-            # Check if the registry path exists, and create it if it does not
-            if (-not (Test-Path $registryPath)) {
-                New-Item -Path $registryPath -Force
-                Write-Output "Created registry path: $registryPath"
+        if ($checkboxRightClickEndTask.Checked) {
+            # Add registry key to enable right click end task
+            $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
+            $regName = "TaskbarEndTask"
+            $regValue = 1
+            #Ensure the registry path exists
+            if (-not (Test-Path $regPath)) {
+                New-Item -Path $regPath -Force | Out-Null
             }
-            
-            # Set the registry key to enable detailed BSOD information
-            Set-ItemProperty -Path $registryPath -Name "DisplayParameters" -Value 1 -Force
-            Write-Host "Detailed BSOD information has been enabled." -ForegroundColor Green
-        } catch {
-            Write-Host "Failed to enable detailed BSOD information: $_" -ForegroundColor Red
+            #Set the registry value, creating it if it doesn't exist
+            New-ItemProperty -Path $regPath -Name $regName -Value $regValue -Force | Out-Null
         }
-    }
-    if ($checkboxVerboseLogon.Checked) {
-        # Enable verbose logon messages
-        Write-Output "Enabling verbose logon messages..."
-        # Add your code here
-        try {
-            # Define the registry path
-            $registryPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
+        if ($checkboxRunDiskCleanup.Checked) {
+            # Run disk cleanup
+            Start-Process "cleanmgr.exe" -ArgumentList "/sagerun:1" -NoNewWindow -Wait
+        
+            # Run DISM command with /StartComponentCleanup
+            Start-Process "dism.exe" -ArgumentList "/Online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
+        }
+        if ($checkboxDetailedBSOD.Checked) {
+            # Enable detailed BSOD information
+            Write-Host "Enabling detailed BSOD information..." -ForegroundColor Green
+        
+            try {
+                # Define the registry path
+                $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl"
             
-            # Check if the registry path exists, and create it if it does not
-            if (-not (Test-Path $registryPath)) {
-                New-Item -Path $registryPath -Force
-                Write-Output "Created registry path: $registryPath"
+                # Check if the registry path exists, and create it if it does not
+                if (-not (Test-Path $registryPath)) {
+                    New-Item -Path $registryPath -Force
+                    Write-Output "Created registry path: $registryPath"
+                }
+            
+                # Set the registry key to enable detailed BSOD information
+                Set-ItemProperty -Path $registryPath -Name "DisplayParameters" -Value 1 -Force
+                Write-Host "Detailed BSOD information has been enabled." -ForegroundColor Green
             }
+            catch {
+                Write-Host "Failed to enable detailed BSOD information: $_" -ForegroundColor Red
+            }
+        }
+        if ($checkboxVerboseLogon.Checked) {
+            # Enable verbose logon messages
+            Write-Output "Enabling verbose logon messages..."
+            # Add your code here
+            try {
+                # Define the registry path
+                $registryPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
             
-            # Set the registry key to enable verbose logon messages
-            Set-ItemProperty -Path $registryPath -Name "VerboseStatus" -Value 1 -Force
-            Write-Host "Verbose logon messages have been enabled." -ForegroundColor Green
-        } catch {
-            Write-Host "Failed to enable verbose logon messages: $_" -ForegroundColor Red
+                # Check if the registry path exists, and create it if it does not
+                if (-not (Test-Path $registryPath)) {
+                    New-Item -Path $registryPath -Force
+                    Write-Output "Created registry path: $registryPath"
+                }
+            
+                # Set the registry key to enable verbose logon messages
+                Set-ItemProperty -Path $registryPath -Name "VerboseStatus" -Value 1 -Force
+                Write-Host "Verbose logon messages have been enabled." -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Failed to enable verbose logon messages: $_" -ForegroundColor Red
+            }
         }
-    }
-    if ($checkboxDeleteTempFiles.Checked) {
-        # Delete temporary files
-        Write-Host "Deleting temporary files..." -ForegroundColor Green
+        if ($checkboxDeleteTempFiles.Checked) {
+            # Delete temporary files
+            Write-Host "Deleting temporary files..." -ForegroundColor Green
 
-        # Check if the C:\Windows\Temp path exists
-        if (Test-Path "C:\Windows\Temp") {
-            Get-ChildItem -Path "C:\Windows\Temp" *.* -Recurse | Remove-Item -Force -Recurse
-        } else {
-            Write-Host "Path C:\Windows\Temp does not exist." -ForegroundColor Red
+            # Check if the C:\Windows\Temp path exists
+            if (Test-Path "C:\Windows\Temp") {
+                Get-ChildItem -Path "C:\Windows\Temp" *.* -Recurse | Remove-Item -Force -Recurse
+            }
+            else {
+                Write-Host "Path C:\Windows\Temp does not exist." -ForegroundColor Red
+            }
+
+            # Check if the $env:TEMP path exists
+            if (Test-Path $env:TEMP) {
+                Get-ChildItem -Path $env:TEMP *.* -Recurse | Remove-Item -Force -Recurse
+            }
+            else {
+                Write-Host "Path $env:TEMP does not exist." -ForegroundColor Red
+            }
+
         }
+        if ($checkboxClassicRightClickMenu.Checked) {
+            # Enable Classic Right Click Menu
+            New-Item -Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Name "InprocServer32" -Force -Value ""
+            Write-Host "Classic Right Click Menu has been enabled." -ForegroundColor Green
 
-        # Check if the $env:TEMP path exists
-        if (Test-Path $env:TEMP) {
-            Get-ChildItem -Path $env:TEMP *.* -Recurse | Remove-Item -Force -Recurse
-        } else {
-            Write-Host "Path $env:TEMP does not exist." -ForegroundColor Red
+            # Restart explorer.exe
+            Write-Host "Restarting explorer.exe ..." -ForegroundColor Green
+            $process = Get-Process -Name "explorer"
+            Stop-Process -InputObject $process
         }
-
-    }
-    if ($checkboxClassicRightClickMenu.Checked) {
-        # Enable Classic Right Click Menu
-        New-Item -Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Name "InprocServer32" -Force -Value ""
-        Write-Host "Classic Right Click Menu has been enabled." -ForegroundColor Green
-
-        # Restart explorer.exe
-        Write-Host "Restarting explorer.exe ..." -ForegroundColor Green
-        $process = Get-Process -Name "explorer"
-        Stop-Process -InputObject $process
-    }
-    [System.Windows.Forms.MessageBox]::Show("Selected tweaks have been applied.")
-})
+        if ($checkboxGodMode.Checked) {
+            $desktopPath = [System.Environment]::GetFolderPath('Desktop')
+            $godModePath = "$desktopPath\GodMode.{ED7BA470-8E54-465E-825C-99712043E01C}"
+            if (-not (Test-Path $godModePath)) {
+                try {
+                    New-Item -Path $godModePath -ItemType Directory -Force | Out-Null
+                    Write-Host "God Mode has been enabled on the desktop." -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to enable God Mode. Error: $_" -ForegroundColor Red
+                }
+            }
+            else {
+                Write-Host "God Mode is already enabled on the desktop." -ForegroundColor Yellow
+            }
+        }
+        if ($checkboxOptimizeDrives.Checked) {
+            # Optimize Drives
+            Write-Host "Optimizing drives..." -ForegroundColor Green
+            Get-Volume | Where-Object { $_.DriveLetter } | ForEach-Object { 
+                try {
+                    Optimize-Volume -DriveLetter $_.DriveLetter -ReTrim -Verbose
+                    Write-Host "Drive $($_.DriveLetter) has been optimized." -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to optimize drive $($_.DriveLetter). Error: $_" -ForegroundColor Yellow
+                }
+            }
+            Write-Host "Drive optimization process completed." -ForegroundColor Green
+        }
+        [System.Windows.Forms.MessageBox]::Show("Selected tweaks have been applied.")
+    })
 
 # Define the action for the Undo button
 $buttonUndo.Add_Click({
-    if ($checkboxRightClickEndTask.Checked) {
-        # Remove registry key to disable right click end task
-        $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
-        $regName = "TaskbarEndTask"
-        $regValue = 0
+        if ($checkboxRightClickEndTask.Checked) {
+            # Remove registry key to disable right click end task
+            $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
+            $regName = "TaskbarEndTask"
+            $regValue = 0
         
-    #Ensure the registry path exists
-        if (-not (Test-Path $regPath)) {
-            New-Item -Path $regPath -Force | Out-Null
+            #Ensure the registry path exists
+            if (-not (Test-Path $regPath)) {
+                New-Item -Path $regPath -Force | Out-Null
+            }
+            #Remove the registry value, creating it if it doesn't exist
+            New-ItemProperty -Path $regPath -Name $regName -Value $regValue -Force | Out-Null
         }
-        #Remove the registry value, creating it if it doesn't exist
-        New-ItemProperty -Path $regPath -Name $regName -Value $regValue -Force | Out-Null
-    }
-    if ($checkboxRunDiskCleanup.Checked) {
-        # Undo disk cleanup
-        Write-Output "Nothing to do here..."
-    }
-    if ($checkboxDetailedBSOD.Checked) {
-       # Disable detailed BSOD information
-    Write-Host "Disabling detailed BSOD information..." -ForegroundColor Green
+        if ($checkboxRunDiskCleanup.Checked) {
+            # Undo disk cleanup
+            Write-Output "Nothing to do here..."
+        }
+        if ($checkboxDetailedBSOD.Checked) {
+            # Disable detailed BSOD information
+            Write-Host "Disabling detailed BSOD information..." -ForegroundColor Green
     
-        try {
-            # Define the registry path
-         $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl"
+            try {
+                # Define the registry path
+                $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl"
         
-            # Check if the registry path exists
-            if (Test-Path $registryPath) {
-                # Set the registry key to disable detailed BSOD information
-                Set-ItemProperty -Path $registryPath -Name "DisplayParameters" -Value 0 -Force
-                Write-Host "Detailed BSOD information has been disabled." -ForegroundColor Green
-            } else {
-                Write-Host "Registry path does not exist: $registryPath" -ForegroundColor Red
+                # Check if the registry path exists
+                if (Test-Path $registryPath) {
+                    # Set the registry key to disable detailed BSOD information
+                    Set-ItemProperty -Path $registryPath -Name "DisplayParameters" -Value 0 -Force
+                    Write-Host "Detailed BSOD information has been disabled." -ForegroundColor Green
+                }
+                else {
+                    Write-Host "Registry path does not exist: $registryPath" -ForegroundColor Red
+                }
             }
-        } catch {
-        Write-Host "Failed to disable detailed BSOD information: $_" -ForegroundColor Red
+            catch {
+                Write-Host "Failed to disable detailed BSOD information: $_" -ForegroundColor Red
+            }
         }
-    }
-    if ($checkboxVerboseLogon.Checked) {
-        # Disable verbose logon messages
-        Write-Output "Disabling verbose logon messages..."
-        # Add your code here
-        try {
-            # Define the registry path
-            $registryPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
+        if ($checkboxVerboseLogon.Checked) {
+            # Disable verbose logon messages
+            Write-Output "Disabling verbose logon messages..."
+            # Add your code here
+            try {
+                # Define the registry path
+                $registryPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
             
-            # Check if the registry path exists
-            if (Test-Path $registryPath) {
-                # Remove the registry key to disable verbose logon messages
-                Remove-ItemProperty -Path $registryPath -Name "VerboseStatus" -Force
-                Write-Host "Verbose logon messages have been disabled." -ForegroundColor Green
-            } else {
-                Write-Host "Registry path does not exist: $registryPath" -ForegroundColor Red
+                # Check if the registry path exists
+                if (Test-Path $registryPath) {
+                    # Remove the registry key to disable verbose logon messages
+                    Remove-ItemProperty -Path $registryPath -Name "VerboseStatus" -Force
+                    Write-Host "Verbose logon messages have been disabled." -ForegroundColor Green
+                }
+                else {
+                    Write-Host "Registry path does not exist: $registryPath" -ForegroundColor Red
+                }
             }
-        } catch {
-            Write-Host "Failed to disable verbose logon messages: $_" -ForegroundColor Red
+            catch {
+                Write-Host "Failed to disable verbose logon messages: $_" -ForegroundColor Red
+            }
         }
-    }
-    if ($checkboxDeleteTempFiles.Checked) {
-        # Undo delete temporary files
-        Write-Output "Nothing to do here..."
-        # Add your code here
-    }
-    if ($checkboxClassicRightClickMenu.Checked) {
-        # Disable Classic Right Click Menu
-        Remove-Item -Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Recurse -Confirm:$false -Force
-        Write-Host "Classic Right Click Menu has been disabled." -ForegroundColor Green
+        if ($checkboxDeleteTempFiles.Checked) {
+            # Undo delete temporary files
+            Write-Output "Nothing to do here..."
+            # Add your code here
+        }
+        if ($checkboxClassicRightClickMenu.Checked) {
+            # Disable Classic Right Click Menu
+            Remove-Item -Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Recurse -Confirm:$false -Force
+            Write-Host "Classic Right Click Menu has been disabled." -ForegroundColor Green
 
-        # Restart explorer.exe
-        Write-Host "Restarting explorer.exe ..." -ForegroundColor Green
-        $process = Get-Process -Name "explorer"
-        Stop-Process -InputObject $process
-    }
-    [System.Windows.Forms.MessageBox]::Show("Selected tweaks have been undone.")
-})
+            # Restart explorer.exe
+            Write-Host "Restarting explorer.exe ..." -ForegroundColor Green
+            $process = Get-Process -Name "explorer"
+            Stop-Process -InputObject $process
+        }
+        if ($checkboxGodMode.Checked) {
+            # Disable God Mode
+            $desktopPath = [System.Environment]::GetFolderPath('Desktop')
+            $godModePath = "$desktopPath\GodMode.{ED7BA470-8E54-465E-825C-99712043E01C}"
+            if (Test-Path $godModePath) {
+                try {
+                    Remove-Item -Path $godModePath -Recurse -Force
+                    Write-Host "God Mode has been disabled." -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to disable God Mode. Error: $_" -ForegroundColor Red
+                }
+            }
+            else {
+                Write-Host "God Mode folder does not exist." -ForegroundColor Yellow
+            }
+        }
+        if ($checkboxOptimizeDrives.Checked) {
+            # Undo Optimize Drives
+            Write-Output "Nothing to do here..."
+        }
+
+        [System.Windows.Forms.MessageBox]::Show("Selected tweaks have been undone.")
+    })
+
+# Define the action for the System Performance button
+$buttonSystemPerformance.Add_Click({
+        # Open System Performance settings
+        Write-Host "Opening System Performance settings..." -ForegroundColor Green
+        Start-Process "SystemPropertiesPerformance.exe"
+    })
+
+######################################
+# Fix Tab Creation and Functionality #
+######################################
 
 # Create the Fix tab
 $tabFix = New-Object System.Windows.Forms.TabPage
 $tabFix.Text = "Fix"
 $tabControl.Controls.Add($tabFix)
 
-# Create controls for the Fix tab
+###############
+# Apps section#
+###############
 
-# Apps section
+# Create controls for the Fix tab
 $sectionApps = New-Object System.Windows.Forms.GroupBox
 $sectionApps.Text = "Apps"
 $sectionApps.Size = New-Object System.Drawing.Size($sectionLength, 100)
@@ -928,33 +1241,35 @@ $linkRemoveAdobeCloud.Text = "Remove Adobe Creative Cloud"
 $linkRemoveAdobeCloud.AutoSize = $true
 $linkRemoveAdobeCloud.Location = New-Object System.Drawing.Point($column1X, 30)
 $linkRemoveAdobeCloud.Add_LinkClicked({
-    # Remove Adobe Cloud
-    Write-Host "Removing Adobe Cloud..."
-    # Code snipet from https://github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/RunAdobeCCCleanerTool.md
-    [string]$url="https://swupmf.adobe.com/webfeed/CleanerTool/win/AdobeCreativeCloudCleanerTool.exe"
+        # Remove Adobe Cloud
+        Write-Host "Removing Adobe Cloud..."
+        # Code snipet from https://github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/RunAdobeCCCleanerTool.md
+        [string]$url = "https://swupmf.adobe.com/webfeed/CleanerTool/win/AdobeCreativeCloudCleanerTool.exe"
 
-    Write-Host "The Adobe Creative Cloud Cleaner tool is hosted at"
-    Write-Host "$url"
+        Write-Host "The Adobe Creative Cloud Cleaner tool is hosted at"
+        Write-Host "$url"
 
-    try {
-        # Don't show the progress because it will slow down the download speed
-        $ProgressPreference='SilentlyContinue'
+        try {
+            # Don't show the progress because it will slow down the download speed
+            $ProgressPreference = 'SilentlyContinue'
 
-        Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -UseBasicParsing -ErrorAction SilentlyContinue -Verbose
+            Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -UseBasicParsing -ErrorAction SilentlyContinue -Verbose
 
-        # Revert back the ProgressPreference variable to the default value since we got the file desired
-        $ProgressPreference='Continue'
+            # Revert back the ProgressPreference variable to the default value since we got the file desired
+            $ProgressPreference = 'Continue'
 
-        Start-Process -FilePath "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Wait -ErrorAction SilentlyContinue -Verbose
-    } catch {
-        Write-Error $_.Exception.Message
-    } finally {
-        if (Test-Path -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe") {
-            Write-Host "Cleaning up..."
-            Remove-Item -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Verbose
+            Start-Process -FilePath "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Wait -ErrorAction SilentlyContinue -Verbose
         }
-    }
-})
+        catch {
+            Write-Error $_.Exception.Message
+        }
+        finally {
+            if (Test-Path -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe") {
+                Write-Host "Cleaning up..."
+                Remove-Item -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Verbose
+            }
+        }
+    })
 $sectionApps.Controls.Add($linkRemoveAdobeCloud)
 
 # Create a hyperlink to remove Adobe Reader
@@ -963,13 +1278,107 @@ $linkRemoveAdobeReader.Text = "Remove Adobe Reader"
 $linkRemoveAdobeReader.AutoSize = $true
 $linkRemoveAdobeReader.Location = New-Object System.Drawing.Point($column1X, 60)
 $linkRemoveAdobeReader.Add_LinkClicked({
-    # Remove Adobe Reader
-    Write-Output "Removing Adobe Reader..."
-    # Add your code here
-})
+        # Remove Adobe Reader
+        Write-Output "Removing Adobe Reader..."
+        # Call the function to remove Adobe Reader
+        Remove-AdobeReader
+    })
 $sectionApps.Controls.Add($linkRemoveAdobeReader)
 
-# System section
+# Create a hyperlink to reset Edge Browser Cache
+$linkResetEdgeCache = New-Object System.Windows.Forms.LinkLabel
+$linkResetEdgeCache.Text = "Reset Edge Browser Cache"
+$linkResetEdgeCache.AutoSize = $true
+$linkResetEdgeCache.Location = New-Object System.Drawing.Point($column2X, 30)
+$linkResetEdgeCache.Add_LinkClicked({
+    try {
+        # Open Edge browser
+        $edgeProcess = Start-Process "msedge" -ArgumentList "about:blank" -PassThru
+
+        # Wait for Edge to open
+        Start-Sleep -Seconds 3
+
+        # Simulate key presses to navigate to the settings page for clearing browsing data
+        $shell = New-Object -ComObject "WScript.Shell"
+        $shell.AppActivate($edgeProcess.Id)
+        Start-Sleep -Milliseconds 500
+        $shell.SendKeys("^+{DEL}")  # Ctrl+Shift+Delete to open the Clear browsing data dialog
+        Start-Sleep -Milliseconds 500
+        $shell.SendKeys("{ENTER}")  # Press Enter to confirm
+
+        Write-Host "Edge settings page for clearing browsing data has been opened." -ForegroundColor Green
+    } catch {
+        Write-Host "Failed to open Edge settings page. Error: $_" -ForegroundColor Red
+    }
+})
+$sectionApps.Controls.Add($linkResetEdgeCache)
+
+# Create a hyperlink to fully reset Edge Browser
+$linkResetEdge = New-Object System.Windows.Forms.LinkLabel
+$linkResetEdge.Text = "Reset Edge Browser"
+$linkResetEdge.AutoSize = $true
+$linkResetEdge.Location = New-Object System.Drawing.Point($column2X, 60)
+$linkResetEdge.Add_LinkClicked({
+    try {
+        # Show a message box to advise the user
+        $result = [System.Windows.Forms.MessageBox]::Show(
+            "This action will fully remove Microsoft Edge and all cached files from the system. Do you want to proceed?",
+            "Warning",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            # Step 1: Reset Edge profile
+            Write-Host "Resetting Edge browser profile..."
+            Start-Process "msedge" -ArgumentList "--reset-profile" -Wait
+            Write-Host "Edge browser profile has been reset." -ForegroundColor Green
+
+            # Step 2: Remove Edge cache and temporary files
+            Write-Host "Removing Edge cache and temporary files..."
+            $edgeCachePaths = @(
+                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Cache",
+                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Code Cache",
+                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\GPUCache",
+                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Media Cache",
+                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\ShaderCache"
+            )
+            foreach ($path in $edgeCachePaths) {
+                if (Test-Path $path) {
+                    Remove-Item -Path $path -Recurse -Force
+                    Write-Host "Removed: $path" -ForegroundColor Green
+                } else {
+                    Write-Host "Path not found: $path" -ForegroundColor Yellow
+                }
+            }
+
+            # Step 3: Uninstall Edge
+            Write-Host "Uninstalling Edge browser..."
+            $edgeUninstallPath = "$env:ProgramFiles (x86)\Microsoft\Edge\Application\msedge.exe"
+            if (Test-Path $edgeUninstallPath) {
+                Start-Process $edgeUninstallPath -ArgumentList "--uninstall --system-level --force-uninstall" -Wait
+                Write-Host "Edge browser has been uninstalled." -ForegroundColor Green
+            } else {
+                Write-Host "Edge uninstall path not found." -ForegroundColor Red
+            }
+
+            # Step 4: Reinstall Edge using winget
+            Write-Host "Reinstalling Edge browser using winget..."
+            Start-Process "winget" -ArgumentList "install --id Microsoft.Edge -e --source winget" -Wait
+            Write-Host "Edge browser has been reinstalled." -ForegroundColor Green
+        } else {
+            Write-Host "Action canceled by the user." -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "Failed to reset Edge browser. Error: $_" -ForegroundColor Red
+    }
+})
+$sectionApps.Controls.Add($linkResetEdge)
+
+#################
+# System section#
+#################
+
 $sectionSystem = New-Object System.Windows.Forms.GroupBox
 $sectionSystem.Text = "System"
 $sectionSystem.Size = New-Object System.Drawing.Size($sectionLength, 100)
@@ -982,21 +1391,21 @@ $linkResetWinUpdate.Text = "Reset Windows Update"
 $linkResetWinUpdate.AutoSize = $true
 $linkResetWinUpdate.Location = New-Object System.Drawing.Point($column1X, 30)
 $linkResetWinUpdate.Add_LinkClicked({
-    # Reset Windows Update
-    Write-Output "Resetting Windows Update..."
-    # Add your code here
-    $fixWindowsUpdate = [System.Windows.Forms.MessageBox]::Show("We will attempt to fix Windows Update service. Do you want to run the fix in aggressive mode?", "Fix Windows Update", "YesNoCancel", "Question")
+        # Reset Windows Update
+        Write-Output "Resetting Windows Update..."
+        # Add your code here
+        $fixWindowsUpdate = [System.Windows.Forms.MessageBox]::Show("We will attempt to fix Windows Update service. Do you want to run the fix in aggressive mode?", "Fix Windows Update", "YesNoCancel", "Question")
 
-    if ($fixWindowsUpdate -eq "Yes") {
-        Invoke-FixesWUpdate -Aggressive $true
-    }
-    elseif ($fixWindowsUpdate -eq "No") {
-        Invoke-FixesWUpdate -Aggressive $false
-    }
-    else {
-        # User clicked Cancel, do nothing
-    }
-})
+        if ($fixWindowsUpdate -eq "Yes") {
+            Invoke-FixesWUpdate -Aggressive $true
+        }
+        elseif ($fixWindowsUpdate -eq "No") {
+            Invoke-FixesWUpdate -Aggressive $false
+        }
+        else {
+            # User clicked Cancel, do nothing
+        }
+    })
 $sectionSystem.Controls.Add($linkResetWinUpdate)
 
 # Create a hyperlink to reset network
@@ -1005,30 +1414,30 @@ $linkResetNetwork.Text = "Reset Network"
 $linkResetNetwork.AutoSize = $true
 $linkResetNetwork.Location = New-Object System.Drawing.Point($column1X, 60)
 $linkResetNetwork.Add_LinkClicked({
-    # Reset network
-    Write-Host "Resetting network..."
+        # Reset network
+        Write-Host "Resetting network..."
 
-    # Reset network using netsh
-    netsh winsock reset | Out-Null
-    netsh int ip reset | Out-Null
-    netsh interface ipv4 reset | Out-Null
-    netsh interface ipv6 reset | Out-Null
-    netsh interface reset all | Out-Null
+        # Reset network using netsh
+        netsh winsock reset | Out-Null
+        netsh int ip reset | Out-Null
+        netsh interface ipv4 reset | Out-Null
+        netsh interface ipv6 reset | Out-Null
+        netsh interface reset all | Out-Null
 
-    # Reset Wi-Fi card
-    $wifiAdapter = Get-NetAdapter | Where-Object {$_.InterfaceDescription -like "*Wi-Fi*"}
-    $wifiAdapter | Disable-NetAdapter | Out-Null
-    $wifiAdapter | Enable-NetAdapter | Out-Null
-    $wifiAdapter | Enable-NetAdapter | Out-Null
+        # Reset Wi-Fi card
+        $wifiAdapter = Get-NetAdapter | Where-Object { $_.InterfaceDescription -like "*Wi-Fi*" }
+        $wifiAdapter | Disable-NetAdapter | Out-Null
+        $wifiAdapter | Enable-NetAdapter | Out-Null
+        $wifiAdapter | Enable-NetAdapter | Out-Null
 
-    # Display message to reboot device
-    [System.Windows.Forms.MessageBox]::Show("Please reboot your device to complete the network reset process.", "Network Reset", "OK", "Information")
+        # Display message to reboot device
+        [System.Windows.Forms.MessageBox]::Show("Please reboot your device to complete the network reset process.", "Network Reset", "OK", "Information")
 
-    # Network reset completed
-    Write-Host "Network Reset Completed!" -ForegroundColor Green
-    # Add your code here
+        # Network reset completed
+        Write-Host "Network Reset Completed!" -ForegroundColor Green
+        # Add your code here
 
-})
+    })
 $sectionSystem.Controls.Add($linkResetNetwork)
 
 # Create a hyperlink to run system repair
@@ -1037,24 +1446,28 @@ $linkSysRepair.Text = "System Repair"
 $linkSysRepair.AutoSize = $true
 $linkSysRepair.Location = New-Object System.Drawing.Point($column2X, 30)
 $linkSysRepair.Add_LinkClicked({
-    # Run system repair
-    Write-Output "Running system repair..."
-    <#  From ChrisTitusTech/winutil repo github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/RunSystemRepair.md
+        # Run system repair
+        Write-Output "Running system repair..."
+        <#  From ChrisTitusTech/winutil repo github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/RunSystemRepair.md
     System Repair Steps:
         1. Chkdsk    - Fixes disk and filesystem corruption
         2. SFC Run 1 - Fixes system file corruption, and fixes DISM if it was corrupted
         3. DISM      - Fixes system image corruption, and fixes SFC's system image if it was corrupted
         4. SFC Run 2 - Fixes system file corruption, this time with an almost guaranteed uncorrupted system 
     #>
-    Start-Process PowerShell -ArgumentList "Write-Host '(1/4) Chkdsk' -ForegroundColor Green; Chkdsk /scan;
+        Start-Process PowerShell -ArgumentList "Write-Host '(1/4) Chkdsk' -ForegroundColor Green; Chkdsk /scan;
     Write-Host '`n(2/4) SFC - 1st scan' -ForegroundColor Green; sfc /scannow;
     Write-Host '`n(3/4) DISM' -ForegroundColor Green; DISM /Online /Cleanup-Image /Restorehealth;
     Write-Host '`n(4/4) SFC - 2nd scan' -ForegroundColor Green; sfc /scannow;
     Read-Host '`nPress Enter to Continue'" -verb runas
-})
+    })
 $sectionSystem.Controls.Add($linkSysRepair)
 
-# Office Apps section
+######################
+# Office Apps section#
+######################
+
+#Create a group box for Office Apps
 $sectionOfficeApps = New-Object System.Windows.Forms.GroupBox
 $sectionOfficeApps.Text = "Office Apps"
 $sectionOfficeApps.Size = New-Object System.Drawing.Size($sectionLength, 100)
@@ -1067,51 +1480,53 @@ $linkRebuildOST.Text = "Rebuild .OST file"
 $linkRebuildOST.AutoSize = $true
 $linkRebuildOST.Location = New-Object System.Drawing.Point($column1X, 30)
 $linkRebuildOST.Add_LinkClicked({
-   # Prompt the user for confirmation
-$result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
-if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-    # Check if Outlook and Teams are running
-    $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
-    $teamsRunning = Get-Process -Name Teams -ErrorAction SilentlyContinue
+        # Prompt the user for confirmation
+        $result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            # Check if Outlook and Teams are running
+            $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
+            $teamsRunning = Get-Process -Name Teams -ErrorAction SilentlyContinue
 
-    # Terminate Outlook and Teams
-    if ($outlookRunning) {
-        Stop-Process -Name Outlook -Force
-    }
-    if ($teamsRunning) {
-        Stop-Process -Name Teams -Force
-    }
-
-    # Path to the Outlook .ost files
-    $ostPath = "$env:LOCALAPPDATA\Microsoft\Outlook"
-
-    # Check if the path exists
-    if (Test-Path $ostPath) {
-        # Remove all .ost files in the current user's AppData folder
-        $ostFiles = Get-ChildItem -Path $ostPath -Filter *.ost -Recurse -ErrorAction SilentlyContinue
-        if ($ostFiles) {
-            foreach ($file in $ostFiles) {
-                Remove-Item -Path $file.FullName -Force
+            # Terminate Outlook and Teams
+            if ($outlookRunning) {
+                Stop-Process -Name Outlook -Force
             }
-            Write-Host "All .ost files have been removed." -ForegroundColor Green
-        } else {
-            Write-Host "No .ost files found to rebuild." -ForegroundColor Red
+            if ($teamsRunning) {
+                Stop-Process -Name Teams -Force
+            }
+
+            # Path to the Outlook .ost files
+            $ostPath = "$env:LOCALAPPDATA\Microsoft\Outlook"
+
+            # Check if the path exists
+            if (Test-Path $ostPath) {
+                # Remove all .ost files in the current user's AppData folder
+                $ostFiles = Get-ChildItem -Path $ostPath -Filter *.ost -Recurse -ErrorAction SilentlyContinue
+                if ($ostFiles) {
+                    foreach ($file in $ostFiles) {
+                        Remove-Item -Path $file.FullName -Force
+                    }
+                    Write-Host "All .ost files have been removed." -ForegroundColor Green
+                }
+                else {
+                    Write-Host "No .ost files found to rebuild." -ForegroundColor Red
+                }
+            }
+            else {
+                Write-Host "The path to .ost files does not exist." -ForegroundColor Red
+            }
+
+            # Reopen Outlook and Teams if they were running before
+            if ($outlookRunning) {
+                Start-Process -Name Outlook
+            }
+            if ($teamsRunning) {
+                Start-Process -Name Teams
+            }
+
+            [System.Windows.Forms.MessageBox]::Show("The process is complete. Outlook and Teams have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
         }
-    } else {
-        Write-Host "The path to .ost files does not exist." -ForegroundColor Red
-    }
-
-    # Reopen Outlook and Teams if they were running before
-    if ($outlookRunning) {
-        Start-Process -Name Outlook
-    }
-    if ($teamsRunning) {
-        Start-Process -Name Teams
-    }
-
-    [System.Windows.Forms.MessageBox]::Show("The process is complete. Outlook and Teams have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-}
-})
+    })
 $sectionOfficeApps.Controls.Add($linkRebuildOST)
 
 # Create a hyperlink for Missing Teams Add-In
@@ -1120,106 +1535,117 @@ $linkMissingTeamsAddIn.Text = "Missing Teams Add-In"
 $linkMissingTeamsAddIn.AutoSize = $true
 $linkMissingTeamsAddIn.Location = New-Object System.Drawing.Point($column1X, 60)
 $linkMissingTeamsAddIn.Add_LinkClicked({
-    # Prompt the user for confirmation
-    $result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams please save any important work beofre proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
-    if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-    # Check if Teams and Outlook are running
-    $teamsRunning = Get-Process -Name Teams -ErrorAction SilentlyContinue
-    $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
+        # Prompt the user for confirmation
+        $result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams please save any important work beofre proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            # Check if Teams and Outlook are running
+            $teamsRunning = Get-Process -Name Teams -ErrorAction SilentlyContinue
+            $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
 
-    # Terminate Teams and Outlook
-    if ($teamsRunning) {
-        Stop-Process -Name Teams -Force
-        Write-Host "Teams has been terminated." -ForegroundColor Green
-    } else {
-        Write-Host "Teams was not running." -ForegroundColor Yellow
-    }
-
-    if ($outlookRunning) {
-        Stop-Process -Name Outlook -Force
-        Write-Host "Outlook has been terminated." -ForegroundColor Green
-    } else {
-        Write-Host "Outlook was not running." -ForegroundColor Yellow
-    }   
-
-    # Step 1: Remove SquirrelTemp and Teams folders
-    try {
-        Remove-Item -Recurse -Force -Path "$env:LOCALAPPDATA\SquirrelTemp"
-        Write-Host "SquirrelTemp folder has been removed." -ForegroundColor Green
-    } catch {
-        Write-Host "Failed to remove SquirrelTemp folder." -ForegroundColor Red
-    }
-
-    try {
-        Remove-Item -Recurse -Force -Path "$env:LOCALAPPDATA\Microsoft\Teams"
-        Write-Host "Teams folder has been removed." -ForegroundColor Green
-    } catch {
-        Write-Host "Failed to remove Teams folder." -ForegroundColor Red
-    }
-
-    # Step 2: Rename tma_settings.json
-    $tmaSettingsPath = "$env:LOCALAPPDATA\Publishers\8wekyb3d8bbwe\TeamsSharedConfig\tma_settings.json"
-    if (Test-Path $tmaSettingsPath) {
-        try {
-            Rename-Item -Path $tmaSettingsPath -NewName "tma_settings.json.old"
-            Write-Host "tma_settings.json has been renamed." -ForegroundColor Green
-        } catch {
-            Write-Host "Failed to rename tma_settings.json." -ForegroundColor Red
-        }
-    } else {
-        Write-Host "tma_settings.json not found." -ForegroundColor Yellow
-    }
-
-    # Step 3: Re-register Microsoft.Teams.AddinLoader.dll
-    try {
-        if ([Environment]::Is64BitOperatingSystem) {
-            & "$env:SystemRoot\System32\regsvr32.exe" /n /i:user "$env:LOCALAPPDATA\Microsoft\TeamsMeetingAddin\1.0.18012.2\x64\Microsoft.Teams.AddinLoader.dll"
-        } else {
-            & "$env:SystemRoot\SysWOW64\regsvr32.exe" /n /i:user "$env:LOCALAPPDATA\Microsoft\TeamsMeetingAddin\1.0.18012.2\x86\Microsoft.Teams.AddinLoader.dll"
-        }
-        Write-Host "Microsoft.Teams.AddinLoader.dll has been re-registered." -ForegroundColor Green
-    } catch {
-        Write-Host "Failed to re-register Microsoft.Teams.AddinLoader.dll." -ForegroundColor Red
-    }
-
-    # Step 4: Check and set LoadBehavior in the registry
-    $regPath = "HKCU:\Software\Microsoft\Office\Outlook\Addins\TeamsAddin.FastConnect"
-    if (Test-Path $regPath) {
-        try {
-            $loadBehavior = Get-ItemProperty -Path $regPath -Name LoadBehavior
-            if ($loadBehavior.LoadBehavior -ne 3) {
-                Set-ItemProperty -Path $regPath -Name LoadBehavior -Value 3
+            # Terminate Teams and Outlook
+            if ($teamsRunning) {
+                Stop-Process -Name Teams -Force
+                Write-Host "Teams has been terminated." -ForegroundColor Green
             }
-            Write-Host "LoadBehavior has been set to 3." -ForegroundColor Green
-        } catch {
-            Write-Host "Failed to set LoadBehavior." -ForegroundColor Red
+            else {
+                Write-Host "Teams was not running." -ForegroundColor Yellow
+            }
+
+            if ($outlookRunning) {
+                Stop-Process -Name Outlook -Force
+                Write-Host "Outlook has been terminated." -ForegroundColor Green
+            }
+            else {
+                Write-Host "Outlook was not running." -ForegroundColor Yellow
+            }   
+
+            # Step 1: Remove SquirrelTemp and Teams folders
+            try {
+                Remove-Item -Recurse -Force -Path "$env:LOCALAPPDATA\SquirrelTemp"
+                Write-Host "SquirrelTemp folder has been removed." -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Failed to remove SquirrelTemp folder." -ForegroundColor Red
+            }
+
+            try {
+                Remove-Item -Recurse -Force -Path "$env:LOCALAPPDATA\Microsoft\Teams"
+                Write-Host "Teams folder has been removed." -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Failed to remove Teams folder." -ForegroundColor Red
+            }
+
+            # Step 2: Rename tma_settings.json
+            $tmaSettingsPath = "$env:LOCALAPPDATA\Publishers\8wekyb3d8bbwe\TeamsSharedConfig\tma_settings.json"
+            if (Test-Path $tmaSettingsPath) {
+                try {
+                    Rename-Item -Path $tmaSettingsPath -NewName "tma_settings.json.old"
+                    Write-Host "tma_settings.json has been renamed." -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to rename tma_settings.json." -ForegroundColor Red
+                }
+            }
+            else {
+                Write-Host "tma_settings.json not found." -ForegroundColor Yellow
+            }
+
+            # Step 3: Re-register Microsoft.Teams.AddinLoader.dll
+            try {
+                if ([Environment]::Is64BitOperatingSystem) {
+                    & "$env:SystemRoot\System32\regsvr32.exe" /n /i:user "$env:LOCALAPPDATA\Microsoft\TeamsMeetingAddin\1.0.18012.2\x64\Microsoft.Teams.AddinLoader.dll"
+                }
+                else {
+                    & "$env:SystemRoot\SysWOW64\regsvr32.exe" /n /i:user "$env:LOCALAPPDATA\Microsoft\TeamsMeetingAddin\1.0.18012.2\x86\Microsoft.Teams.AddinLoader.dll"
+                }
+                Write-Host "Microsoft.Teams.AddinLoader.dll has been re-registered." -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Failed to re-register Microsoft.Teams.AddinLoader.dll." -ForegroundColor Red
+            }
+
+            # Step 4: Check and set LoadBehavior in the registry
+            $regPath = "HKCU:\Software\Microsoft\Office\Outlook\Addins\TeamsAddin.FastConnect"
+            if (Test-Path $regPath) {
+                try {
+                    $loadBehavior = Get-ItemProperty -Path $regPath -Name LoadBehavior
+                    if ($loadBehavior.LoadBehavior -ne 3) {
+                        Set-ItemProperty -Path $regPath -Name LoadBehavior -Value 3
+                    }
+                    Write-Host "LoadBehavior has been set to 3." -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to set LoadBehavior." -ForegroundColor Red
+                }
+            }
+            else {
+                Write-Host "Registry path for LoadBehavior not found." -ForegroundColor Yellow
+            }
+
+            # Step 5: Reset Teams UWP app
+            try {
+                Get-AppxPackage -Name "MicrosoftTeams" | Reset-AppxPackage
+                Write-Host "Teams UWP app has been reset." -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Failed to reset Teams UWP app." -ForegroundColor Red
+            }
+
+            # Reopen Teams and Outlook if they were running before
+            if ($teamsRunning) {
+                Start-Process -Name Teams
+                Write-Host "Teams has been restarted." -ForegroundColor Green
+            }
+
+            if ($outlookRunning) {
+                Start-Process -Name Outlook
+                Write-Host "Outlook has been restarted." -ForegroundColor Green
+            }
+
+            [System.Windows.Forms.MessageBox]::Show("The process is complete. Teams and Outlook have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
         }
-    } else {
-        Write-Host "Registry path for LoadBehavior not found." -ForegroundColor Yellow
-    }
-
-    # Step 5: Reset Teams UWP app
-    try {
-        Get-AppxPackage -Name "MicrosoftTeams" | Reset-AppxPackage
-        Write-Host "Teams UWP app has been reset." -ForegroundColor Green
-    } catch {
-        Write-Host "Failed to reset Teams UWP app." -ForegroundColor Red
-    }
-
-    # Reopen Teams and Outlook if they were running before
-    if ($teamsRunning) {
-        Start-Process -Name Teams
-        Write-Host "Teams has been restarted." -ForegroundColor Green
-    }
-
-    if ($outlookRunning) {
-        Start-Process -Name Outlook
-        Write-Host "Outlook has been restarted." -ForegroundColor Green
-    }
-
-        [System.Windows.Forms.MessageBox]::Show("The process is complete. Teams and Outlook have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-    }
-})
+    })
 $sectionOfficeApps.Controls.Add($linkMissingTeamsAddIn)
 
 # Create a hyperlink to Remove Office
@@ -1228,95 +1654,100 @@ $linkRemoveOffice.Text = "Remove Office"
 $linkRemoveOffice.AutoSize = $true
 $linkRemoveOffice.Location = New-Object System.Drawing.Point($column2X, 30)
 $linkRemoveOffice.Add_LinkClicked({
-   # Inform the user that the removal process is starting
-$result = [System.Windows.Forms.MessageBox]::Show("This action will close all running Office apps and remove all Office instances. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
-if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-    Write-Host "Removing Office..." -ForegroundColor Green
+        # Inform the user that the removal process is starting
+        $result = [System.Windows.Forms.MessageBox]::Show("This action will close all running Office apps and remove all Office instances. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            Write-Host "Removing Office..." -ForegroundColor Green
 
-    # Step 1: Uninstall Office using the Office Removal Tool
-    try {
-        $officeRemovalToolPath = "$env:TEMP\OfficeRemovalTool.exe"
-        Invoke-WebRequest -Uri "https://aka.ms/SaRA-officeUninstallFromPC" -OutFile $officeRemovalToolPath
-        Start-Process -FilePath $officeRemovalToolPath -ArgumentList "/quiet" -Wait
-        Write-Host "Office has been uninstalled." -ForegroundColor Green
-    } catch {
-        Write-Host "Failed to uninstall Office using the Office Removal Tool." -ForegroundColor Red
-    }
+            # Step 1: Uninstall Office using the Office Removal Tool
+            try {
+                $officeRemovalToolPath = "$env:TEMP\OfficeRemovalTool.exe"
+                Invoke-WebRequest -Uri "https://aka.ms/SaRA-officeUninstallFromPC" -OutFile $officeRemovalToolPath
+                Start-Process -FilePath $officeRemovalToolPath -ArgumentList "/quiet" -Wait
+                Write-Host "Office has been uninstalled." -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Failed to uninstall Office using the Office Removal Tool." -ForegroundColor Red
+            }
 
-    # Step 2: Remove Office-related folders
-    $officeFolders = @(
-        "$env:ProgramFiles\Microsoft Office",
-        "$env:ProgramFiles (x86)\Microsoft Office",
-        "$env:ProgramData\Microsoft\Office",
-        "$env:LOCALAPPDATA\Microsoft\Office",
-        "$env:APPDATA\Microsoft\Office"
-    )
-    foreach ($folder in $officeFolders) {
-        try {
-            Remove-Item -Recurse -Force -Path $folder
-            Write-Host "Removed folder: $folder" -ForegroundColor Green
-        } catch {
-            Write-Host "Failed to remove folder: $folder" -ForegroundColor Red
+            # Step 2: Remove Office-related folders
+            $officeFolders = @(
+                "$env:ProgramFiles\Microsoft Office",
+                "$env:ProgramFiles (x86)\Microsoft Office",
+                "$env:ProgramData\Microsoft\Office",
+                "$env:LOCALAPPDATA\Microsoft\Office",
+                "$env:APPDATA\Microsoft\Office"
+            )
+            foreach ($folder in $officeFolders) {
+                try {
+                    Remove-Item -Recurse -Force -Path $folder
+                    Write-Host "Removed folder: $folder" -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to remove folder: $folder" -ForegroundColor Red
+                }
+            }
+
+            # Step 3: Remove Office-related registry entries
+            $officeRegistryPaths = @(
+                "HKCU:\Software\Microsoft\Office",
+                "HKCU:\Software\Microsoft\Office\16.0",
+                "HKCU:\Software\Microsoft\Office\15.0",
+                "HKCU:\Software\Microsoft\Office\14.0",
+                "HKCU:\Software\Microsoft\Office\13.0",
+                "HKCU:\Software\Microsoft\Office\12.0",
+                "HKCU:\Software\Microsoft\Office\11.0",
+                "HKLM:\Software\Microsoft\Office",
+                "HKLM:\Software\Wow6432Node\Microsoft\Office"
+            )
+            foreach ($regPath in $officeRegistryPaths) {
+                try {
+                    Remove-Item -Recurse -Force -Path $regPath
+                    Write-Host "Removed registry path: $regPath" -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to remove registry path: $regPath" -ForegroundColor Red
+                }
+            }
+
+            # Step 4: Remove Office shortcuts
+            $officeShortcuts = @(
+                "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Office",
+                "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Office"
+            )
+            foreach ($shortcut in $officeShortcuts) {
+                try {
+                    Remove-Item -Recurse -Force -Path $shortcut
+                    Write-Host "Removed shortcut: $shortcut" -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to remove shortcut: $shortcut" -ForegroundColor Red
+                }
+            }
+
+            # Step 5: Remove Office temp files and cache files
+            $officeTempFiles = @(
+                "$env:TEMP\*Office*",
+                "$env:TEMP\*MSO*",
+                "$env:LOCALAPPDATA\Temp\*Office*",
+                "$env:LOCALAPPDATA\Temp\*MSO*"
+            )
+            foreach ($tempFile in $officeTempFiles) {
+                try {
+                    Remove-Item -Recurse -Force -Path $tempFile
+                    Write-Host "Removed temp file: $tempFile" -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to remove temp file: $tempFile" -ForegroundColor Red
+                }
+            }
+
+            Write-Host "Office removal process is complete." -ForegroundColor Green
+
+            # Prompt the user to reboot the computer
+            [System.Windows.Forms.MessageBox]::Show("The Office removal process is complete. Please reboot your computer to finalize the changes.", "Reboot Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
         }
-    }
-
-    # Step 3: Remove Office-related registry entries
-    $officeRegistryPaths = @(
-        "HKCU:\Software\Microsoft\Office",
-        "HKCU:\Software\Microsoft\Office\16.0",
-        "HKCU:\Software\Microsoft\Office\15.0",
-        "HKCU:\Software\Microsoft\Office\14.0",
-        "HKCU:\Software\Microsoft\Office\13.0",
-        "HKCU:\Software\Microsoft\Office\12.0",
-        "HKCU:\Software\Microsoft\Office\11.0",
-        "HKLM:\Software\Microsoft\Office",
-        "HKLM:\Software\Wow6432Node\Microsoft\Office"
-    )
-    foreach ($regPath in $officeRegistryPaths) {
-        try {
-            Remove-Item -Recurse -Force -Path $regPath
-            Write-Host "Removed registry path: $regPath" -ForegroundColor Green
-        } catch {
-            Write-Host "Failed to remove registry path: $regPath" -ForegroundColor Red
-        }
-    }
-
-    # Step 4: Remove Office shortcuts
-    $officeShortcuts = @(
-        "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Office",
-        "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Office"
-    )
-    foreach ($shortcut in $officeShortcuts) {
-        try {
-            Remove-Item -Recurse -Force -Path $shortcut
-            Write-Host "Removed shortcut: $shortcut" -ForegroundColor Green
-        } catch {
-            Write-Host "Failed to remove shortcut: $shortcut" -ForegroundColor Red
-        }
-    }
-
-    # Step 5: Remove Office temp files and cache files
-    $officeTempFiles = @(
-        "$env:TEMP\*Office*",
-        "$env:TEMP\*MSO*",
-        "$env:LOCALAPPDATA\Temp\*Office*",
-        "$env:LOCALAPPDATA\Temp\*MSO*"
-    )
-    foreach ($tempFile in $officeTempFiles) {
-        try {
-            Remove-Item -Recurse -Force -Path $tempFile
-            Write-Host "Removed temp file: $tempFile" -ForegroundColor Green
-        } catch {
-            Write-Host "Failed to remove temp file: $tempFile" -ForegroundColor Red
-        }
-    }
-
-    Write-Host "Office removal process is complete." -ForegroundColor Green
-
-    # Prompt the user to reboot the computer
-    [System.Windows.Forms.MessageBox]::Show("The Office removal process is complete. Please reboot your computer to finalize the changes.", "Reboot Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-}
-})
+    })
 $sectionOfficeApps.Controls.Add($linkRemoveOffice)
 
 # ...
