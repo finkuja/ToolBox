@@ -682,8 +682,8 @@ $tabControl.Controls.Add($tabInstall)
 
 # Create checkboxes for packages in the Install tab
 $checkboxAdobe = New-Object System.Windows.Forms.CheckBox
-$checkboxAdobe.Text = "Adobe Reader"
-$checkboxAdobe.Name = "Adobe Acrobat Reader 64-Bit"
+$checkboxAdobe.Text = "Adobe Reader DC 64-Bit"
+$checkboxAdobe.Name = "Adobe Acrobat Reader DC"
 $checkboxAdobe.AutoSize = $true
 $checkboxAdobe.Location = New-Object System.Drawing.Point($column1X, 20)
 $tabInstall.Controls.Add($checkboxAdobe)
@@ -802,7 +802,7 @@ $buttonInstall.Add_Click({
             Start-Process "winget" -ArgumentList "install --id XPFFZHVGQWWLHB -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
         }
         if ($checkboxAdobe.Checked) {
-            Start-Process "winget" -ArgumentList "install --id Adobe.Acrobat.Reader.64-Bit -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            Start-Process "winget" -ArgumentList "install --id Adobe.Acrobat.Reader.64-bit -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
         }
         if ($checkboxAdobeCloud.Checked) {
             Start-Process "winget" -ArgumentList "install --id Adobe.CreativeCloud -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
