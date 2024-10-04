@@ -518,19 +518,20 @@ function Add-PublisherToTrustedList {
 function Remove-AdobeReader {
     Write-Host "Removing Adobe Reader..."
         
-# Step 1: Uninstall Adobe Reader using the Adobe AcroCleaner tool
+    # Step 1: Uninstall Adobe Reader using the Adobe AcroCleaner tool
 try {
     $acroCleanerToolPath = "$env:TEMP\AcroCleaner_DC2021.exe"
     if (-not (Test-Path $acroCleanerToolPath)) {
         Write-Host "Downloading the Adobe AcroCleaner tool..." -ForegroundColor Yellow
-        Invoke-WebRequest -Uri "https://www.adobe.com/support/downloads/detail.jsp?ftpID=5518" -OutFile $acroCleanerToolPath
+        Invoke-WebRequest -Uri "https://ardownload2.adobe.com/pub/adobe/acrobat/win/AcrobatDC/2100120135/x64/AdobeAcroCleaner_DC2021.exe" -OutFile $acroCleanerToolPath
     }
     Write-Host "Running the Adobe AcroCleaner tool..." -ForegroundColor Yellow
     Start-Process -FilePath $acroCleanerToolPath -ArgumentList "/silent" -NoNewWindow -Wait
     Write-Host "Adobe AcroCleaner tool has completed." -ForegroundColor Green
 }
 catch {
-    Write-Host "Failed to run the Adobe AcroCleaner tool." -ForegroundColor Red
+    Write-Host "Failed to run the Adobe AcroCleaner tool. Exiting function." -ForegroundColor Red
+    return
 }
 
 # Step 2: Uninstall Adobe Reader using Get-WinGetPackage
@@ -550,7 +551,8 @@ try {
     }
 }
 catch {
-    Write-Host "Failed to uninstall Adobe Reader using winget." -ForegroundColor Red
+    Write-Host "Failed to uninstall Adobe Reader using winget. Exiting function." -ForegroundColor Red
+    return
 }
 
 # Step 3: Remove Adobe Reader-related folders
@@ -563,22 +565,29 @@ $adobeReaderFolders = @(
 )
 $lockedFolders = @()
 foreach ($folder in $adobeReaderFolders) {
-    try {
-        Remove-Item -Recurse -Force -Path $folder
-        Write-Host "Removed folder: $folder" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "Failed to remove folder: $folder" -ForegroundColor Red
-        $lockedFolders += $folder
+    if (Test-Path $folder) {
+        try {
+            Remove-Item -Recurse -Force -Path $folder
+            Write-Host "Removed folder: $folder" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to remove folder: $folder" -ForegroundColor Red
+            $lockedFolders += $folder
+        }
+    } else {
+        Write-Host "Path not found: $folder" -ForegroundColor Yellow
     }
 }
 
 if ($lockedFolders.Count -gt 0) {
     Write-Host "The following folders were not deleted because they are in use:" -ForegroundColor Yellow
     $lockedFolders | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
-} else {
+}
+else {
     Write-Host "All Adobe Reader-related folders were successfully deleted." -ForegroundColor Green
-} 
+}
+
+Write-Host "Adobe Reader uninstallation process completed." -ForegroundColor Green
 }
 
 ###########################################
@@ -694,7 +703,7 @@ $checkboxOffice.Location = New-Object System.Drawing.Point($column1X, 80)
 $tabInstall.Controls.Add($checkboxOffice)
 
 $checkboxOneNote = New-Object System.Windows.Forms.CheckBox
-$checkboxOneNote.Text = "Microsoft OneNote UWP (msstore)"
+$checkboxOneNote.Text = "Microsoft OneNote (UWP)"
 $checkboxOneNote.Name = "Microsfot OneNote"
 $checkboxOneNote.AutoSize = $true
 $checkboxOneNote.Location = New-Object System.Drawing.Point($column1X, 110)
@@ -739,22 +748,29 @@ $checkboxSurfaceDiagnosticToolkit = New-Object System.Windows.Forms.CheckBox
 $checkboxSurfaceDiagnosticToolkit.Text = "Surface Diagnostic Toolkit"
 $checkboxSurfaceDiagnosticToolkit.Name = "Surface Diagnostic Toolkit"
 $checkboxSurfaceDiagnosticToolkit.AutoSize = $true
-$checkboxSurfaceDiagnosticToolkit.Location = New-Object System.Drawing.Point($column2X, 20)
+$checkboxSurfaceDiagnosticToolkit.Location = New-Object System.Drawing.Point($column2X, 50)
 $tabInstall.Controls.Add($checkboxSurfaceDiagnosticToolkit)
 
 $checkboxVisio = New-Object System.Windows.Forms.CheckBox
 $checkboxVisio.Text = "Visio Viewer 2016"
 $checkboxVisio.Name = "Microsoft VisioViewer"
 $checkboxVisio.AutoSize = $true
-$checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 80)
+$checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 110)
 $tabInstall.Controls.Add($checkboxVisio)
 
 $checkboxRemoteDesktop = New-Object System.Windows.Forms.CheckBox
 $checkboxRemoteDesktop.Text = "Remote Desktop"
 $checkboxRemoteDesktop.Name = "Microsoft Remote Desktop"
 $checkboxRemoteDesktop.AutoSize = $true
-$checkboxRemoteDesktop.Location = New-Object System.Drawing.Point($column2X, 50)
+$checkboxRemoteDesktop.Location = New-Object System.Drawing.Point($column2X, 80)
 $tabInstall.Controls.Add($checkboxRemoteDesktop)
+
+$checkboxMicrosoftSARA = New-Object System.Windows.Forms.CheckBox
+$checkboxMicrosoftSARA.Text = "SARA Tool"
+$checkboxMicrosoftSARA.Name = "Microsoft Support and Recovery Assistant"
+$checkboxMicrosoftSARA.AutoSize = $true
+$checkboxMicrosoftSARA.Location = New-Object System.Drawing.Point($column2X, 20)
+$tabInstall.Controls.Add($checkboxMicrosoftSARA)
 
 # Create a checkbox to show in the command promt all pacakges installed
 $checkboxShowInstalled = New-Object System.Windows.Forms.CheckBox
@@ -810,8 +826,11 @@ $buttonInstall.Add_Click({
         if ($checkboxSurfaceDiagnosticToolkit.Checked) {
             Start-Process "winget" -ArgumentList "install --id 9NF1MR6C60ZF -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
         }
-        if($checkboxRemoteDesktop.Checked){
+        if ($checkboxRemoteDesktop.Checked) {
             Start-Process "winget" -ArgumentList "install --id 9WZDNCRFJ3PS -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxMicrosoftSARA.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.SupportandRecoveryAssistant -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
         }
         [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
     })
@@ -1042,11 +1061,13 @@ $buttonApply.Add_Click({
                     Get-ChildItem -Path $path -Recurse -Force | ForEach-Object {
                         try {
                             Remove-Item -Path $_.FullName -Force -Recurse
-                        } catch {
+                        }
+                        catch {
                             $lockedFiles += $_.FullName
                         }
                     }
-                } else {
+                }
+                else {
                     Write-Host "Path $path does not exist." -ForegroundColor Red
                 }
             }
@@ -1060,7 +1081,8 @@ $buttonApply.Add_Click({
             if ($lockedFiles.Count -gt 0) {
                 Write-Host "The following files were not deleted because they are in use:" -ForegroundColor Yellow
                 $lockedFiles | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
-            } else {
+            }
+            else {
                 Write-Host "All temporary files were successfully deleted." -ForegroundColor Green
             }
         }
@@ -1293,26 +1315,27 @@ $linkResetEdgeCache.Text = "Reset Edge Browser Cache"
 $linkResetEdgeCache.AutoSize = $true
 $linkResetEdgeCache.Location = New-Object System.Drawing.Point($column2X, 30)
 $linkResetEdgeCache.Add_LinkClicked({
-    try {
-        # Open Edge browser
-        $edgeProcess = Start-Process "msedge" -ArgumentList "about:blank" -PassThru
+        try {
+            # Open Edge browser
+            $edgeProcess = Start-Process "msedge" -ArgumentList "about:blank" -PassThru
 
-        # Wait for Edge to open
-        Start-Sleep -Seconds 3
+            # Wait for Edge to open
+            Start-Sleep -Seconds 3
 
-        # Simulate key presses to navigate to the settings page for clearing browsing data
-        $shell = New-Object -ComObject "WScript.Shell"
-        $shell.AppActivate($edgeProcess.Id)
-        Start-Sleep -Milliseconds 500
-        $shell.SendKeys("^+{DEL}")  # Ctrl+Shift+Delete to open the Clear browsing data dialog
-        Start-Sleep -Milliseconds 500
-        $shell.SendKeys("{ENTER}")  # Press Enter to confirm
+            # Simulate key presses to navigate to the settings page for clearing browsing data
+            $shell = New-Object -ComObject "WScript.Shell"
+            $shell.AppActivate($edgeProcess.Id)
+            Start-Sleep -Milliseconds 500
+            $shell.SendKeys("^+{DEL}")  # Ctrl+Shift+Delete to open the Clear browsing data dialog
+            Start-Sleep -Milliseconds 500
+            $shell.SendKeys("{ENTER}")  # Press Enter to confirm
 
-        Write-Host "Edge settings page for clearing browsing data has been opened." -ForegroundColor Green
-    } catch {
-        Write-Host "Failed to open Edge settings page. Error: $_" -ForegroundColor Red
-    }
-})
+            Write-Host "Edge settings page for clearing browsing data has been opened." -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to open Edge settings page. Error: $_" -ForegroundColor Red
+        }
+    })
 $sectionApps.Controls.Add($linkResetEdgeCache)
 
 # Create a hyperlink to fully reset Edge Browser
@@ -1321,60 +1344,64 @@ $linkResetEdge.Text = "Reset Edge Browser"
 $linkResetEdge.AutoSize = $true
 $linkResetEdge.Location = New-Object System.Drawing.Point($column2X, 60)
 $linkResetEdge.Add_LinkClicked({
-    try {
-        # Show a message box to advise the user
-        $result = [System.Windows.Forms.MessageBox]::Show(
-            "This action will fully remove Microsoft Edge and all cached files from the system. Do you want to proceed?",
-            "Warning",
-            [System.Windows.Forms.MessageBoxButtons]::YesNo,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
-
-        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-            # Step 1: Reset Edge profile
-            Write-Host "Resetting Edge browser profile..."
-            Start-Process "msedge" -ArgumentList "--reset-profile" -Wait
-            Write-Host "Edge browser profile has been reset." -ForegroundColor Green
-
-            # Step 2: Remove Edge cache and temporary files
-            Write-Host "Removing Edge cache and temporary files..."
-            $edgeCachePaths = @(
-                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Cache",
-                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Code Cache",
-                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\GPUCache",
-                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Media Cache",
-                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\ShaderCache"
+        try {
+            # Show a message box to advise the user
+            $result = [System.Windows.Forms.MessageBox]::Show(
+                "This action will fully remove Microsoft Edge and all cached files from the system. Do you want to proceed?",
+                "Warning",
+                [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                [System.Windows.Forms.MessageBoxIcon]::Warning
             )
-            foreach ($path in $edgeCachePaths) {
-                if (Test-Path $path) {
-                    Remove-Item -Path $path -Recurse -Force
-                    Write-Host "Removed: $path" -ForegroundColor Green
-                } else {
-                    Write-Host "Path not found: $path" -ForegroundColor Yellow
+
+            if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                # Step 1: Reset Edge profile
+                Write-Host "Resetting Edge browser profile..."
+                Start-Process "msedge" -ArgumentList "--reset-profile" -Wait
+                Write-Host "Edge browser profile has been reset." -ForegroundColor Green
+
+                # Step 2: Remove Edge cache and temporary files
+                Write-Host "Removing Edge cache and temporary files..."
+                $edgeCachePaths = @(
+                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Cache",
+                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Code Cache",
+                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\GPUCache",
+                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Media Cache",
+                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\ShaderCache"
+                )
+                foreach ($path in $edgeCachePaths) {
+                    if (Test-Path $path) {
+                        Remove-Item -Path $path -Recurse -Force
+                        Write-Host "Removed: $path" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "Path not found: $path" -ForegroundColor Yellow
+                    }
                 }
-            }
 
-            # Step 3: Uninstall Edge
-            Write-Host "Uninstalling Edge browser..."
-            $edgeUninstallPath = "$env:ProgramFiles (x86)\Microsoft\Edge\Application\msedge.exe"
-            if (Test-Path $edgeUninstallPath) {
-                Start-Process $edgeUninstallPath -ArgumentList "--uninstall --system-level --force-uninstall" -Wait
-                Write-Host "Edge browser has been uninstalled." -ForegroundColor Green
-            } else {
-                Write-Host "Edge uninstall path not found." -ForegroundColor Red
-            }
+                # Step 3: Uninstall Edge
+                Write-Host "Uninstalling Edge browser..."
+                $edgeUninstallPath = "$env:ProgramFiles (x86)\Microsoft\Edge\Application\msedge.exe"
+                if (Test-Path $edgeUninstallPath) {
+                    Start-Process $edgeUninstallPath -ArgumentList "--uninstall --system-level --force-uninstall" -Wait
+                    Write-Host "Edge browser has been uninstalled." -ForegroundColor Green
+                }
+                else {
+                    Write-Host "Edge uninstall path not found." -ForegroundColor Red
+                }
 
-            # Step 4: Reinstall Edge using winget
-            Write-Host "Reinstalling Edge browser using winget..."
-            Start-Process "winget" -ArgumentList "install --id Microsoft.Edge -e --source winget" -Wait
-            Write-Host "Edge browser has been reinstalled." -ForegroundColor Green
-        } else {
-            Write-Host "Action canceled by the user." -ForegroundColor Yellow
+                # Step 4: Reinstall Edge using winget
+                Write-Host "Reinstalling Edge browser using winget..."
+                Start-Process "winget" -ArgumentList "install --id Microsoft.Edge -e --source winget" -Wait
+                Write-Host "Edge browser has been reinstalled." -ForegroundColor Green
+            }
+            else {
+                Write-Host "Action canceled by the user." -ForegroundColor Yellow
+            }
         }
-    } catch {
-        Write-Host "Failed to reset Edge browser. Error: $_" -ForegroundColor Red
-    }
-})
+        catch {
+            Write-Host "Failed to reset Edge browser. Error: $_" -ForegroundColor Red
+        }
+    })
 $sectionApps.Controls.Add($linkResetEdge)
 
 #################
