@@ -76,19 +76,19 @@ $cpuInfo = Get-WmiObject -Class Win32_Processor | Select-Object -First 1 -Proper
 switch ($cpuInfo.Architecture) {
     0 {
         Write-Host "CPU Architecture: x86 (32-bit)"
-        $isARM = $false
+        $disableInstall = $false
     }
     9 {
         Write-Host "CPU Architecture: x64 (64-bit)"
-        $isARM = $false
+        $disableInstall = $false
     }
     5 {
         Write-Host "CPU Architecture: ARM"
-        $isARM = $true
+        $disableInstall = $true
     }
     default {
         Write-Host "CPU Architecture: Unknown"
-        $isARM = $false
+        $disableInstall = $true
     }
 }
 
@@ -953,7 +953,7 @@ $buttonCheckAll.Add_Click({
 })
 
 # Disable the Install Tab if device architecture is ARM
-if ($isARM) {
+if ($disableInstall) {
     foreach ($control in $tabInstall.Controls) {
         if ($control -is [System.Windows.Forms.CheckBox]) {
             $control.Enabled = $false
