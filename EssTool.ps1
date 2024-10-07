@@ -71,22 +71,28 @@ else {
 }
 
 # Check the system architecture
-$cpuArchitecture = (Get-WmiObject -Class Win32_Processor).AddressWidth
-$cpuInfo = Get-WmiObject -Class Win32_Processor | Select-Object -First 1 -Property Name, Manufacturer, Description
+$cpuInfo = Get-WmiObject -Class Win32_Processor | Select-Object -First 1 -Property Name, Manufacturer, Description, Architecture
 
-if ($cpuArchitecture -eq 64) {
-    Write-Host "CPU Architecture: 64-bit"
-    Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
-    $isARM = $false
-} elseif ($cpuArchitecture -eq 32) {
-    Write-Host "CPU Architecture: 32-bit"
-    Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
-    $isARM = $false
-} else {
-    Write-Host "CPU Architecture ARM"
-    Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
-    $isARM = $true
+switch ($cpuInfo.Architecture) {
+    0 {
+        Write-Host "CPU Architecture: x86 (32-bit)"
+        $isARM = $false
+    }
+    9 {
+        Write-Host "CPU Architecture: x64 (64-bit)"
+        $isARM = $false
+    }
+    5 {
+        Write-Host "CPU Architecture: ARM"
+        $isARM = $true
+    }
+    default {
+        Write-Host "CPU Architecture: Unknown"
+        $isARM = $false
+    }
 }
+
+Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
 
 #Check if winget is installed
 Write-Host "Checking if Windows Package Manager (winget) is installed..."
@@ -945,6 +951,19 @@ $buttonCheckAll.Add_Click({
         $buttonCheckAll.Text = "Uncheck All"
     }
 })
+
+# Disable the Install Tab if device architecture is ARM
+if ($isARM) {
+    foreach ($control in $tabInstall.Controls) {
+        if ($control -is [System.Windows.Forms.CheckBox]) {
+            $control.Enabled = $false
+        }
+    }
+    $buttonInstall.Enabled = $false
+    $buttonUninstall.Enabled = $false
+    $buttonGetPackages.Enabled = $false
+    $buttonCheckAll.Enabled = $false
+}
 
 #######################################
 # Tweak Tab Creation and Functionality #
