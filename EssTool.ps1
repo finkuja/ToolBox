@@ -1,4 +1,3 @@
-
 <#
 .SYNOPSIS
     This script is the ESSToolBox, a tool for system administration tasks.
@@ -33,7 +32,7 @@ Write-Output " ______  _____  _____    _______          _   ____
  
  === Version Beta 0.1 ===
 
- === Created by: Carlos Alvarez Magariños ===
+ === Author: Carlos Alvarez Magariños ===
  "
 # Check if the script is running with administrator privileges
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
@@ -69,6 +68,24 @@ if (-not $isAdmin) {
 }
 else {
     Write-Host "Running with administrator privileges." -ForegroundColor Green
+}
+
+# Check the system architecture
+$cpuArchitecture = (Get-WmiObject -Class Win32_Processor).AddressWidth
+$cpuInfo = Get-WmiObject -Class Win32_Processor | Select-Object -First 1 -Property Name, Manufacturer, Description
+
+if ($cpuArchitecture -eq 64) {
+    Write-Host "CPU Architecture: 64-bit"
+    Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
+    $isARM = $false
+} elseif ($cpuArchitecture -eq 32) {
+    Write-Host "CPU Architecture: 32-bit"
+    Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
+    $isARM = $false
+} else {
+    Write-Host "CPU Architecture ARM"
+    Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
+    $isARM = $true
 }
 
 #Check if winget is installed
@@ -775,17 +792,17 @@ $tabInstall.Controls.Add($checkboxMicrosoftSARA)
 
 # Create a checkbox to show in the command promt all pacakges installed
 $checkboxShowInstalled = New-Object System.Windows.Forms.CheckBox
-$checkboxShowInstalled.Text = "Show Installed Packages"
+$checkboxShowInstalled.Text = "Show All Installed"
 $checkboxShowInstalled.Name = "ShowInstalled"
 $checkboxShowInstalled.AutoSize = $true
-$checkboxShowInstalled.Location = New-Object System.Drawing.Point($column3X, $buttonY)
+$checkboxShowInstalled.Location = New-Object System.Drawing.Point(410, 350)
 $tabInstall.Controls.Add($checkboxShowInstalled)
 
 # Create an Install button in the Install tab
 $buttonInstall = New-Object System.Windows.Forms.Button
 $buttonInstall.Text = "Install"
 $buttonInstall.AutoSize = $true
-$buttonInstall.Location = New-Object System.Drawing.Point(20, $buttonY)
+$buttonInstall.Location = New-Object System.Drawing.Point($column1X, $buttonY)
 $tabInstall.Controls.Add($buttonInstall)
 
 # Define the action for the Install button
@@ -895,6 +912,39 @@ $buttonGetPackages.Add_Click({
             }
         }
     })
+
+# Create a Check/Uncheck All button in the Install tab
+$buttonCheckAll = New-Object System.Windows.Forms.Button
+$buttonCheckAll.Text = "Check All"
+$buttonCheckAll.AutoSize = $true
+$buttonCheckAll.Location = New-Object System.Drawing.Point(320, $buttonY)
+$tabInstall.Controls.Add($buttonCheckAll)
+
+# Define the action for the Check All button
+$buttonCheckAll.Add_Click({
+    # Determine if any checkbox is currently checked
+    $anyChecked = $false
+    foreach ($control in $tabInstall.Controls) {
+        if ($control -is [System.Windows.Forms.CheckBox] -and $control.Checked) {
+            $anyChecked = $true
+            break
+        }
+    }
+
+    # Toggle the check state based on the current state
+    foreach ($control in $tabInstall.Controls) {
+        if ($control -is [System.Windows.Forms.CheckBox]) {
+            $control.Checked = -not $anyChecked
+        }
+    }
+
+    # Update the button text based on the new state
+    if ($anyChecked) {
+        $buttonCheckAll.Text = "Check All"
+    } else {
+        $buttonCheckAll.Text = "Uncheck All"
+    }
+})
 
 #######################################
 # Tweak Tab Creation and Functionality #
@@ -1052,6 +1102,7 @@ $buttonApply.Add_Click({
             Write-Host "Deleting temporary files..." -ForegroundColor Green
         
             $lockedFiles = @()
+            $nonExistentPaths = @()
         
             function Remove-Files {
                 param (
@@ -1061,15 +1112,19 @@ $buttonApply.Add_Click({
                 if (Test-Path $path) {
                     Get-ChildItem -Path $path -Recurse -Force | ForEach-Object {
                         try {
-                            Remove-Item -Path $_.FullName -Force -Recurse
+                            Remove-Item -Path $_.FullName -Force -Recurse -ErrorAction Stop
                         }
                         catch {
-                            $lockedFiles += $_.FullName
+                            if ($_.Exception.Message -match "because it is being used by another process") {
+                                $lockedFiles += $_.FullName
+                            } else {
+                                $nonExistentPaths += $_.FullName
+                            }
                         }
                     }
                 }
                 else {
-                    Write-Host "Path $path does not exist." -ForegroundColor Red
+                    $nonExistentPaths += $path
                 }
             }
         
@@ -1083,7 +1138,13 @@ $buttonApply.Add_Click({
                 Write-Host "The following files were not deleted because they are in use:" -ForegroundColor Yellow
                 $lockedFiles | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
             }
-            else {
+        
+            if ($nonExistentPaths.Count -gt 0) {
+                Write-Host "The following paths do not exist:" -ForegroundColor Yellow
+                $nonExistentPaths | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+            }
+        
+            if ($lockedFiles.Count -eq 0 -and $nonExistentPaths.Count -eq 0) {
                 Write-Host "All temporary files were successfully deleted." -ForegroundColor Green
             }
         }
@@ -1690,100 +1751,135 @@ $linkRemoveOffice.Text = "Remove Office"
 $linkRemoveOffice.AutoSize = $true
 $linkRemoveOffice.Location = New-Object System.Drawing.Point($column2X, 30)
 $linkRemoveOffice.Add_LinkClicked({
-        # Inform the user that the removal process is starting
-        $result = [System.Windows.Forms.MessageBox]::Show("This action will close all running Office apps and remove all Office instances. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
-        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-            Write-Host "Removing Office..." -ForegroundColor Green
+    # Inform the user that the removal process is starting
+    $result = [System.Windows.Forms.MessageBox]::Show("This action will close all running Office apps and remove all Office instances. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+    if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+        Write-Host "Removing Office..." -ForegroundColor Green
 
-            # Step 1: Uninstall Office using the Office Removal Tool
-            try {
-                $officeRemovalToolPath = "$env:TEMP\OfficeRemovalTool.exe"
-                Invoke-WebRequest -Uri "https://aka.ms/SaRA-officeUninstallFromPC" -OutFile $officeRemovalToolPath
-                Start-Process -FilePath $officeRemovalToolPath -ArgumentList "/quiet" -Wait
-                Write-Host "Office has been uninstalled." -ForegroundColor Green
-            }
-            catch {
-                Write-Host "Failed to uninstall Office using the Office Removal Tool." -ForegroundColor Red
-            }
+        # Arrays to store paths that couldn't be deleted
+        $failedFolders = @()
+        $failedRegistryPaths = @()
+        $failedShortcuts = @()
+        $failedTempFiles = @()
 
-            # Step 2: Remove Office-related folders
-            $officeFolders = @(
-                "$env:ProgramFiles\Microsoft Office",
-                "$env:ProgramFiles (x86)\Microsoft Office",
-                "$env:ProgramData\Microsoft\Office",
-                "$env:LOCALAPPDATA\Microsoft\Office",
-                "$env:APPDATA\Microsoft\Office"
-            )
-            foreach ($folder in $officeFolders) {
+        # Step 1: Uninstall Office using the Office Removal Tool
+        try {
+            $officeRemovalToolPath = "$env:TEMP\OfficeRemovalTool.exe"
+            Invoke-WebRequest -Uri "https://aka.ms/SaRA-officeUninstallFromPC" -OutFile $officeRemovalToolPath
+            Start-Process -FilePath $officeRemovalToolPath -ArgumentList "/quiet" -Wait
+            Write-Host "Office has been uninstalled." -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to uninstall Office using the Office Removal Tool." -ForegroundColor Red
+        }
+
+        # Step 2: Remove Office-related folders
+        $officeFolders = @(
+            "$env:ProgramFiles\Microsoft Office",
+            "$env:ProgramFiles (x86)\Microsoft Office",
+            "$env:ProgramData\Microsoft\Office",
+            "$env:LOCALAPPDATA\Microsoft\Office",
+            "$env:APPDATA\Microsoft\Office"
+        )
+        foreach ($folder in $officeFolders) {
+            if (Test-Path $folder) {
                 try {
-                    Remove-Item -Recurse -Force -Path $folder
+                    Remove-Item -Recurse -Force -Path $folder -ErrorAction Stop
                     Write-Host "Removed folder: $folder" -ForegroundColor Green
                 }
                 catch {
-                    Write-Host "Failed to remove folder: $folder" -ForegroundColor Red
+                    $failedFolders += $folder
                 }
             }
+        }
 
-            # Step 3: Remove Office-related registry entries
-            $officeRegistryPaths = @(
-                "HKCU:\Software\Microsoft\Office",
-                "HKCU:\Software\Microsoft\Office\16.0",
-                "HKCU:\Software\Microsoft\Office\15.0",
-                "HKCU:\Software\Microsoft\Office\14.0",
-                "HKCU:\Software\Microsoft\Office\13.0",
-                "HKCU:\Software\Microsoft\Office\12.0",
-                "HKCU:\Software\Microsoft\Office\11.0",
-                "HKLM:\Software\Microsoft\Office",
-                "HKLM:\Software\Wow6432Node\Microsoft\Office"
-            )
-            foreach ($regPath in $officeRegistryPaths) {
+        # Step 3: Remove Office-related registry entries
+        $officeRegistryPaths = @(
+            "HKCU:\Software\Microsoft\Office",
+            "HKCU:\Software\Microsoft\Office\16.0",
+            "HKCU:\Software\Microsoft\Office\15.0",
+            "HKCU:\Software\Microsoft\Office\14.0",
+            "HKCU:\Software\Microsoft\Office\13.0",
+            "HKCU:\Software\Microsoft\Office\12.0",
+            "HKCU:\Software\Microsoft\Office\11.0",
+            "HKLM:\Software\Microsoft\Office",
+            "HKLM:\Software\Wow6432Node\Microsoft\Office"
+        )
+        foreach ($regPath in $officeRegistryPaths) {
+            if (Test-Path $regPath) {
                 try {
-                    Remove-Item -Recurse -Force -Path $regPath
+                    Remove-Item -Recurse -Force -Path $regPath -ErrorAction Stop
                     Write-Host "Removed registry path: $regPath" -ForegroundColor Green
                 }
                 catch {
-                    Write-Host "Failed to remove registry path: $regPath" -ForegroundColor Red
+                    $failedRegistryPaths += $regPath
                 }
             }
+        }
 
-            # Step 4: Remove Office shortcuts
-            $officeShortcuts = @(
-                "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Office",
-                "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Office"
-            )
-            foreach ($shortcut in $officeShortcuts) {
+        # Step 4: Remove Office shortcuts
+        $officeShortcuts = @(
+            "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Office",
+            "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Office"
+        )
+        foreach ($shortcut in $officeShortcuts) {
+            if (Test-Path $shortcut) {
                 try {
-                    Remove-Item -Recurse -Force -Path $shortcut
+                    Remove-Item -Recurse -Force -Path $shortcut -ErrorAction Stop
                     Write-Host "Removed shortcut: $shortcut" -ForegroundColor Green
                 }
                 catch {
-                    Write-Host "Failed to remove shortcut: $shortcut" -ForegroundColor Red
+                    $failedShortcuts += $shortcut
                 }
             }
+        }
 
-            # Step 5: Remove Office temp files and cache files
-            $officeTempFiles = @(
-                "$env:TEMP\*Office*",
-                "$env:TEMP\*MSO*",
-                "$env:LOCALAPPDATA\Temp\*Office*",
-                "$env:LOCALAPPDATA\Temp\*MSO*"
-            )
-            foreach ($tempFile in $officeTempFiles) {
+        # Step 5: Remove Office temp files and cache files
+        $officeTempFiles = @(
+            "$env:TEMP\*Office*",
+            "$env:TEMP\*MSO*",
+            "$env:LOCALAPPDATA\Temp\*Office*",
+            "$env:LOCALAPPDATA\Temp\*MSO*"
+        )
+        foreach ($tempFile in $officeTempFiles) {
+            if (Test-Path $tempFile) {
                 try {
-                    Remove-Item -Recurse -Force -Path $tempFile
+                    Remove-Item -Recurse -Force -Path $tempFile -ErrorAction Stop
                     Write-Host "Removed temp file: $tempFile" -ForegroundColor Green
                 }
                 catch {
-                    Write-Host "Failed to remove temp file: $tempFile" -ForegroundColor Red
+                    $failedTempFiles += $tempFile
                 }
             }
-
-            Write-Host "Office removal process is complete." -ForegroundColor Green
-
-            # Prompt the user to reboot the computer
-            [System.Windows.Forms.MessageBox]::Show("The Office removal process is complete. Please reboot your computer to finalize the changes.", "Reboot Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
         }
-    })
+
+        # Display summary of failed deletions
+        if ($failedFolders.Count -gt 0) {
+            Write-Host "The following folders could not be deleted:" -ForegroundColor Yellow
+            $failedFolders | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+        }
+
+        if ($failedRegistryPaths.Count -gt 0) {
+            Write-Host "The following registry paths could not be deleted:" -ForegroundColor Yellow
+            $failedRegistryPaths | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+        }
+
+        if ($failedShortcuts.Count -gt 0) {
+            Write-Host "The following shortcuts could not be deleted:" -ForegroundColor Yellow
+            $failedShortcuts | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+        }
+
+        if ($failedTempFiles.Count -gt 0) {
+            Write-Host "The following temp files could not be deleted:" -ForegroundColor Yellow
+            $failedTempFiles | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+        }
+
+        Write-Host "Office removal process is complete." -ForegroundColor Green
+
+        # Prompt the user to reboot the computer
+        [System.Windows.Forms.MessageBox]::Show("The Office removal process is complete. Please reboot your computer to finalize the changes.", "Reboot Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    }
+})
 $sectionOfficeApps.Controls.Add($linkRemoveOffice)
 
 # ...
