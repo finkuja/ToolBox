@@ -808,7 +808,7 @@ function Uninstall-EdgeBrowser {
 
 # Function to remove OneDrive from the system
 
- <#
+<#
     .SYNOPSIS
     Removes OneDrive from the system, including its files, registry entries, and scheduled tasks.
 
@@ -836,7 +836,8 @@ function Remove-OneDrive {
         $OneDriveUninstallString = Get-ItemPropertyValue $regPath -Name "UninstallString"
         $OneDriveExe, $OneDriveArgs = $OneDriveUninstallString.Split(" ")
         Start-Process -FilePath $OneDriveExe -ArgumentList "$OneDriveArgs /silent" -NoNewWindow -Wait
-    } else {
+    }
+    else {
         Write-Host "OneDrive doesn't seem to be installed anymore" -ForegroundColor Red
         return
     }
@@ -906,7 +907,8 @@ function Remove-OneDrive {
         Write-Host "Please Note - The OneDrive folder at $OneDrivePath may still have items in it. You must manually delete it, but all the files should already be copied to the base user folder."
         Write-Host "If there are Files missing afterwards, please Login to Onedrive.com and Download them manually" -ForegroundColor Yellow
         Start-Sleep 5
-    } else {
+    }
+    else {
         Write-Host "Something went wrong during the uninstallation of OneDrive" -ForegroundColor Red
     }
 }
@@ -1454,54 +1456,57 @@ $tabTweak.Controls.Add($buttonSystemPerformance)
 # Define the action for the Apply button
 $buttonApply.Add_Click({
 
-    if ($checkboxCleanBoot.Checked) {
-        # Prompt the user
-        $result = [System.Windows.Forms.MessageBox]::Show(
-            "This action will disable all non-Microsoft services. Do you want to proceed?",
-            "Clean Boot",
-            [System.Windows.Forms.MessageBoxButtons]::YesNo,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
+        if ($checkboxCleanBoot.Checked) {
+            # Prompt the user
+            $result = [System.Windows.Forms.MessageBox]::Show(
+                "This action will disable all non-Microsoft services. Do you want to proceed?",
+                "Clean Boot",
+                [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                [System.Windows.Forms.MessageBoxIcon]::Warning
+            )
     
-        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-            # Perform a clean boot
-            Write-Host "Performing a clean boot..." -ForegroundColor Yellow
+            if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                # Perform a clean boot
+                Write-Host "Performing a clean boot..." -ForegroundColor Yellow
     
-            # Get all non-Microsoft services
-            $nonMicrosoftServices = Get-Service | Where-Object { $_.DisplayName -notmatch "^(Microsoft|Windows)" }
+                # Get all non-Microsoft services
+                $nonMicrosoftServices = Get-Service | Where-Object { $_.DisplayName -notmatch "^(Microsoft|Windows)" }
     
-            # Backup the services to a file
-            $backupFilePath = "$env:USERPROFILE\Documents\DisabledServicesBackup.txt"
-            $nonMicrosoftServices | Select-Object Name, DisplayName, Status | Export-Csv -Path $backupFilePath -NoTypeInformation
-            Write-Host "Backup of disabled services saved to $backupFilePath" -ForegroundColor Green
+                # Backup the services to a file
+                $backupFilePath = "$env:USERPROFILE\Documents\DisabledServicesBackup.txt"
+                $nonMicrosoftServices | Select-Object Name, DisplayName, Status | Export-Csv -Path $backupFilePath -NoTypeInformation
+                Write-Host "Backup of disabled services saved to $backupFilePath" -ForegroundColor Green
     
-            # Disable all non-Microsoft services
-            foreach ($service in $nonMicrosoftServices) {
-                try {
-                    Set-Service -Name $service.Name -StartupType Disabled
-                    Write-Host "Disabled service: $($service.DisplayName)" -ForegroundColor Green
-                } catch {
-                    Write-Host "Failed to disable service: $($service.DisplayName)" -ForegroundColor Red
+                # Disable all non-Microsoft services
+                foreach ($service in $nonMicrosoftServices) {
+                    try {
+                        Set-Service -Name $service.Name -StartupType Disabled
+                        Write-Host "Disabled service: $($service.DisplayName)" -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host "Failed to disable service: $($service.DisplayName)" -ForegroundColor Red
+                    }
                 }
-            }
     
-            # Disable all startup items using Task Scheduler
-            $startupTasks = Get-ScheduledTask | Where-Object { $_.TaskPath -notlike "\Microsoft\*" }
-            foreach ($task in $startupTasks) {
-                try {
-                    Disable-ScheduledTask -TaskName $task.TaskName -TaskPath $task.TaskPath
-                    Write-Host "Disabled startup task: $($task.TaskName)" -ForegroundColor Green
-                } catch {
-                    Write-Host "Failed to disable startup task: $($task.TaskName)" -ForegroundColor Red
+                # Disable all startup items using Task Scheduler
+                $startupTasks = Get-ScheduledTask | Where-Object { $_.TaskPath -notlike "\Microsoft\*" }
+                foreach ($task in $startupTasks) {
+                    try {
+                        Disable-ScheduledTask -TaskName $task.TaskName -TaskPath $task.TaskPath
+                        Write-Host "Disabled startup task: $($task.TaskName)" -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host "Failed to disable startup task: $($task.TaskName)" -ForegroundColor Red
+                    }
                 }
-            }
     
-            # Open System Configuration to verify changes
-            Start-Process "msconfig.exe" -ArgumentList "/4" -NoNewWindow -Wait
-        } else {
-            Write-Host "Clean boot operation canceled by the user." -ForegroundColor Yellow
+                # Open System Configuration to verify changes
+                Start-Process "msconfig.exe" -ArgumentList "/4" -NoNewWindow -Wait
+            }
+            else {
+                Write-Host "Clean boot operation canceled by the user." -ForegroundColor Yellow
+            }
         }
-    }
         if ($checkboxRightClickEndTask.Checked) {
             # Add registry key to enable right click end task
             $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
@@ -1670,39 +1675,42 @@ $buttonApply.Add_Click({
 # Define the action for the Undo button
 $buttonUndo.Add_Click({
 
-    if ($checkboxCleanBoot.Checked) {
-        # Undo clean boot
-        Write-Host "Undoing clean boot..." -ForegroundColor Yellow
+        if ($checkboxCleanBoot.Checked) {
+            # Undo clean boot
+            Write-Host "Undoing clean boot..." -ForegroundColor Yellow
 
-        # Path to the backup file
-        $backupFilePath = "$env:USERPROFILE\Documents\DisabledServicesBackup.txt"
+            # Path to the backup file
+            $backupFilePath = "$env:USERPROFILE\Documents\DisabledServicesBackup.txt"
 
-        # Check if the backup file exists
-        if (Test-Path $backupFilePath) {
-            try {
-                # Read the backup file
-                $disabledServices = Import-Csv -Path $backupFilePath
+            # Check if the backup file exists
+            if (Test-Path $backupFilePath) {
+                try {
+                    # Read the backup file
+                    $disabledServices = Import-Csv -Path $backupFilePath
 
-                # Re-enable the services
-                foreach ($service in $disabledServices) {
-                    try {
-                        Set-Service -Name $service.Name -StartupType Automatic
-                        Write-Host "Re-enabled service: $($service.DisplayName)" -ForegroundColor Green
-                    } catch {
-                        Write-Host "Failed to re-enable service: $($service.DisplayName)" -ForegroundColor Red
+                    # Re-enable the services
+                    foreach ($service in $disabledServices) {
+                        try {
+                            Set-Service -Name $service.Name -StartupType Automatic
+                            Write-Host "Re-enabled service: $($service.DisplayName)" -ForegroundColor Green
+                        }
+                        catch {
+                            Write-Host "Failed to re-enable service: $($service.DisplayName)" -ForegroundColor Red
+                        }
                     }
-                }
 
-                # Remove the backup file after re-enabling services
-                Remove-Item -Path $backupFilePath -Force
-                Write-Host "Clean boot undo completed." -ForegroundColor Green
-            } catch {
-                Write-Host "Failed to undo clean boot. Error: $_" -ForegroundColor Red
+                    # Remove the backup file after re-enabling services
+                    Remove-Item -Path $backupFilePath -Force
+                    Write-Host "Clean boot undo completed." -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to undo clean boot. Error: $_" -ForegroundColor Red
+                }
             }
-        } else {
-            Write-Host "No backup file found for clean boot undo." -ForegroundColor Red
+            else {
+                Write-Host "No backup file found for clean boot undo." -ForegroundColor Red
+            }
         }
-    }
         if ($checkboxRightClickEndTask.Checked) {
             # Remove registry key to disable right click end task
             $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
@@ -2060,11 +2068,24 @@ $linkRemoveOneDrive.Text = "Remove OneDrive"
 $linkRemoveOneDrive.AutoSize = $true
 $linkRemoveOneDrive.Location = New-Object System.Drawing.Point($column2X, 60)
 $linkRemoveOneDrive.Add_LinkClicked({
-    # Remove OneDrive
-    Write-Output "Removing OneDrive..."
-    # Call the function to remove OneDrive
-    Remove-OneDrive
-})
+        # Ask for user confirmation
+        $result = [System.Windows.Forms.MessageBox]::Show(
+            "Are you sure you want to remove OneDrive? This action cannot be undone.",
+            "Confirm Remove OneDrive",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            # Remove OneDrive
+            Write-Host "Removing OneDrive..." -ForegroundColor Yellow
+            # Call the function to remove OneDrive
+            Remove-OneDrive
+        }
+        else {
+            Write-Host "Remove OneDrive operation canceled by the user." -ForegroundColor Yellow
+        }
+    })
 $sectionApps.Controls.Add($linkRemoveOneDrive)
 
 #################
@@ -2083,19 +2104,60 @@ $linkResetWinUpdate.Text = "Reset Windows Update"
 $linkResetWinUpdate.AutoSize = $true
 $linkResetWinUpdate.Location = New-Object System.Drawing.Point($column1X, 30)
 $linkResetWinUpdate.Add_LinkClicked({
-        # Reset Windows Update
-        Write-Host "Resetting Windows Update..." -ForegroundColor Yellow
-        # Add your code here
-        $fixWindowsUpdate = [System.Windows.Forms.MessageBox]::Show("We will attempt to fix Windows Update service. Do you want to run the fix in aggressive mode?", "Fix Windows Update", "YesNoCancel", "Question")
+        # Custom message box for selecting reset mode
+        $form = New-Object System.Windows.Forms.Form
+        $form.Text = "Fix Windows Update"
+        $form.Size = New-Object System.Drawing.Size(300, 150)
+        $form.StartPosition = "CenterScreen"
 
-        if ($fixWindowsUpdate -eq "Yes") {
-            Invoke-FixesWUpdate -Aggressive $true
-        }
-        elseif ($fixWindowsUpdate -eq "No") {
-            Invoke-FixesWUpdate -Aggressive $false
-        }
-        else {
-            # User clicked Cancel, do nothing
+        $label = New-Object System.Windows.Forms.Label
+        $label.Text = "We will attempt to fix Windows Update service.`nChoose the mode:"
+        $label.AutoSize = $true
+        $label.Location = New-Object System.Drawing.Point(10, 10)
+        $form.Controls.Add($label)
+
+        $buttonAggressive = New-Object System.Windows.Forms.Button
+        $buttonAggressive.Text = "Aggressive"
+        $buttonAggressive.Location = New-Object System.Drawing.Point(10, 60)
+        $buttonAggressive.Add_Click({
+                $form.Tag = "Aggressive"
+                $form.Close()
+            })
+        $form.Controls.Add($buttonAggressive)
+
+        $buttonNormal = New-Object System.Windows.Forms.Button
+        $buttonNormal.Text = "Normal"
+        $buttonNormal.Location = New-Object System.Drawing.Point(100, 60)
+        $buttonNormal.Add_Click({
+                $form.Tag = "Normal"
+                $form.Close()
+            })
+        $form.Controls.Add($buttonNormal)
+
+        $buttonCancel = New-Object System.Windows.Forms.Button
+        $buttonCancel.Text = "Cancel"
+        $buttonCancel.Location = New-Object System.Drawing.Point(190, 60)
+        $buttonCancel.Add_Click({
+                $form.Tag = "Cancel"
+                $form.Close()
+            })
+        $form.Controls.Add($buttonCancel)
+
+        $form.ShowDialog()
+
+        # Handle the user's choice
+        switch ($form.Tag) {
+            "Aggressive" {
+                Write-Host "Resetting Windows Update in Aggressive mode..." -ForegroundColor Yellow
+                Invoke-FixesWUpdate -Aggressive $true
+            }
+            "Normal" {
+                Write-Host "Resetting Windows Update in Normal mode..." -ForegroundColor Yellow
+                Invoke-FixesWUpdate -Aggressive $false
+            }
+            "Cancel" {
+                Write-Host "Reset Windows Update operation canceled by the user." -ForegroundColor Red
+            }
         }
     })
 $sectionSystem.Controls.Add($linkResetWinUpdate)
@@ -2171,7 +2233,7 @@ $sectionSystem.Controls.Add($linkOpenTroubleshooters)
 $linkRunMemoryTest = New-Object System.Windows.Forms.LinkLabel
 $linkRunMemoryTest.Text = "Run Memory Test"
 $linkRunMemoryTest.AutoSize = $true
-$linkRunMemoryTest.Location = New-Object System.Drawing.Point($column2X, 90)
+$linkRunMemoryTest.Location = New-Object System.Drawing.Point($column3X, 30)
 $linkRunMemoryTest.Add_LinkClicked({
         # Run Windows Memory Test
         Write-Host "Running Windows Memory Test..." -ForegroundColor Yellow
