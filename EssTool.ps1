@@ -1578,8 +1578,10 @@ $linkResetEdge.Add_LinkClicked({
             # Step 3: Uninstall Edge using Get-AppxPackage and Remove-AppxPackage
             Write-Host "Uninstalling Edge browser..."
             try {
-                $edgePackage = Get-AppxPackage -Name "Microsoft.MicrosoftEdge.Stable" -ErrorAction Stop
-                Remove-AppxPackage -Package $edgePackage.PackageFullName -AllUsers -ErrorAction Stop
+                $edgePackages = Get-AppxPackage -Name "*MicrosoftEdge*" -AllUsers -ErrorAction Stop
+                foreach ($package in $edgePackages) {
+                    Remove-AppxPackage -Package $package.PackageFullName -AllUsers -ErrorAction Stop
+                }
                 Write-Host "Edge browser has been uninstalled." -ForegroundColor Green
             }
             catch {
