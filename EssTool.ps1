@@ -1577,9 +1577,10 @@ $linkResetEdge.Add_LinkClicked({
 
             # Step 3: Uninstall Edge using setup.exe
             Write-Host "Uninstalling Edge browser..."
-            $edgeSetupPath = "$env:ProgramFiles (x86)\Microsoft\Edge\Application\setup.exe"
-            if (Test-Path $edgeSetupPath) {
-                Start-Process $edgeSetupPath -ArgumentList "--uninstall --system-level --force-uninstall --verbose-logging --do-not-launch-chrome" -NoNewWindow -Wait
+            $edgeInstallPath = "$env:ProgramFiles (x86)\Microsoft\Edge\Application"
+            $setupExePath = Get-ChildItem -Path $edgeInstallPath -Recurse -Filter "setup.exe" | Select-Object -First 1 -ExpandProperty FullName
+            if ($setupExePath) {
+                Start-Process $setupExePath -ArgumentList "--uninstall --system-level --force-uninstall --verbose-logging --do-not-launch-chrome" -NoNewWindow -Wait
                 Write-Host "Edge browser has been uninstalled." -ForegroundColor Green
             }
             else {
