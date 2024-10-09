@@ -1443,31 +1443,33 @@ $linkResetEdge.Text = "Remove Edge Browser"
 $linkResetEdge.AutoSize = $true
 $linkResetEdge.Location = New-Object System.Drawing.Point($column2X, 60)
 $linkResetEdge.Add_LinkClicked({
-        try {
-            # Show a message box to advise the user
-            $result = [System.Windows.Forms.MessageBox]::Show(
-                "This action will fully remove Microsoft Edge and all cached files from the system. Do you want to proceed?",
-                "Warning",
-                [System.Windows.Forms.MessageBoxButtons]::YesNo,
-                [System.Windows.Forms.MessageBoxIcon]::Warning
+    try {
+        # Show a message box to advise the user
+        $result = [System.Windows.Forms.MessageBox]::Show(
+            "This action will fully remove Microsoft Edge and all cached files from the system. Do you want to proceed?",
+            "Warning",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            # Step 1: Reset Edge profile silently
+            Write-Host "Resetting Edge browser profile..."
+            Start-Process "msedge" -ArgumentList "--reset-profile" -NoNewWindow -Wait
+            Write-Host "Edge browser profile has been reset." -ForegroundColor Green
+
+            # Step 2: Remove Edge cache and temporary files
+            Write-Host "Removing Edge cache and temporary files..."
+            $edgeCachePaths = @(
+                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Cache",
+                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Code Cache",
+                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\GPUCache",
+                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Media Cache",
+                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\ShaderCache"
             )
-
-            if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-                # Step 1: Reset Edge profile
-                Write-Host "Resetting Edge browser profile..."
-                Start-Process "msedge" -ArgumentList "--reset-profile" -Wait
-                Write-Host "Edge browser profile has been reset." -ForegroundColor Green
-
-                # Step 2: Remove Edge cache and temporary files
-                Write-Host "Removing Edge cache and temporary files..."
-                $edgeCachePaths = @(
-                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Cache",
-                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Code Cache",
-                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\GPUCache",
-                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Media Cache",
-                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\ShaderCache"
-                )
-                foreach ($path in $edgeCachePaths) {
+            $failedRemovals = @()
+            foreach ($path in $edgeCachePaths) {
+                try {
                     if (Test-Path $path) {
                         Remove-Item -Path $path -Recurse -Force
                         Write-Host "Removed: $path" -ForegroundColor Green
@@ -1476,31 +1478,42 @@ $linkResetEdge.Add_LinkClicked({
                         Write-Host "Path not found: $path" -ForegroundColor Yellow
                     }
                 }
-
-                # Step 3: Uninstall Edge
-                Write-Host "Uninstalling Edge browser..."
-                $edgeUninstallPath = "$env:ProgramFiles (x86)\Microsoft\Edge\Application\msedge.exe"
-                if (Test-Path $edgeUninstallPath) {
-                    Start-Process $edgeUninstallPath -ArgumentList "--uninstall --system-level --force-uninstall" -Wait
-                    Write-Host "Edge browser has been uninstalled." -ForegroundColor Green
+                catch {
+                    Write-Host "Failed to remove: $path" -ForegroundColor Red
+                    $failedRemovals += $path
                 }
-                else {
-                    Write-Host "Edge uninstall path not found." -ForegroundColor Red
-                }
+            }
 
-                # Step 4: Reinstall Edge using winget
-                Write-Host "Reinstalling Edge browser using winget..."
-                Start-Process "winget" -ArgumentList "install --id Microsoft.Edge -e --source winget" -Wait
-                Write-Host "Edge browser has been reinstalled." -ForegroundColor Green
+            # Step 3: Uninstall Edge silently
+            Write-Host "Uninstalling Edge browser..."
+            $edgeUninstallPath = "$env:ProgramFiles (x86)\Microsoft\Edge\Application\msedge.exe"
+            if (Test-Path $edgeUninstallPath) {
+                Start-Process $edgeUninstallPath -ArgumentList "--uninstall --system-level --force-uninstall" -NoNewWindow -Wait
+                Write-Host "Edge browser has been uninstalled." -ForegroundColor Green
             }
             else {
-                Write-Host "Action canceled by the user." -ForegroundColor Yellow
+                Write-Host "Edge uninstall path not found." -ForegroundColor Red
+            }
+
+            # Step 4: Reinstall Edge using winget silently
+            Write-Host "Reinstalling Edge browser using winget..."
+            Start-Process "winget" -ArgumentList "install --id Microsoft.Edge -e --source winget" -NoNewWindow -Wait
+            Write-Host "Edge browser has been reinstalled." -ForegroundColor Green
+
+            # Prompt user with the list of files/folders that could not be removed
+            if ($failedRemovals.Count -gt 0) {
+                $failedRemovalsMessage = "The following files/folders could not be removed:`n" + ($failedRemovals -join "`n")
+                [System.Windows.Forms.MessageBox]::Show($failedRemovalsMessage, "Removal Errors", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
             }
         }
-        catch {
-            Write-Host "Failed to reset Edge browser. Error: $_" -ForegroundColor Red
+        else {
+            Write-Host "Action canceled by the user." -ForegroundColor Yellow
         }
-    })
+    }
+    catch {
+        Write-Host "Failed to reset Edge browser. Error: $_" -ForegroundColor Red
+    }
+})
 $sectionApps.Controls.Add($linkResetEdge)
 
 #################
