@@ -1364,35 +1364,35 @@ $linkRemoveAdobeCloud.Text = "Remove Adobe Creative Cloud"
 $linkRemoveAdobeCloud.AutoSize = $true
 $linkRemoveAdobeCloud.Location = New-Object System.Drawing.Point($column1X, 30)
 $linkRemoveAdobeCloud.Add_LinkClicked({
-        # Remove Adobe Cloud
-        Write-Host "Removing Adobe Cloud..."
-        # Code snipet from https://github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/RunAdobeCCCleanerTool.md
-        [string]$url = "https://swupmf.adobe.com/webfeed/CleanerTool/win/AdobeCreativeCloudCleanerTool.exe"
+    # Remove Adobe Cloud
+    Write-Host "Removing Adobe Cloud..."
+    # Code snipet from https://github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/RunAdobeCCCleanerTool.md
+    [string]$url = "https://swupmf.adobe.com/webfeed/CleanerTool/win/AdobeCreativeCloudCleanerTool.exe"
 
-        Write-Host "The Adobe Creative Cloud Cleaner tool is hosted at"
-        Write-Host "$url"
+    Write-Host "The Adobe Creative Cloud Cleaner tool is hosted at"
+    Write-Host "$url"
 
-        try {
-            # Don't show the progress because it will slow down the download speed
-            $ProgressPreference = 'SilentlyContinue'
+    try {
+        # Don't show the progress because it will slow down the download speed
+        $ProgressPreference = 'SilentlyContinue'
 
-            Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -UseBasicParsing -ErrorAction SilentlyContinue -Verbose
+        Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -UseBasicParsing -ErrorAction SilentlyContinue -Verbose
 
-            # Revert back the ProgressPreference variable to the default value since we got the file desired
-            $ProgressPreference = 'Continue'
+        # Revert back the ProgressPreference variable to the default value since we got the file desired
+        $ProgressPreference = 'Continue'
 
-            Start-Process -FilePath "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Wait -ErrorAction SilentlyContinue -Verbose
+        Start-Process -FilePath "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Wait -ErrorAction SilentlyContinue -Verbose
+    }
+    catch {
+        Write-Error $_.Exception.Message
+    }
+    finally {
+        if (Test-Path -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe") {
+            Write-Host "Cleaning up..."
+            Remove-Item -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Verbose
         }
-        catch {
-            Write-Error $_.Exception.Message
-        }
-        finally {
-            if (Test-Path -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe") {
-                Write-Host "Cleaning up..."
-                Remove-Item -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Verbose
-            }
-        }
-    })
+    }
+})
 $sectionApps.Controls.Add($linkRemoveAdobeCloud)
 
 # Create a hyperlink to remove Adobe Reader
@@ -1401,47 +1401,74 @@ $linkRemoveAdobeReader.Text = "Remove Adobe Reader"
 $linkRemoveAdobeReader.AutoSize = $true
 $linkRemoveAdobeReader.Location = New-Object System.Drawing.Point($column1X, 60)
 $linkRemoveAdobeReader.Add_LinkClicked({
-        # Remove Adobe Reader
-        Write-Output "Removing Adobe Reader..."
-        # Call the function to remove Adobe Reader
-        Remove-AdobeReader
-    })
+    # Remove Adobe Reader
+    Write-Output "Removing Adobe Reader..."
+    # Call the function to remove Adobe Reader
+    Remove-AdobeReader
+})
 $sectionApps.Controls.Add($linkRemoveAdobeReader)
+
+# Create a new form for Edge Fixes
+$formEdgeFixes = New-Object System.Windows.Forms.Form
+$formEdgeFixes.Text = "Edge Fixes"
+$formEdgeFixes.Size = New-Object System.Drawing.Size(400, 300)
+$formEdgeFixes.StartPosition = "CenterScreen"
+$formEdgeFixes.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+$formEdgeFixes.MaximizeBox = $false
+$formEdgeFixes.MinimizeBox = $false
 
 # Create a hyperlink to reset Edge Browser Cache
 $linkResetEdgeCache = New-Object System.Windows.Forms.LinkLabel
 $linkResetEdgeCache.Text = "Reset Edge Browser Cache"
 $linkResetEdgeCache.AutoSize = $true
-$linkResetEdgeCache.Location = New-Object System.Drawing.Point($column2X, 30)
+$linkResetEdgeCache.Location = New-Object System.Drawing.Point(10, 10)
 $linkResetEdgeCache.Add_LinkClicked({
-        try {
-            # Open Edge browser
-            $edgeProcess = Start-Process "msedge" -ArgumentList "about:blank" -PassThru
+    try {
+        # Open Edge browser
+        $edgeProcess = Start-Process "msedge" -ArgumentList "about:blank" -PassThru
 
-            # Wait for Edge to open
-            Start-Sleep -Seconds 3
+        # Wait for Edge to open
+        Start-Sleep -Seconds 3
 
-            # Simulate key presses to navigate to the settings page for clearing browsing data
-            $shell = New-Object -ComObject "WScript.Shell"
-            $shell.AppActivate($edgeProcess.Id)
-            Start-Sleep -Milliseconds 500
-            $shell.SendKeys("^+{DEL}")  # Ctrl+Shift+Delete to open the Clear browsing data dialog
-            Start-Sleep -Milliseconds 500
-            $shell.SendKeys("{ENTER}")  # Press Enter to confirm
+        # Simulate key presses to navigate to the settings page for clearing browsing data
+        $shell = New-Object -ComObject "WScript.Shell"
+        $shell.AppActivate($edgeProcess.Id)
+        Start-Sleep -Milliseconds 500
+        $shell.SendKeys("^+{DEL}")  # Ctrl+Shift+Delete to open the Clear browsing data dialog
+        Start-Sleep -Milliseconds 500
+        $shell.SendKeys("{ENTER}")  # Press Enter to confirm
 
-            Write-Host "Edge settings page for clearing browsing data has been opened." -ForegroundColor Green
-        }
-        catch {
-            Write-Host "Failed to open Edge settings page. Error: $_" -ForegroundColor Red
-        }
-    })
-$sectionApps.Controls.Add($linkResetEdgeCache)
+        Write-Host "Edge settings page for clearing browsing data has been opened." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Failed to open Edge settings page. Error: $_" -ForegroundColor Red
+    }
+})
+$formEdgeFixes.Controls.Add($linkResetEdgeCache)
+
+# Create a hyperlink to reset Edge Profile
+$linkResetEdgeProfile = New-Object System.Windows.Forms.LinkLabel
+$linkResetEdgeProfile.Text = "Reset Edge Profile"
+$linkResetEdgeProfile.AutoSize = $true
+$linkResetEdgeProfile.Location = New-Object System.Drawing.Point(10, 40)
+$linkResetEdgeProfile.Add_LinkClicked({
+    try {
+        # Step 1: Reset Edge profile silently
+        Write-Host "Resetting Edge browser profile..."
+        Start-Process "msedge" -ArgumentList "--reset-profile" -NoNewWindow -Wait
+        Write-Host "Edge browser profile has been reset." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Failed to reset Edge profile. Error: $_" -ForegroundColor Red
+    }
+})
+$formEdgeFixes.Controls.Add($linkResetEdgeProfile)
 
 # Create a hyperlink to fully reset Edge Browser
 $linkResetEdge = New-Object System.Windows.Forms.LinkLabel
 $linkResetEdge.Text = "Remove Edge Browser"
 $linkResetEdge.AutoSize = $true
-$linkResetEdge.Location = New-Object System.Drawing.Point($column2X, 60)
+$linkResetEdge.Location = New-Object System.Drawing.Point(10, 70)
 $linkResetEdge.Add_LinkClicked({
     try {
         # Show a message box to advise the user
@@ -1453,18 +1480,13 @@ $linkResetEdge.Add_LinkClicked({
         )
 
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-            # Check if Edge is running and close it
+            # Step 1: Check if Edge is running and close it
             $edgeProcesses = Get-Process -Name "msedge" -ErrorAction SilentlyContinue
             if ($edgeProcesses) {
                 Write-Host "Microsoft Edge is running. Closing it..."
                 $edgeProcesses | ForEach-Object { $_.CloseMainWindow() | Out-Null; $_.WaitForExit() }
                 Write-Host "Microsoft Edge has been closed." -ForegroundColor Green
             }
-
-            # Step 1: Reset Edge profile silently
-            Write-Host "Resetting Edge browser profile..."
-            Start-Process "msedge" -ArgumentList "--reset-profile" -NoNewWindow -Wait
-            Write-Host "Edge browser profile has been reset." -ForegroundColor Green
 
             # Step 2: Remove Edge cache and temporary files
             Write-Host "Removing Edge cache and temporary files..."
@@ -1522,7 +1544,27 @@ $linkResetEdge.Add_LinkClicked({
         Write-Host "Failed to reset Edge browser. Error: $_" -ForegroundColor Red
     }
 })
-$sectionApps.Controls.Add($linkResetEdge)
+$formEdgeFixes.Controls.Add($linkResetEdge)
+
+# Create a hyperlink to close the Edge Fixes window
+$linkCloseWindow = New-Object System.Windows.Forms.LinkLabel
+$linkCloseWindow.Text = "Close Window"
+$linkCloseWindow.AutoSize = $true
+$linkCloseWindow.Location = New-Object System.Drawing.Point(10, 100)
+$linkCloseWindow.Add_LinkClicked({
+    $formEdgeFixes.Close()
+})
+$formEdgeFixes.Controls.Add($linkCloseWindow)
+
+# Create a hyperlink to open the Edge Fixes window
+$linkMicrosoftEdge = New-Object System.Windows.Forms.LinkLabel
+$linkMicrosoftEdge.Text = "Microsoft Edge"
+$linkMicrosoftEdge.AutoSize = $true
+$linkMicrosoftEdge.Location = New-Object System.Drawing.Point($column2X, 30)
+$linkMicrosoftEdge.Add_LinkClicked({
+    $formEdgeFixes.ShowDialog()
+})
+$sectionApps.Controls.Add($linkMicrosoftEdge)
 
 #################
 # System section#
