@@ -1530,6 +1530,7 @@ $linkResetEdge.Text = "Remove Edge Browser"
 $linkResetEdge.AutoSize = $true
 $linkResetEdge.Location = New-Object System.Drawing.Point(10, 70)
 $linkResetEdge.Add_LinkClicked({
+    $errors = @()
     try {
         # Show a message box to advise the user
         $result = [System.Windows.Forms.MessageBox]::Show(
@@ -1574,15 +1575,17 @@ $linkResetEdge.Add_LinkClicked({
                 }
             }
 
-            # Step 3: Uninstall Edge silently
+            # Step 3: Uninstall Edge using setup.exe
             Write-Host "Uninstalling Edge browser..."
-            $edgeUninstallPath = "$env:ProgramFiles (x86)\Microsoft\Edge\Application\msedge.exe"
-            if (Test-Path $edgeUninstallPath) {
-                Start-Process $edgeUninstallPath -ArgumentList "--uninstall --system-level --force-uninstall" -NoNewWindow -Wait
+            $edgeSetupPath = "$env:ProgramFiles (x86)\Microsoft\Edge\Application\setup.exe"
+            if (Test-Path $edgeSetupPath) {
+                Start-Process $edgeSetupPath -ArgumentList "--uninstall --system-level --force-uninstall --verbose-logging --do-not-launch-chrome" -NoNewWindow -Wait
                 Write-Host "Edge browser has been uninstalled." -ForegroundColor Green
             }
             else {
-                Write-Host "Edge uninstall path not found." -ForegroundColor Red
+                $errorMessage = "Edge setup path not found."
+                Write-Host $errorMessage -ForegroundColor Red
+                $errors += $errorMessage
             }
 
             # Prompt user with the list of files/folders that could not be removed
@@ -1596,7 +1599,15 @@ $linkResetEdge.Add_LinkClicked({
         }
     }
     catch {
-        Write-Host "Failed to reset Edge browser. Error: $_" -ForegroundColor Red
+        $errorMessage = "Failed to reset Edge browser. Error: $_"
+        Write-Host $errorMessage -ForegroundColor Red
+        $errors += $errorMessage
+    }
+    finally {
+        if ($errors.Count -gt 0) {
+            $errorSummary = "The following errors occurred during the reset process:`n" + ($errors -join "`n")
+            [System.Windows.Forms.MessageBox]::Show($errorSummary, "Errors", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        }
     }
 })
 $formEdgeFixes.Controls.Add($linkResetEdge)
