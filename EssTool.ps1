@@ -1431,7 +1431,7 @@ $sectionApps.Controls.Add($linkResetEdgeCache)
 
 # Create a hyperlink to fully reset Edge Browser
 $linkResetEdge = New-Object System.Windows.Forms.LinkLabel
-$linkResetEdge.Text = "Reset Edge Browser"
+$linkResetEdge.Text = "Remove Edge Browser"
 $linkResetEdge.AutoSize = $true
 $linkResetEdge.Location = New-Object System.Drawing.Point($column2X, 60)
 $linkResetEdge.Add_LinkClicked({
