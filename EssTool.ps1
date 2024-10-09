@@ -716,40 +716,40 @@ $tabInstall.Text = "Install / Update"
 $tabControl.Controls.Add($tabInstall)
 
 # Create checkboxes for packages in the Install tab
-$checkboxAdobe = New-Object System.Windows.Forms.CheckBox
-$checkboxAdobe.Text = "Adobe Reader DC 64-Bit"
-$checkboxAdobe.Name = "Adobe Acrobat"
-$checkboxAdobe.AutoSize = $true
-$checkboxAdobe.Location = New-Object System.Drawing.Point($column1X, 20)
-$tabInstall.Controls.Add($checkboxAdobe)
-
 $checkboxAdobeCloud = New-Object System.Windows.Forms.CheckBox
 $checkboxAdobeCloud.Text = "Adobe Creative Cloud"
 $checkboxAdobeCloud.Name = "Adobe Creative Cloud"
 $checkboxAdobeCloud.AutoSize = $true
-$checkboxAdobeCloud.Location = New-Object System.Drawing.Point($column1X, 50)
+$checkboxAdobeCloud.Location = New-Object System.Drawing.Point($column1X, 20)
 $tabInstall.Controls.Add($checkboxAdobeCloud)
 
-$checkboxOffice = New-Object System.Windows.Forms.CheckBox
-$checkboxOffice.Text = "Microsoft Office 365"
-$checkboxOffice.Name = "Microsoft 365 Apps for Enterprise"
-$checkboxOffice.AutoSize = $true
-$checkboxOffice.Location = New-Object System.Drawing.Point($column1X, 80)
-$tabInstall.Controls.Add($checkboxOffice)
+$checkboxAdobe = New-Object System.Windows.Forms.CheckBox
+$checkboxAdobe.Text = "Adobe Reader DC 64-Bit"
+$checkboxAdobe.Name = "Adobe Acrobat"
+$checkboxAdobe.AutoSize = $true
+$checkboxAdobe.Location = New-Object System.Drawing.Point($column1X, 50)
+$tabInstall.Controls.Add($checkboxAdobe)
 
-$checkboxOneNote = New-Object System.Windows.Forms.CheckBox
-$checkboxOneNote.Text = "Microsoft OneNote (UWP)"
-$checkboxOneNote.Name = "Microsfot OneNote"
-$checkboxOneNote.AutoSize = $true
-$checkboxOneNote.Location = New-Object System.Drawing.Point($column1X, 110)
-$tabInstall.Controls.Add($checkboxOneNote)
+$checkboxChrome = New-Object System.Windows.Forms.CheckBox
+$checkboxChrome.Text = "Google Chrome"
+$checkboxChrome.Name = "Google Chrome"
+$checkboxChrome.AutoSize = $true
+$checkboxChrome.Location = New-Object System.Drawing.Point($column1X, 80)
+$tabInstall.Controls.Add($checkboxChrome)
 
-$checkboxTeams = New-Object System.Windows.Forms.CheckBox
-$checkboxTeams.Text = "Microsoft Teams"
-$checkboxTeams.Name = "Microsoft Teams"
-$checkboxTeams.AutoSize = $true
-$checkboxTeams.Location = New-Object System.Drawing.Point($column1X, 140)
-$tabInstall.Controls.Add($checkboxTeams)
+$checkboxFiddler = New-Object System.Windows.Forms.CheckBox
+$checkboxFiddler.Text = "Fiddler"
+$checkboxFiddler.Name = "Fiddler"
+$checkboxFiddler.AutoSize = $true
+$checkboxFiddler.Location = New-Object System.Drawing.Point($column1X, 110)
+$tabInstall.Controls.Add($checkboxFiddler)
+
+$checkboxHWMonitor = New-Object System.Windows.Forms.CheckBox
+$checkboxHWMonitor.Text = "HWMonitor"
+$checkboxHWMonitor.Name = "HWMonitor"
+$checkboxHWMonitor.AutoSize = $true
+$checkboxHWMonitor.Location = New-Object System.Drawing.Point($column1X, 140)
+$tabInstall.Controls.Add($checkboxHWMonitor)
 
 $checkboxNetFrameworks = New-Object System.Windows.Forms.CheckBox
 $checkboxNetFrameworks.Text = ".NET All Versions"
@@ -758,54 +758,96 @@ $checkboxNetFrameworks.AutoSize = $true
 $checkboxNetFrameworks.Location = New-Object System.Drawing.Point($column1X, 170)
 $tabInstall.Controls.Add($checkboxNetFrameworks)
 
+$checkboxEdge = New-Object System.Windows.Forms.CheckBox
+$checkboxEdge.Text = "Microsoft Edge"
+$checkboxEdge.Name = "Microsoft Edge"
+$checkboxEdge.AutoSize = $true
+$checkboxEdge.Location = New-Object System.Drawing.Point($column1X, 200)
+$tabInstall.Controls.Add($checkboxEdge)
+
+$checkboxOffice = New-Object System.Windows.Forms.CheckBox
+$checkboxOffice.Text = "Microsoft Office 365"
+$checkboxOffice.Name = "Microsoft 365 Apps for Enterprise"
+$checkboxOffice.AutoSize = $true
+$checkboxOffice.Location = New-Object System.Drawing.Point($column1X, 230)
+$tabInstall.Controls.Add($checkboxOffice)
+
+$checkboxOneDrive = New-Object System.Windows.Forms.CheckBox
+$checkboxOneDrive.Text = "Microsoft OneDrive"
+$checkboxOneDrive.Name = "Microsoft OneDrive"
+$checkboxOneDrive.AutoSize = $true
+$checkboxOneDrive.Location = New-Object System.Drawing.Point($column1X, 260)
+$tabInstall.Controls.Add($checkboxOneDrive)
+
+$checkboxOneNote = New-Object System.Windows.Forms.CheckBox
+$checkboxOneNote.Text = "Microsoft OneNote (UWP)"
+$checkboxOneNote.Name = "Microsfot OneNote"
+$checkboxOneNote.AutoSize = $true
+$checkboxOneNote.Location = New-Object System.Drawing.Point($column1X, 290)
+$tabInstall.Controls.Add($checkboxOneNote)
+
+$checkboxTeams = New-Object System.Windows.Forms.CheckBox
+$checkboxTeams.Text = "Microsoft Teams"
+$checkboxTeams.Name = "Microsoft Teams"
+$checkboxTeams.AutoSize = $true
+$checkboxTeams.Location = New-Object System.Drawing.Point($column2X, 20)
+$tabInstall.Controls.Add($checkboxTeams)
+
+$checkboxFirefox = New-Object System.Windows.Forms.CheckBox
+$checkboxFirefox.Text = "Mozilla Firefox"
+$checkboxFirefox.Name = "Mozilla Firefox"
+$checkboxFirefox.AutoSize = $true
+$checkboxFirefox.Location = New-Object System.Drawing.Point($column2X, 50)
+$tabInstall.Controls.Add($checkboxFirefox)
+
 $checkboxPowerAutomate = New-Object System.Windows.Forms.CheckBox
 $checkboxPowerAutomate.Text = "Power Automate"
 $checkboxPowerAutomate.Name = "Power Automate"
 $checkboxPowerAutomate.AutoSize = $true
-$checkboxPowerAutomate.Location = New-Object System.Drawing.Point($column1X, 200)
+$checkboxPowerAutomate.Location = New-Object System.Drawing.Point($column2X, 80)
 $tabInstall.Controls.Add($checkboxPowerAutomate)
 
 $checkboxPowerToys = New-Object System.Windows.Forms.CheckBox
 $checkboxPowerToys.Text = "PowerToys"
 $checkboxPowerToys.Name = "PowerToys"
 $checkboxPowerToys.AutoSize = $true
-$checkboxPowerToys.Location = New-Object System.Drawing.Point($column1X, 230)
+$checkboxPowerToys.Location = New-Object System.Drawing.Point($column2X, 110)
 $tabInstall.Controls.Add($checkboxPowerToys)
 
 $checkboxQuickAssist = New-Object System.Windows.Forms.CheckBox
 $checkboxQuickAssist.Text = "Quick Assist"
 $checkboxQuickAssist.Name = "Quick Assist"
 $checkboxQuickAssist.AutoSize = $true
-$checkboxQuickAssist.Location = New-Object System.Drawing.Point($column1X, 260)
+$checkboxQuickAssist.Location = New-Object System.Drawing.Point($column2X, 140)
 $tabInstall.Controls.Add($checkboxQuickAssist)
-
-$checkboxSurfaceDiagnosticToolkit = New-Object System.Windows.Forms.CheckBox
-$checkboxSurfaceDiagnosticToolkit.Text = "Surface Diagnostic Toolkit"
-$checkboxSurfaceDiagnosticToolkit.Name = "Surface Diagnostic Toolkit"
-$checkboxSurfaceDiagnosticToolkit.AutoSize = $true
-$checkboxSurfaceDiagnosticToolkit.Location = New-Object System.Drawing.Point($column2X, 50)
-$tabInstall.Controls.Add($checkboxSurfaceDiagnosticToolkit)
-
-$checkboxVisio = New-Object System.Windows.Forms.CheckBox
-$checkboxVisio.Text = "Visio Viewer 2016"
-$checkboxVisio.Name = "Microsoft VisioViewer"
-$checkboxVisio.AutoSize = $true
-$checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 110)
-$tabInstall.Controls.Add($checkboxVisio)
 
 $checkboxRemoteDesktop = New-Object System.Windows.Forms.CheckBox
 $checkboxRemoteDesktop.Text = "Remote Desktop"
 $checkboxRemoteDesktop.Name = "Microsoft Remote Desktop"
 $checkboxRemoteDesktop.AutoSize = $true
-$checkboxRemoteDesktop.Location = New-Object System.Drawing.Point($column2X, 80)
+$checkboxRemoteDesktop.Location = New-Object System.Drawing.Point($column2X, 170)
 $tabInstall.Controls.Add($checkboxRemoteDesktop)
 
 $checkboxMicrosoftSARA = New-Object System.Windows.Forms.CheckBox
 $checkboxMicrosoftSARA.Text = "SARA Tool"
 $checkboxMicrosoftSARA.Name = "Microsoft Support and Recovery Assistant"
 $checkboxMicrosoftSARA.AutoSize = $true
-$checkboxMicrosoftSARA.Location = New-Object System.Drawing.Point($column2X, 20)
+$checkboxMicrosoftSARA.Location = New-Object System.Drawing.Point($column2X, 200)
 $tabInstall.Controls.Add($checkboxMicrosoftSARA)
+
+$checkboxSurfaceDiagnosticToolkit = New-Object System.Windows.Forms.CheckBox
+$checkboxSurfaceDiagnosticToolkit.Text = "Surface Diagnostic Toolkit"
+$checkboxSurfaceDiagnosticToolkit.Name = "Surface Diagnostic Toolkit"
+$checkboxSurfaceDiagnosticToolkit.AutoSize = $true
+$checkboxSurfaceDiagnosticToolkit.Location = New-Object System.Drawing.Point($column2X, 230)
+$tabInstall.Controls.Add($checkboxSurfaceDiagnosticToolkit)
+
+$checkboxVisio = New-Object System.Windows.Forms.CheckBox
+$checkboxVisio.Text = "Visio Viewer 2016"
+$checkboxVisio.Name = "Microsoft VisioViewer"
+$checkboxVisio.AutoSize = $true
+$checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 260)
+$tabInstall.Controls.Add($checkboxVisio)
 
 # Create a checkbox to show in the command promt all pacakges installed
 $checkboxShowInstalled = New-Object System.Windows.Forms.CheckBox
@@ -824,49 +866,67 @@ $tabInstall.Controls.Add($buttonInstall)
 
 # Define the action for the Install button
 $buttonInstall.Add_Click({
-        if ($checkboxOffice.Checked) {
-            Start-Process "winget" -ArgumentList "install --id Microsoft.Office -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxPowerToys.Checked) {
-            Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxTeams.Checked) {
-            Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxOneNote.Checked) {
-            Start-Process "winget" -ArgumentList "install --id XPFFZHVGQWWLHB -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxAdobe.Checked) {
-            Start-Process "winget" -ArgumentList "install --id Adobe.Acrobat.Reader.64-bit -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxAdobeCloud.Checked) {
-            Start-Process "winget" -ArgumentList "install --id Adobe.CreativeCloud -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxPowerAutomate.Checked) {
-            Start-Process "winget" -ArgumentList "install --id 9NFTCH6J7FHV -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxVisio.Checked) {
-            Start-Process "winget" -ArgumentList "install --id Microsoft.VisioViewer -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxNetFrameworks.Checked) {
-            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.3_1 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.6 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.7 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.8 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxQuickAssist.Checked) {
-            Start-Process "winget" -ArgumentList "install --id 9P7BP5VNWKX5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxSurfaceDiagnosticToolkit.Checked) {
-            Start-Process "winget" -ArgumentList "install --id 9NF1MR6C60ZF -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxRemoteDesktop.Checked) {
-            Start-Process "winget" -ArgumentList "install --id 9WZDNCRFJ3PS -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
-        if ($checkboxMicrosoftSARA.Checked) {
-            Start-Process "winget" -ArgumentList "install --id Microsoft.SupportAndRecoveryAssistant -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        }
+    if ($checkboxAdobe.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Adobe.Acrobat.Reader.64-bit -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxAdobeCloud.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Adobe.CreativeCloud -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxChrome.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Google.Chrome -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxEdge.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.Edge -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxFiddler.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Telerik.Fiddler.Classic -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxFirefox.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Mozilla.Firefox -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxHWMonitor.Checked) {
+        Start-Process "winget" -ArgumentList "install --id CPUID.HWMonitor -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxMicrosoftSARA.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.SupportAndRecoveryAssistant -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxNetFrameworks.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.3_1 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.6 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.7 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.8 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxOffice.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.Office -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxOneDrive.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.OneDrive -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxOneNote.Checked) {
+        Start-Process "winget" -ArgumentList "install --id XPFFZHVGQWWLHB -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxPowerAutomate.Checked) {
+        Start-Process "winget" -ArgumentList "install --id 9NFTCH6J7FHV -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxPowerToys.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxQuickAssist.Checked) {
+        Start-Process "winget" -ArgumentList "install --id 9P7BP5VNWKX5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxRemoteDesktop.Checked) {
+        Start-Process "winget" -ArgumentList "install --id 9WZDNCRFJ3PS -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxSurfaceDiagnosticToolkit.Checked) {
+        Start-Process "winget" -ArgumentList "install --id 9NF1MR6C60ZF -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxTeams.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+    if ($checkboxVisio.Checked) {
+        Start-Process "winget" -ArgumentList "install --id Microsoft.VisioViewer -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
         [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
     })
 
@@ -1524,11 +1584,6 @@ $linkResetEdge.Add_LinkClicked({
             else {
                 Write-Host "Edge uninstall path not found." -ForegroundColor Red
             }
-
-            # Step 4: Reinstall Edge using winget silently
-            Write-Host "Reinstalling Edge browser using winget..."
-            Start-Process "winget" -ArgumentList "install --id Microsoft.Edge -e --source winget" -NoNewWindow -Wait
-            Write-Host "Edge browser has been reinstalled." -ForegroundColor Green
 
             # Prompt user with the list of files/folders that could not be removed
             if ($failedRemovals.Count -gt 0) {
