@@ -40,7 +40,7 @@ if (-not $isAdmin) {
     Write-Host "The ESSToolBox needs to run as Administrator, trying to elevate the permissions..." -ForegroundColor Yellow
     
     # Get the current script content
-    $scriptContent = (irm https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/main/EssTool.ps1)
+    $scriptContent = (Invoke-RestMethod https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/main/EssTool.ps1)
     
     # Define a temporary file path
     $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox.ps1")
@@ -543,75 +543,76 @@ function Remove-AdobeReader {
     Write-Host "Removing Adobe Reader..."
         
     # Step 1: Uninstall Adobe Reader using the Adobe AcroCleaner tool
-try {
-    $acroCleanerToolPath = "$env:TEMP\AcroCleaner_DC2021.exe"
-    if (-not (Test-Path $acroCleanerToolPath)) {
-        Write-Host "Downloading the Adobe AcroCleaner tool..." -ForegroundColor Yellow
-        Invoke-WebRequest -Uri "https://ardownload2.adobe.com/pub/adobe/acrobat/win/AcrobatDC/2100120135/x64/AdobeAcroCleaner_DC2021.exe" -OutFile $acroCleanerToolPath
-    }
-    Write-Host "Running the Adobe AcroCleaner tool..." -ForegroundColor Yellow
-    Start-Process -FilePath $acroCleanerToolPath -ArgumentList "/silent" -NoNewWindow -Wait
-    Write-Host "Adobe AcroCleaner tool has completed." -ForegroundColor Green
-}
-catch {
-    Write-Host "Failed to run the Adobe AcroCleaner tool. Exiting function." -ForegroundColor Red
-    return
-}
-
-# Step 2: Uninstall Adobe Reader using Get-WinGetPackage
-try {
-    # Get all installed Adobe Reader packages
-    $adobePackages = Get-WinGetPackage | Where-Object { $_.Name -like "*Adobe Acrobat Reader*" }
-    if ($adobePackages) {
-        foreach ($package in $adobePackages) {
-            $packageId = $package.Id
-            Write-Host "Uninstalling Adobe Reader package: $packageId"
-            Start-Process -FilePath "winget" -ArgumentList "uninstall --id $packageId -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    try {
+        $acroCleanerToolPath = "$env:TEMP\AcroCleaner_DC2021.exe"
+        if (-not (Test-Path $acroCleanerToolPath)) {
+            Write-Host "Downloading the Adobe AcroCleaner tool..." -ForegroundColor Yellow
+            Invoke-WebRequest -Uri "https://ardownload2.adobe.com/pub/adobe/acrobat/win/AcrobatDC/2100120135/x64/AdobeAcroCleaner_DC2021.exe" -OutFile $acroCleanerToolPath
         }
-        Write-Host "All versions of Adobe Reader have been uninstalled using winget." -ForegroundColor Green
+        Write-Host "Running the Adobe AcroCleaner tool..." -ForegroundColor Yellow
+        Start-Process -FilePath $acroCleanerToolPath -ArgumentList "/silent" -NoNewWindow -Wait
+        Write-Host "Adobe AcroCleaner tool has completed." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Failed to run the Adobe AcroCleaner tool. Exiting function." -ForegroundColor Red
+        return
+    }
+
+    # Step 2: Uninstall Adobe Reader using Get-WinGetPackage
+    try {
+        # Get all installed Adobe Reader packages
+        $adobePackages = Get-WinGetPackage | Where-Object { $_.Name -like "*Adobe Acrobat Reader*" }
+        if ($adobePackages) {
+            foreach ($package in $adobePackages) {
+                $packageId = $package.Id
+                Write-Host "Uninstalling Adobe Reader package: $packageId"
+                Start-Process -FilePath "winget" -ArgumentList "uninstall --id $packageId -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            }
+            Write-Host "All versions of Adobe Reader have been uninstalled using winget." -ForegroundColor Green
+        }
+        else {
+            Write-Host "No Adobe Reader packages found to uninstall using winget." -ForegroundColor Yellow
+        }
+    }
+    catch {
+        Write-Host "Failed to uninstall Adobe Reader using winget. Exiting function." -ForegroundColor Red
+        return
+    }
+
+    # Step 3: Remove Adobe Reader-related folders
+    $adobeReaderFolders = @(
+        "$env:ProgramFiles\Adobe\Acrobat Reader DC",
+        "$env:ProgramFiles (x86)\Adobe\Acrobat Reader DC",
+        "$env:ProgramData\Adobe\Acrobat",
+        "$env:LOCALAPPDATA\Adobe\Acrobat",
+        "$env:APPDATA\Adobe\Acrobat"
+    )
+    $lockedFolders = @()
+    foreach ($folder in $adobeReaderFolders) {
+        if (Test-Path $folder) {
+            try {
+                Remove-Item -Recurse -Force -Path $folder
+                Write-Host "Removed folder: $folder" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Failed to remove folder: $folder" -ForegroundColor Red
+                $lockedFolders += $folder
+            }
+        }
+        else {
+            Write-Host "Path not found: $folder" -ForegroundColor Yellow
+        }
+    }
+
+    if ($lockedFolders.Count -gt 0) {
+        Write-Host "The following folders were not deleted because they are in use:" -ForegroundColor Yellow
+        $lockedFolders | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
     }
     else {
-        Write-Host "No Adobe Reader packages found to uninstall using winget." -ForegroundColor Yellow
+        Write-Host "All Adobe Reader-related folders were successfully deleted." -ForegroundColor Green
     }
-}
-catch {
-    Write-Host "Failed to uninstall Adobe Reader using winget. Exiting function." -ForegroundColor Red
-    return
-}
 
-# Step 3: Remove Adobe Reader-related folders
-$adobeReaderFolders = @(
-    "$env:ProgramFiles\Adobe\Acrobat Reader DC",
-    "$env:ProgramFiles (x86)\Adobe\Acrobat Reader DC",
-    "$env:ProgramData\Adobe\Acrobat",
-    "$env:LOCALAPPDATA\Adobe\Acrobat",
-    "$env:APPDATA\Adobe\Acrobat"
-)
-$lockedFolders = @()
-foreach ($folder in $adobeReaderFolders) {
-    if (Test-Path $folder) {
-        try {
-            Remove-Item -Recurse -Force -Path $folder
-            Write-Host "Removed folder: $folder" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "Failed to remove folder: $folder" -ForegroundColor Red
-            $lockedFolders += $folder
-        }
-    } else {
-        Write-Host "Path not found: $folder" -ForegroundColor Yellow
-    }
-}
-
-if ($lockedFolders.Count -gt 0) {
-    Write-Host "The following folders were not deleted because they are in use:" -ForegroundColor Yellow
-    $lockedFolders | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
-}
-else {
-    Write-Host "All Adobe Reader-related folders were successfully deleted." -ForegroundColor Green
-}
-
-Write-Host "Adobe Reader uninstallation process completed." -ForegroundColor Green
+    Write-Host "Adobe Reader uninstallation process completed." -ForegroundColor Green
 }
 
 ###########################################
@@ -689,7 +690,7 @@ $form.Controls.Add($tabControl)
 # Define column positions
 $column1X = 20
 $column2X = 200
-$column3X = 380
+#$column3X = 380
 #Define Section Length
 $sectionLength = 520
 #Define Install and Tweak Tab Buttons y position
@@ -928,29 +929,30 @@ $tabInstall.Controls.Add($buttonCheckAll)
 
 # Define the action for the Check All button
 $buttonCheckAll.Add_Click({
-    # Determine if any checkbox is currently checked
-    $anyChecked = $false
-    foreach ($control in $tabInstall.Controls) {
-        if ($control -is [System.Windows.Forms.CheckBox] -and $control.Checked) {
-            $anyChecked = $true
-            break
+        # Determine if any checkbox is currently checked
+        $anyChecked = $false
+        foreach ($control in $tabInstall.Controls) {
+            if ($control -is [System.Windows.Forms.CheckBox] -and $control.Checked) {
+                $anyChecked = $true
+                break
+            }
         }
-    }
 
-    # Toggle the check state based on the current state
-    foreach ($control in $tabInstall.Controls) {
-        if ($control -is [System.Windows.Forms.CheckBox]) {
-            $control.Checked = -not $anyChecked
+        # Toggle the check state based on the current state
+        foreach ($control in $tabInstall.Controls) {
+            if ($control -is [System.Windows.Forms.CheckBox]) {
+                $control.Checked = -not $anyChecked
+            }
         }
-    }
 
-    # Update the button text based on the new state
-    if ($anyChecked) {
-        $buttonCheckAll.Text = "Check All"
-    } else {
-        $buttonCheckAll.Text = "Uncheck All"
-    }
-})
+        # Update the button text based on the new state
+        if ($anyChecked) {
+            $buttonCheckAll.Text = "Check All"
+        }
+        else {
+            $buttonCheckAll.Text = "Uncheck All"
+        }
+    })
 
 # Disable the Install Tab if device architecture is ARM
 if ($disableInstall) {
@@ -1136,7 +1138,8 @@ $buttonApply.Add_Click({
                         catch {
                             if ($_.Exception.Message -match "because it is being used by another process") {
                                 $lockedFiles += $_.FullName
-                            } else {
+                            }
+                            else {
                                 $nonExistentPaths += $_.FullName
                             }
                         }
@@ -1202,7 +1205,8 @@ $buttonApply.Add_Click({
                     if ($mediaType -eq 'SSD') {
                         Optimize-Volume -DriveLetter $_.DriveLetter -ReTrim -Verbose
                         Write-Host "SSD Drive $($_.DriveLetter) has been optimized with ReTrim." -ForegroundColor Green
-                    } else {
+                    }
+                    else {
                         Optimize-Volume -DriveLetter $_.DriveLetter -Defrag -Verbose
                         Write-Host "Drive $($_.DriveLetter) has been optimized with Defrag." -ForegroundColor Green
                     }
@@ -1590,179 +1594,457 @@ $sectionOfficeApps.Size = New-Object System.Drawing.Size($sectionLength, 100)
 $sectionOfficeApps.Location = New-Object System.Drawing.Point($column1X, 140)
 $tabFix.Controls.Add($sectionOfficeApps)
 
-# Create a hyperlink to rebuild .OST file
-$linkRebuildOST = New-Object System.Windows.Forms.LinkLabel
-$linkRebuildOST.Text = "Rebuild .OST file"
-$linkRebuildOST.AutoSize = $true
-$linkRebuildOST.Location = New-Object System.Drawing.Point($column1X, 30)
-$linkRebuildOST.Add_LinkClicked({
-        # Prompt the user for confirmation
-        $result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
-        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-            # Check if Outlook and Teams are running
-            $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
-            $teamsRunning = Get-Process -Name Teams -ErrorAction SilentlyContinue
+# Create a hyperlink to fix Outlook
+$linkFixOutlook = New-Object System.Windows.Forms.LinkLabel
+$linkFixOutlook.Text = "Outlook"
+$linkFixOutlook.AutoSize = $true
+$linkFixOutlook.Location = New-Object System.Drawing.Point($column1X, 30)
+$linkFixOutlook.Add_LinkClicked({
+        # Create a new form
+        $formFixOutlook = New-Object System.Windows.Forms.Form
+        $formFixOutlook.Text = "Outlook Fixes"
+        $formFixOutlook.Size = New-Object System.Drawing.Size(400, 200)
+        $formFixOutlook.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
 
-            # Terminate Outlook and Teams
-            if ($outlookRunning) {
-                Stop-Process -Name Outlook -Force
-            }
-            if ($teamsRunning) {
-                Stop-Process -Name Teams -Force
-            }
+        # Create a hyperlink to rebuild .OST file
+        $linkRebuildOST = New-Object System.Windows.Forms.LinkLabel
+        $linkRebuildOST.Text = "Rebuild .OST file"
+        $linkRebuildOST.AutoSize = $true
+        $linkRebuildOST.Location = New-Object System.Drawing.Point(10, 10)
+        $linkRebuildOST.Add_LinkClicked({
+                # Prompt the user for confirmation
+                $result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+                if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                    # Check if Outlook and Teams are running
+                    $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
+                    $teamsRunning = @()
+                    $teamsRunning += Get-Process -Name Teams -ErrorAction SilentlyContinue
+                    $teamsRunning += Get-Process -Name ms-teams -ErrorAction SilentlyContinue
+                    $teamsRunning = $teamsRunning | Where-Object { $_ -ne $null }
 
-            # Path to the Outlook .ost files
-            $ostPath = "$env:LOCALAPPDATA\Microsoft\Outlook"
-
-            # Check if the path exists
-            if (Test-Path $ostPath) {
-                # Remove all .ost files in the current user's AppData folder
-                $ostFiles = Get-ChildItem -Path $ostPath -Filter *.ost -Recurse -ErrorAction SilentlyContinue
-                if ($ostFiles) {
-                    foreach ($file in $ostFiles) {
-                        Remove-Item -Path $file.FullName -Force
+                    # Terminate Outlook and Teams
+                    if ($outlookRunning) {
+                        Stop-Process -Name Outlook -Force
                     }
-                    Write-Host "All .ost files have been removed." -ForegroundColor Green
+                    foreach ($teamProcess in $teamsRunning) {
+                        Stop-Process -Id $teamProcess.Id -Force
+                    }
+
+                    # Path to the Outlook .ost files
+                    $ostPath = "$env:LOCALAPPDATA\Microsoft\Outlook"
+
+                    # Check if the path exists
+                    if (Test-Path $ostPath) {
+                        # Get all .ost files in the current user's AppData folder
+                        $ostFiles = Get-ChildItem -Path $ostPath -Filter *.ost -Recurse -ErrorAction SilentlyContinue
+                        if ($ostFiles) {
+                            # Create a form to display the list of .ost files
+                            $form = New-Object System.Windows.Forms.Form
+                            $form.Text = "Select .OST Files"
+                            $form.Size = New-Object System.Drawing.Size(800, 400)  # Set a wider form size
+                            $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+
+                            $label = New-Object System.Windows.Forms.Label
+                            $label.Text = "Select the .ost files to delete or rename:"
+                            $label.AutoSize = $true
+                            $label.Location = New-Object System.Drawing.Point(10, 10)
+                            $form.Controls.Add($label)
+
+                            $checkedListBox = New-Object System.Windows.Forms.CheckedListBox
+                            $checkedListBox.Size = New-Object System.Drawing.Size(760, 280)  # Adjust the size to fit within the form
+                            $checkedListBox.Location = New-Object System.Drawing.Point(10, 40)
+                            foreach ($file in $ostFiles) {
+                                $checkedListBox.Items.Add($file.FullName)
+                            }
+                            $form.Controls.Add($checkedListBox)
+
+                            $deleteButton = New-Object System.Windows.Forms.Button
+                            $deleteButton.Text = "Delete"
+                            $deleteButton.Location = New-Object System.Drawing.Point(10, 330)
+                            $deleteButton.Add_Click({
+                                    foreach ($item in $checkedListBox.CheckedItems) {
+                                        Remove-Item -Path $item -Force
+                                    }
+                                    Write-Host "Selected .ost files have been deleted." -ForegroundColor Green
+                                    $form.Close()
+                                })
+                            $form.Controls.Add($deleteButton)
+
+                            $renameButton = New-Object System.Windows.Forms.Button
+                            $renameButton.Text = "Rename"
+                            $renameButton.Location = New-Object System.Drawing.Point(100, 330)
+                            $renameButton.Add_Click({
+                                    foreach ($item in $checkedListBox.CheckedItems) {
+                                        Rename-Item -Path $item -NewName ($item + ".bak")
+                                    }
+                                    Write-Host "Selected .ost files have been renamed." -ForegroundColor Green
+                                    $form.Close()
+                                })
+                            $form.Controls.Add($renameButton)
+
+                            $cancelButton = New-Object System.Windows.Forms.Button
+                            $cancelButton.Text = "Cancel"
+                            $cancelButton.Location = New-Object System.Drawing.Point(190, 330)
+                            $cancelButton.Add_Click({
+                                    $form.Close()
+                                })
+                            $form.Controls.Add($cancelButton)
+
+                            $form.ShowDialog()
+                        }
+                        else {
+                            Write-Host "No .ost files found to rebuild." -ForegroundColor Red
+                        }
+                    }
+                    else {
+                        Write-Host "The path to .ost files does not exist." -ForegroundColor Red
+                    }
+
+                    # Reopen Outlook and Teams if they were running before
+                    if ($outlookRunning) {
+                        Start-Process "Outlook"
+                    }
+                    foreach ($teamProcess in $teamsRunning) {
+                        Start-Process $teamProcess.Name
+                    }
+
+                    [System.Windows.Forms.MessageBox]::Show("The process is complete. Outlook and Teams have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+                }
+            })
+        $formFixOutlook.Controls.Add($linkRebuildOST)
+
+        # Create a hyperlink for Missing Teams Add-In
+        $linkMissingTeamsAddIn = New-Object System.Windows.Forms.LinkLabel
+        $linkMissingTeamsAddIn.Text = "Missing Teams Add-In"
+        $linkMissingTeamsAddIn.AutoSize = $true
+        $linkMissingTeamsAddIn.Location = New-Object System.Drawing.Point(10, 40)
+        $linkMissingTeamsAddIn.Add_LinkClicked({
+                # Prompt the user for confirmation
+                $result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+                if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                    # Check if Teams and Outlook are running
+                    $teamsRunning = @()
+                    $teamsRunning += Get-Process -Name Teams -ErrorAction SilentlyContinue
+                    $teamsRunning += Get-Process -Name ms-teams -ErrorAction SilentlyContinue
+                    $teamsRunning = $teamsRunning | Where-Object { $_ -ne $null }
+                    $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
+
+                    # Terminate Teams and Outlook
+                    foreach ($teamProcess in $teamsRunning) {
+                        Stop-Process -Id $teamProcess.Id -Force
+                        Write-Host "$($teamProcess.Name) has been terminated." -ForegroundColor Green
+                    }
+
+                    if ($outlookRunning) {
+                        Stop-Process -Name Outlook -Force
+                        Write-Host "Outlook has been terminated." -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "Outlook was not running." -ForegroundColor Yellow
+                    }
+
+                    # Step 1: Remove SquirrelTemp and Teams folders
+                    try {
+                        Remove-Item -Recurse -Force -Path "$env:LOCALAPPDATA\SquirrelTemp"
+                        Write-Host "SquirrelTemp folder has been removed." -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host "Failed to remove SquirrelTemp folder." -ForegroundColor Red
+                    }
+
+                    try {
+                        Remove-Item -Recurse -Force -Path "$env:LOCALAPPDATA\Microsoft\Teams"
+                        Write-Host "Teams folder has been removed." -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host "Failed to remove Teams folder." -ForegroundColor Red
+                    }
+
+                    # Step 2: Rename tma_settings.json
+                    $tmaSettingsPath = "$env:LOCALAPPDATA\Publishers\8wekyb3d8bbwe\TeamsSharedConfig\tma_settings.json"
+                    if (Test-Path $tmaSettingsPath) {
+                        try {
+                            Rename-Item -Path $tmaSettingsPath -NewName "tma_settings.json.old"
+                            Write-Host "tma_settings.json has been renamed." -ForegroundColor Green
+                        }
+                        catch {
+                            Write-Host "Failed to rename tma_settings.json." -ForegroundColor Red
+                        }
+                    }
+                    else {
+                        Write-Host "tma_settings.json not found." -ForegroundColor Yellow
+                    }
+
+                    # Step 3: Re-register Microsoft.Teams.AddinLoader.dll
+                    try {
+                        if ([Environment]::Is64BitOperatingSystem) {
+                            & "$env:SystemRoot\System32\regsvr32.exe" /n /i:user "$env:LOCALAPPDATA\Microsoft\TeamsMeetingAddin\1.0.18012.2\x64\Microsoft.Teams.AddinLoader.dll"
+                        }
+                        else {
+                            & "$env:SystemRoot\SysWOW64\regsvr32.exe" /n /i:user "$env:LOCALAPPDATA\Microsoft\TeamsMeetingAddin\1.0.18012.2\x86\Microsoft.Teams.AddinLoader.dll"
+                        }
+                        Write-Host "Microsoft.Teams.AddinLoader.dll has been re-registered." -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host "Failed to re-register Microsoft.Teams.AddinLoader.dll." -ForegroundColor Red
+                    }
+
+                    # Step 4: Check and set LoadBehavior in the registry
+                    $regPath = "HKCU:\Software\Microsoft\Office\Outlook\Addins\TeamsAddin.FastConnect"
+                    if (Test-Path $regPath) {
+                        try {
+                            $loadBehavior = Get-ItemProperty -Path $regPath -Name LoadBehavior
+                            if ($loadBehavior.LoadBehavior -ne 3) {
+                                Set-ItemProperty -Path $regPath -Name LoadBehavior -Value 3
+                            }
+                            Write-Host "LoadBehavior has been set to 3." -ForegroundColor Green
+                        }
+                        catch {
+                            Write-Host "Failed to set LoadBehavior." -ForegroundColor Red
+                        }
+                    }
+                    else {
+                        Write-Host "Registry path for LoadBehavior not found." -ForegroundColor Yellow
+                    }
+
+                    # Step 5: Reset Teams UWP app
+                    try {
+                        Get-AppxPackage -Name "MicrosoftTeams" | Reset-AppxPackage
+                        Write-Host "Teams UWP app has been reset." -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host "Failed to reset Teams UWP app." -ForegroundColor Red
+                    }
+
+                    # Reopen Teams and Outlook if they were running before
+                    foreach ($teamProcess in $teamsRunning) {
+                        Start-Process $teamProcess.Name
+                        Write-Host "$($teamProcess.Name) has been restarted." -ForegroundColor Green
+                    }
+
+                    if ($outlookRunning) {
+                        Start-Process "Outlook"
+                        Write-Host "Outlook has been restarted." -ForegroundColor Green
+                    }
+
+                    [System.Windows.Forms.MessageBox]::Show("The process is complete. Teams and Outlook have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+                }
+            })
+        $formFixOutlook.Controls.Add($linkMissingTeamsAddIn)
+
+        # Create a hyperlink to close the form
+        $linkCloseForm = New-Object System.Windows.Forms.LinkLabel
+        $linkCloseForm.Text = "Close"
+        $linkCloseForm.AutoSize = $true
+        $linkCloseForm.Location = New-Object System.Drawing.Point(10, 70)
+        $linkCloseForm.Add_LinkClicked({
+                $formFixOutlook.Close()
+            })
+        $formFixOutlook.Controls.Add($linkCloseForm)
+
+        $formFixOutlook.ShowDialog()
+    })
+$sectionOfficeApps.Controls.Add($linkFixOutlook)
+
+# Create a hyperlink to fix Teams issues
+$linkFixTeams = New-Object System.Windows.Forms.LinkLabel
+$linkFixTeams.Text = "Teams"
+$linkFixTeams.AutoSize = $true
+$linkFixTeams.Location = New-Object System.Drawing.Point($column1X, 60)
+$linkFixTeams.Add_LinkClicked({
+        # Create a new form
+        $formFixTeams = New-Object System.Windows.Forms.Form
+        $formFixTeams.Text = "Teams Fixes"
+        $formFixTeams.Size = New-Object System.Drawing.Size(400, 200)
+        $formFixTeams.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+
+        # Create a hyperlink to clean Teams cache
+        $linkCleanTeamsCache = New-Object System.Windows.Forms.LinkLabel
+        $linkCleanTeamsCache.Text = "Clean Teams Cache"
+        $linkCleanTeamsCache.AutoSize = $true
+        $linkCleanTeamsCache.Location = New-Object System.Drawing.Point(10, 10)
+        $linkCleanTeamsCache.Add_LinkClicked({
+                $result = [System.Windows.Forms.MessageBox]::Show("This action will clean the Teams cache and will require Teams to shut down. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+
+                if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                    # Check if Teams and ms-teams are running
+                    $teamsRunning = @()
+                    $teamsRunning += Get-Process -Name Teams -ErrorAction SilentlyContinue
+                    $teamsRunning += Get-Process -Name ms-teams -ErrorAction SilentlyContinue
+                    $teamsRunning = $teamsRunning | Where-Object { $_ -ne $null }
+    
+                    # Terminate Teams if running
+                    foreach ($teamProcess in $teamsRunning) {
+                        Stop-Process -Id $teamProcess.Id -Force
+                        Write-Host "$($teamProcess.Name) has been terminated." -ForegroundColor Green
+                    }
+    
+                    # Clean Teams cache
+                    $teamsCachePath = "$env:APPDATA\Microsoft\Teams"
+                    if (Test-Path $teamsCachePath) {
+                        Remove-Item -Recurse -Force -Path "$teamsCachePath\*"
+                        Write-Host "Teams cache has been cleaned." -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "Teams cache path not found." -ForegroundColor Yellow
+                    }
+    
+                    # Restart Teams if it was running before
+                    foreach ($teamProcess in $teamsRunning) {
+                        Start-Process $teamProcess.Name
+                        Write-Host "$($teamProcess.Name) has been restarted." -ForegroundColor Green
+                    }
                 }
                 else {
-                    Write-Host "No .ost files found to rebuild." -ForegroundColor Red
+                    Write-Host "Cleaning Teams cache operation was canceled by the user." -ForegroundColor Yellow
                 }
-            }
-            else {
-                Write-Host "The path to .ost files does not exist." -ForegroundColor Red
-            }
+            })
+        $formFixTeams.Controls.Add($linkCleanTeamsCache)
 
-            # Reopen Outlook and Teams if they were running before
-            if ($outlookRunning) {
-                Start-Process -Name Outlook
-            }
-            if ($teamsRunning) {
-                Start-Process -Name Teams
-            }
+        # Create a hyperlink to reset Teams app
+        $linkResetTeamsApp = New-Object System.Windows.Forms.LinkLabel
+        $linkResetTeamsApp.Text = "Reset Teams App"
+        $linkResetTeamsApp.AutoSize = $true
+        $linkResetTeamsApp.Location = New-Object System.Drawing.Point(10, 40)
+        $linkResetTeamsApp.Add_LinkClicked({
+                # Prompt the user for confirmation
+                $result = [System.Windows.Forms.MessageBox]::Show("This action will reset the Teams app and will require Teams to shut down. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
 
-            [System.Windows.Forms.MessageBox]::Show("The process is complete. Outlook and Teams have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-        }
-    })
-$sectionOfficeApps.Controls.Add($linkRebuildOST)
+                if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                    # Check if Teams and ms-teams are running
+                    $teamsRunning = @()
+                    $teamsRunning += Get-Process -Name Teams -ErrorAction SilentlyContinue
+                    $teamsRunning += Get-Process -Name ms-teams -ErrorAction SilentlyContinue
+                    $teamsRunning = $teamsRunning | Where-Object { $_ -ne $null }
 
-# Create a hyperlink for Missing Teams Add-In
-$linkMissingTeamsAddIn = New-Object System.Windows.Forms.LinkLabel
-$linkMissingTeamsAddIn.Text = "Missing Teams Add-In"
-$linkMissingTeamsAddIn.AutoSize = $true
-$linkMissingTeamsAddIn.Location = New-Object System.Drawing.Point($column1X, 60)
-$linkMissingTeamsAddIn.Add_LinkClicked({
-        # Prompt the user for confirmation
-        $result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams please save any important work beofre proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
-        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-            # Check if Teams and Outlook are running
-            $teamsRunning = Get-Process -Name Teams -ErrorAction SilentlyContinue
-            $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
+                    # Terminate Teams if running
+                    foreach ($teamProcess in $teamsRunning) {
+                        Stop-Process -Id $teamProcess.Id -Force
+                        Write-Host "$($teamProcess.Name) has been terminated." -ForegroundColor Green
+                    }
 
-            # Terminate Teams and Outlook
-            if ($teamsRunning) {
-                Stop-Process -Name Teams -Force
-                Write-Host "Teams has been terminated." -ForegroundColor Green
-            }
-            else {
-                Write-Host "Teams was not running." -ForegroundColor Yellow
-            }
+                    # Reset Teams app
+                    try {
+                        Get-AppxPackage -Name "MicrosoftTeams" | Reset-AppxPackage
+                        Write-Host "Teams app has been reset." -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host "Failed to reset Teams app. Error: $_" -ForegroundColor Red
+                    }
 
-            if ($outlookRunning) {
-                Stop-Process -Name Outlook -Force
-                Write-Host "Outlook has been terminated." -ForegroundColor Green
-            }
-            else {
-                Write-Host "Outlook was not running." -ForegroundColor Yellow
-            }   
-
-            # Step 1: Remove SquirrelTemp and Teams folders
-            try {
-                Remove-Item -Recurse -Force -Path "$env:LOCALAPPDATA\SquirrelTemp"
-                Write-Host "SquirrelTemp folder has been removed." -ForegroundColor Green
-            }
-            catch {
-                Write-Host "Failed to remove SquirrelTemp folder." -ForegroundColor Red
-            }
-
-            try {
-                Remove-Item -Recurse -Force -Path "$env:LOCALAPPDATA\Microsoft\Teams"
-                Write-Host "Teams folder has been removed." -ForegroundColor Green
-            }
-            catch {
-                Write-Host "Failed to remove Teams folder." -ForegroundColor Red
-            }
-
-            # Step 2: Rename tma_settings.json
-            $tmaSettingsPath = "$env:LOCALAPPDATA\Publishers\8wekyb3d8bbwe\TeamsSharedConfig\tma_settings.json"
-            if (Test-Path $tmaSettingsPath) {
-                try {
-                    Rename-Item -Path $tmaSettingsPath -NewName "tma_settings.json.old"
-                    Write-Host "tma_settings.json has been renamed." -ForegroundColor Green
-                }
-                catch {
-                    Write-Host "Failed to rename tma_settings.json." -ForegroundColor Red
-                }
-            }
-            else {
-                Write-Host "tma_settings.json not found." -ForegroundColor Yellow
-            }
-
-            # Step 3: Re-register Microsoft.Teams.AddinLoader.dll
-            try {
-                if ([Environment]::Is64BitOperatingSystem) {
-                    & "$env:SystemRoot\System32\regsvr32.exe" /n /i:user "$env:LOCALAPPDATA\Microsoft\TeamsMeetingAddin\1.0.18012.2\x64\Microsoft.Teams.AddinLoader.dll"
+                    # Restart Teams if it was running before
+                    foreach ($teamProcess in $teamsRunning) {
+                        Start-Process $teamProcess.Name
+                        Write-Host "$($teamProcess.Name) has been restarted." -ForegroundColor Green
+                    }
                 }
                 else {
-                    & "$env:SystemRoot\SysWOW64\regsvr32.exe" /n /i:user "$env:LOCALAPPDATA\Microsoft\TeamsMeetingAddin\1.0.18012.2\x86\Microsoft.Teams.AddinLoader.dll"
+                    Write-Host "Reset Teams app operation was canceled by the user." -ForegroundColor Yellow
                 }
-                Write-Host "Microsoft.Teams.AddinLoader.dll has been re-registered." -ForegroundColor Green
-            }
-            catch {
-                Write-Host "Failed to re-register Microsoft.Teams.AddinLoader.dll." -ForegroundColor Red
-            }
+            })
+        $formFixTeams.Controls.Add($linkResetTeamsApp)
 
-            # Step 4: Check and set LoadBehavior in the registry
-            $regPath = "HKCU:\Software\Microsoft\Office\Outlook\Addins\TeamsAddin.FastConnect"
-            if (Test-Path $regPath) {
-                try {
-                    $loadBehavior = Get-ItemProperty -Path $regPath -Name LoadBehavior
-                    if ($loadBehavior.LoadBehavior -ne 3) {
-                        Set-ItemProperty -Path $regPath -Name LoadBehavior -Value 3
+        # Create a hyperlink to remove Teams
+        $linkRemoveTeams = New-Object System.Windows.Forms.LinkLabel
+        $linkRemoveTeams.Text = "Remove Teams"
+        $linkRemoveTeams.AutoSize = $true
+        $linkRemoveTeams.Location = New-Object System.Drawing.Point(10, 70)
+        $linkRemoveTeams.Add_LinkClicked({
+                # Remove Teams
+                # Prompt the user for confirmation
+                $result = [System.Windows.Forms.MessageBox]::Show("This action will stop Teams processes, uninstall Teams, and delete related cache, temp files, and registry keys. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+
+                if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                    Write-Host "Stopping Teams processes..."
+
+                    # Check if Teams and ms-teams are running
+                    $teamsRunning = @()
+                    $teamsRunning += Get-Process -Name Teams -ErrorAction SilentlyContinue
+                    $teamsRunning += Get-Process -Name ms-teams -ErrorAction SilentlyContinue
+                    $teamsRunning = $teamsRunning | Where-Object { $_ -ne $null }
+
+                    # Terminate Teams if running
+                    foreach ($teamProcess in $teamsRunning) {
+                        Stop-Process -Id $teamProcess.Id -Force
+                        Write-Host "$($teamProcess.Name) has been terminated." -ForegroundColor Green
                     }
-                    Write-Host "LoadBehavior has been set to 3." -ForegroundColor Green
+
+                    Write-Host "Removing Teams..."
+
+                    # Uninstall Teams
+                    $teamsUninstallPath = "$env:LOCALAPPDATA\Microsoft\Teams\Update.exe"
+                    if (Test-Path $teamsUninstallPath) {
+                        Start-Process $teamsUninstallPath -ArgumentList "--uninstall" -Wait
+                        Write-Host "Teams has been removed." -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "Teams uninstall path not found." -ForegroundColor Yellow
+                    }
+
+                    # Delete Teams cache and temp files
+                    $teamsCachePath = "$env:APPDATA\Microsoft\Teams"
+                    if (Test-Path $teamsCachePath) {
+                        Remove-Item -Recurse -Force -Path "$teamsCachePath\*"
+                        Write-Host "Teams cache has been deleted." -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "Teams cache path not found." -ForegroundColor Yellow
+                    }
+
+                    $teamsTempPath = "$env:LOCALAPPDATA\Microsoft\Teams"
+                    if (Test-Path $teamsTempPath) {
+                        Remove-Item -Recurse -Force -Path "$teamsTempPath\*"
+                        Write-Host "Teams temp files have been deleted." -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "Teams temp path not found." -ForegroundColor Yellow
+                    }
+
+                    # Delete Teams registry keys
+                    $teamsRegKeys = @(
+                        "HKCU:\Software\Microsoft\Office\Teams",
+                        "HKCU:\Software\Microsoft\Office\Outlook\Addins\TeamsAddin.FastConnect",
+                        "HKCU:\Software\Microsoft\Teams"
+                    )
+                    foreach ($regKey in $teamsRegKeys) {
+                        if (Test-Path $regKey) {
+                            Remove-Item -Path $regKey -Recurse -Force
+                            Write-Host "Registry key $regKey has been deleted." -ForegroundColor Green
+                        }
+                        else {
+                            Write-Host "Registry key $regKey not found." -ForegroundColor Yellow
+                        }
+                    }
+
+                    # Inform the user of successful completion and suggest rebooting
+                    $rebootResult = [System.Windows.Forms.MessageBox]::Show("Teams has been successfully uninstalled and related files and registry keys have been deleted. It is recommended to reboot your system. Do you want to reboot now?", "Information", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Information)
+
+                    if ($rebootResult -eq [System.Windows.Forms.DialogResult]::Yes) {
+                        Restart-Computer -Force
+                    }
+                    else {
+                        Write-Host "Reboot operation was canceled by the user." -ForegroundColor Yellow
+                    }
                 }
-                catch {
-                    Write-Host "Failed to set LoadBehavior." -ForegroundColor Red
+                else {
+                    Write-Host "Teams removal operation was canceled by the user." -ForegroundColor Yellow
                 }
-            }
-            else {
-                Write-Host "Registry path for LoadBehavior not found." -ForegroundColor Yellow
-            }
+            })
+        $formFixTeams.Controls.Add($linkRemoveTeams)
 
-            # Step 5: Reset Teams UWP app
-            try {
-                Get-AppxPackage -Name "MicrosoftTeams" | Reset-AppxPackage
-                Write-Host "Teams UWP app has been reset." -ForegroundColor Green
-            }
-            catch {
-                Write-Host "Failed to reset Teams UWP app." -ForegroundColor Red
-            }
+        # Create a hyperlink to close the form
+        $linkCloseForm = New-Object System.Windows.Forms.LinkLabel
+        $linkCloseForm.Text = "Close"
+        $linkCloseForm.AutoSize = $true
+        $linkCloseForm.Location = New-Object System.Drawing.Point(10, 100)
+        $linkCloseForm.Add_LinkClicked({
+                $formFixTeams.Close()
+            })
+        $formFixTeams.Controls.Add($linkCloseForm)
 
-            # Reopen Teams and Outlook if they were running before
-            if ($teamsRunning) {
-                Start-Process -Name Teams
-                Write-Host "Teams has been restarted." -ForegroundColor Green
-            }
-
-            if ($outlookRunning) {
-                Start-Process -Name Outlook
-                Write-Host "Outlook has been restarted." -ForegroundColor Green
-            }
-
-            [System.Windows.Forms.MessageBox]::Show("The process is complete. Teams and Outlook have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-        }
+        $formFixTeams.ShowDialog()
     })
-$sectionOfficeApps.Controls.Add($linkMissingTeamsAddIn)
+$sectionOfficeApps.Controls.Add($linkFixTeams)
 
 # Create a hyperlink to Remove Office
 $linkRemoveOffice = New-Object System.Windows.Forms.LinkLabel
@@ -1770,137 +2052,280 @@ $linkRemoveOffice.Text = "Remove Office"
 $linkRemoveOffice.AutoSize = $true
 $linkRemoveOffice.Location = New-Object System.Drawing.Point($column2X, 30)
 $linkRemoveOffice.Add_LinkClicked({
-    # Inform the user that the removal process is starting
-    $result = [System.Windows.Forms.MessageBox]::Show("This action will close all running Office apps and remove all Office instances. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
-    if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-        Write-Host "Removing Office..." -ForegroundColor Green
+        # Inform the user that the removal process is starting
+        $result = [System.Windows.Forms.MessageBox]::Show("This action will close all running Office apps and remove all Office instances. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            Write-Host "Removing Office..." -ForegroundColor Green
 
-        # Arrays to store paths that couldn't be deleted
-        $failedFolders = @()
-        $failedRegistryPaths = @()
-        $failedShortcuts = @()
-        $failedTempFiles = @()
+            # Arrays to store paths that couldn't be deleted
+            $failedFolders = @()
+            $failedRegistryPaths = @()
+            $failedShortcuts = @()
+            $failedTempFiles = @()
 
-        # Step 1: Uninstall Office using the Office Removal Tool
-        try {
-            $officeRemovalToolPath = "$env:TEMP\OfficeRemovalTool.exe"
-            Invoke-WebRequest -Uri "https://aka.ms/SaRA-officeUninstallFromPC" -OutFile $officeRemovalToolPath
-            Start-Process -FilePath $officeRemovalToolPath -ArgumentList "/quiet" -Wait
-            Write-Host "Office has been uninstalled." -ForegroundColor Green
-        }
-        catch {
-            Write-Host "Failed to uninstall Office using the Office Removal Tool." -ForegroundColor Red
-        }
+            # Step 1: Uninstall Office using the Office Removal Tool
+            try {
+                $officeRemovalToolPath = "$env:TEMP\OfficeRemovalTool.exe"
+                Invoke-WebRequest -Uri "https://aka.ms/SaRA-officeUninstallFromPC" -OutFile $officeRemovalToolPath
+                Start-Process -FilePath $officeRemovalToolPath -ArgumentList "/quiet" -Wait
+                Write-Host "Office has been uninstalled." -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Failed to uninstall Office using the Office Removal Tool." -ForegroundColor Red
+            }
 
-        # Step 2: Remove Office-related folders
-        $officeFolders = @(
-            "$env:ProgramFiles\Microsoft Office",
-            "$env:ProgramFiles (x86)\Microsoft Office",
-            "$env:ProgramData\Microsoft\Office",
-            "$env:LOCALAPPDATA\Microsoft\Office",
-            "$env:APPDATA\Microsoft\Office"
-        )
-        foreach ($folder in $officeFolders) {
-            if (Test-Path $folder) {
-                try {
-                    Remove-Item -Recurse -Force -Path $folder -ErrorAction Stop
-                    Write-Host "Removed folder: $folder" -ForegroundColor Green
-                }
-                catch {
-                    $failedFolders += $folder
+            # Step 2: Remove Office-related folders
+            $officeFolders = @(
+                "$env:ProgramFiles\Microsoft Office",
+                "$env:ProgramFiles (x86)\Microsoft Office",
+                "$env:ProgramData\Microsoft\Office",
+                "$env:LOCALAPPDATA\Microsoft\Office",
+                "$env:APPDATA\Microsoft\Office"
+            )
+            foreach ($folder in $officeFolders) {
+                if (Test-Path $folder) {
+                    try {
+                        Remove-Item -Recurse -Force -Path $folder -ErrorAction Stop
+                        Write-Host "Removed folder: $folder" -ForegroundColor Green
+                    }
+                    catch {
+                        $failedFolders += $folder
+                    }
                 }
             }
-        }
 
-        # Step 3: Remove Office-related registry entries
-        $officeRegistryPaths = @(
-            "HKCU:\Software\Microsoft\Office",
-            "HKCU:\Software\Microsoft\Office\16.0",
-            "HKCU:\Software\Microsoft\Office\15.0",
-            "HKCU:\Software\Microsoft\Office\14.0",
-            "HKCU:\Software\Microsoft\Office\13.0",
-            "HKCU:\Software\Microsoft\Office\12.0",
-            "HKCU:\Software\Microsoft\Office\11.0",
-            "HKLM:\Software\Microsoft\Office",
-            "HKLM:\Software\Wow6432Node\Microsoft\Office"
-        )
-        foreach ($regPath in $officeRegistryPaths) {
-            if (Test-Path $regPath) {
-                try {
-                    Remove-Item -Recurse -Force -Path $regPath -ErrorAction Stop
-                    Write-Host "Removed registry path: $regPath" -ForegroundColor Green
-                }
-                catch {
-                    $failedRegistryPaths += $regPath
-                }
-            }
-        }
-
-        # Step 4: Remove Office shortcuts
-        $officeShortcuts = @(
-            "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Office",
-            "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Office"
-        )
-        foreach ($shortcut in $officeShortcuts) {
-            if (Test-Path $shortcut) {
-                try {
-                    Remove-Item -Recurse -Force -Path $shortcut -ErrorAction Stop
-                    Write-Host "Removed shortcut: $shortcut" -ForegroundColor Green
-                }
-                catch {
-                    $failedShortcuts += $shortcut
+            # Step 3: Remove Office-related registry entries
+            $officeRegistryPaths = @(
+                "HKCU:\Software\Microsoft\Office",
+                "HKCU:\Software\Microsoft\Office\16.0",
+                "HKCU:\Software\Microsoft\Office\15.0",
+                "HKCU:\Software\Microsoft\Office\14.0",
+                "HKCU:\Software\Microsoft\Office\13.0",
+                "HKCU:\Software\Microsoft\Office\12.0",
+                "HKCU:\Software\Microsoft\Office\11.0",
+                "HKLM:\Software\Microsoft\Office",
+                "HKLM:\Software\Wow6432Node\Microsoft\Office"
+            )
+            foreach ($regPath in $officeRegistryPaths) {
+                if (Test-Path $regPath) {
+                    try {
+                        Remove-Item -Recurse -Force -Path $regPath -ErrorAction Stop
+                        Write-Host "Removed registry path: $regPath" -ForegroundColor Green
+                    }
+                    catch {
+                        $failedRegistryPaths += $regPath
+                    }
                 }
             }
-        }
 
-        # Step 5: Remove Office temp files and cache files
-        $officeTempFiles = @(
-            "$env:TEMP\*Office*",
-            "$env:TEMP\*MSO*",
-            "$env:LOCALAPPDATA\Temp\*Office*",
-            "$env:LOCALAPPDATA\Temp\*MSO*"
-        )
-        foreach ($tempFile in $officeTempFiles) {
-            if (Test-Path $tempFile) {
-                try {
-                    Remove-Item -Recurse -Force -Path $tempFile -ErrorAction Stop
-                    Write-Host "Removed temp file: $tempFile" -ForegroundColor Green
-                }
-                catch {
-                    $failedTempFiles += $tempFile
+            # Step 4: Remove Office shortcuts
+            $officeShortcuts = @(
+                "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Office",
+                "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Office"
+            )
+            foreach ($shortcut in $officeShortcuts) {
+                if (Test-Path $shortcut) {
+                    try {
+                        Remove-Item -Recurse -Force -Path $shortcut -ErrorAction Stop
+                        Write-Host "Removed shortcut: $shortcut" -ForegroundColor Green
+                    }
+                    catch {
+                        $failedShortcuts += $shortcut
+                    }
                 }
             }
+
+            # Step 5: Remove Office temp files and cache files
+            $officeTempFiles = @(
+                "$env:TEMP\*Office*",
+                "$env:TEMP\*MSO*",
+                "$env:LOCALAPPDATA\Temp\*Office*",
+                "$env:LOCALAPPDATA\Temp\*MSO*"
+            )
+            foreach ($tempFile in $officeTempFiles) {
+                if (Test-Path $tempFile) {
+                    try {
+                        Remove-Item -Recurse -Force -Path $tempFile -ErrorAction Stop
+                        Write-Host "Removed temp file: $tempFile" -ForegroundColor Green
+                    }
+                    catch {
+                        $failedTempFiles += $tempFile
+                    }
+                }
+            }
+
+            # Display summary of failed deletions
+            if ($failedFolders.Count -gt 0) {
+                Write-Host "The following folders could not be deleted:" -ForegroundColor Yellow
+                $failedFolders | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+            }
+
+            if ($failedRegistryPaths.Count -gt 0) {
+                Write-Host "The following registry paths could not be deleted:" -ForegroundColor Yellow
+                $failedRegistryPaths | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+            }
+
+            if ($failedShortcuts.Count -gt 0) {
+                Write-Host "The following shortcuts could not be deleted:" -ForegroundColor Yellow
+                $failedShortcuts | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+            }
+
+            if ($failedTempFiles.Count -gt 0) {
+                Write-Host "The following temp files could not be deleted:" -ForegroundColor Yellow
+                $failedTempFiles | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+            }
+
+            Write-Host "Office removal process is complete." -ForegroundColor Green
+
+            # Prompt the user to reboot the computer
+            [System.Windows.Forms.MessageBox]::Show("The Office removal process is complete. Please reboot your computer to finalize the changes.", "Reboot Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
         }
-
-        # Display summary of failed deletions
-        if ($failedFolders.Count -gt 0) {
-            Write-Host "The following folders could not be deleted:" -ForegroundColor Yellow
-            $failedFolders | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
-        }
-
-        if ($failedRegistryPaths.Count -gt 0) {
-            Write-Host "The following registry paths could not be deleted:" -ForegroundColor Yellow
-            $failedRegistryPaths | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
-        }
-
-        if ($failedShortcuts.Count -gt 0) {
-            Write-Host "The following shortcuts could not be deleted:" -ForegroundColor Yellow
-            $failedShortcuts | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
-        }
-
-        if ($failedTempFiles.Count -gt 0) {
-            Write-Host "The following temp files could not be deleted:" -ForegroundColor Yellow
-            $failedTempFiles | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
-        }
-
-        Write-Host "Office removal process is complete." -ForegroundColor Green
-
-        # Prompt the user to reboot the computer
-        [System.Windows.Forms.MessageBox]::Show("The Office removal process is complete. Please reboot your computer to finalize the changes.", "Reboot Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-    }
-})
+    })
 $sectionOfficeApps.Controls.Add($linkRemoveOffice)
 
+# Create a hyperlink to Repair Office
+$linkRepairOffice = New-Object System.Windows.Forms.LinkLabel
+$linkRepairOffice.Text = "Office Repair"
+$linkRepairOffice.AutoSize = $true
+$linkRepairOffice.Location = New-Object System.Drawing.Point($column2X, 60)
+$linkRepairOffice.Add_LinkClicked({
+        # Inform the user that the repair process is starting
+        $result = [System.Windows.Forms.MessageBox]::Show("This action will start the Office repair process. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            Write-Host "Repairing Office..." -ForegroundColor Green
+
+            # Check for running Office applications
+            $officeApps = @("WINWORD", "EXCEL", "POWERPNT", "OUTLOOK", "ONENOTE", "MSACCESS", "MSPUB", "VISIO", "LYNC")
+            $runningApps = @()
+            foreach ($app in $officeApps) {
+                $process = Get-Process -Name $app -ErrorAction SilentlyContinue
+                if ($process) {
+                    $runningApps += $app
+                }
+            }
+
+            if ($runningApps.Count -gt 0) {
+                $appsList = $runningApps -join ", "
+                $closeResult = [System.Windows.Forms.MessageBox]::Show("The following Office applications are currently running: $appsList. Do you want to close them and proceed with the repair?", "Office Applications Running", [System.Windows.Forms.MessageBoxButtons]::OKCancel, [System.Windows.Forms.MessageBoxIcon]::Warning)
+                if ($closeResult -eq [System.Windows.Forms.DialogResult]::OK) {
+                    foreach ($app in $runningApps) {
+                        try {
+                            Stop-Process -Name $app -Force
+                            Write-Host "$app has been closed." -ForegroundColor Green
+                        }
+                        catch {
+                            Write-Host "Failed to close $app. Office repair process has been canceled." -ForegroundColor Red
+                            return
+                        }
+                    }
+                }
+                else {
+                    Write-Host "Office repair process was canceled by the user." -ForegroundColor Yellow
+                    return
+                }
+            }
+
+            # Create a custom form to prompt the user to choose between App Reset and Repair
+            $choiceForm = New-Object System.Windows.Forms.Form
+            $choiceForm.Text = "Choose Action"
+            $choiceForm.Size = New-Object System.Drawing.Size(300, 150)
+            $choiceForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+
+            $choiceLabel = New-Object System.Windows.Forms.Label
+            $choiceLabel.Text = "Do you want to perform an Office?"
+            $choiceLabel.AutoSize = $true
+            $choiceLabel.Location = New-Object System.Drawing.Point(10, 10)
+            $choiceForm.Controls.Add($choiceLabel)
+
+            $repairButton = New-Object System.Windows.Forms.Button
+            $repairButton.Text = "Repair"
+            $repairButton.Location = New-Object System.Drawing.Point(10, 50)
+            $repairButton.Add_Click({
+                    $choiceForm.Tag = "Repair"
+                    $choiceForm.Close()
+                })
+            $choiceForm.Controls.Add($repairButton)
+
+            $resetButton = New-Object System.Windows.Forms.Button
+            $resetButton.Text = "Reset"
+            $resetButton.Location = New-Object System.Drawing.Point(100, 50)
+            $resetButton.Add_Click({
+                    $choiceForm.Tag = "Reset"
+                    $choiceForm.Close()
+                })
+            $choiceForm.Controls.Add($resetButton)
+
+            $cancelButton = New-Object System.Windows.Forms.Button
+            $cancelButton.Text = "Cancel"
+            $cancelButton.Location = New-Object System.Drawing.Point(190, 50)
+            $cancelButton.Add_Click({
+                    $choiceForm.Tag = "Cancel"
+                    $choiceForm.Close()
+                })
+            $choiceForm.Controls.Add($cancelButton)
+
+            $choiceForm.ShowDialog()
+
+            $choiceResult = $choiceForm.Tag
+            if ($choiceResult -eq "Repair") {
+                # Perform Repair
+                try {
+                    # Start the Office repair process using Windows 11 reset and repair app feature
+                    $progressForm = New-Object System.Windows.Forms.Form
+                    $progressForm.Text = "Repairing Office"
+                    $progressForm.Size = New-Object System.Drawing.Size(400, 100)
+                    $progressForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+                    $progressLabel = New-Object System.Windows.Forms.Label
+                    $progressLabel.Text = "Repairing Office, please wait..."
+                    $progressLabel.AutoSize = $true
+                    $progressLabel.Location = New-Object System.Drawing.Point(10, 10)
+                    $progressForm.Controls.Add($progressLabel)
+                    $progressForm.Show()
+
+                    # Use the Windows 11 reset and repair app feature
+                    Start-Process -FilePath "ms-settings:appsfeatures-app" -ArgumentList "Microsoft Office" -Wait
+
+                    $progressForm.Close()
+                    Write-Host "Office repair process has been started." -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to start the Office repair process." -ForegroundColor Red
+                }
+            }
+            elseif ($choiceResult -eq "Reset") {
+                # Perform App Reset
+                try {
+                    # Start the Office reset process using Windows 11 reset and repair app feature
+                    $progressForm = New-Object System.Windows.Forms.Form
+                    $progressForm.Text = "Resetting Office"
+                    $progressForm.Size = New-Object System.Drawing.Size(400, 100)
+                    $progressForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+                    $progressLabel = New-Object System.Windows.Forms.Label
+                    $progressLabel.Text = "Resetting Office, please wait..."
+                    $progressLabel.AutoSize = $true
+                    $progressLabel.Location = New-Object System.Drawing.Point(10, 10)
+                    $progressForm.Controls.Add($progressLabel)
+                    $progressForm.Show()
+
+                    # Use the Windows 11 reset and repair app feature
+                    Start-Process -FilePath "ms-settings:appsfeatures-app" -ArgumentList "Microsoft Office" -Wait
+
+                    $progressForm.Close()
+                    Write-Host "Office reset process has been started." -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to start the Office reset process." -ForegroundColor Red
+                }
+            }
+            else {
+                Write-Host "Office repair/reset process was canceled by the user." -ForegroundColor Yellow
+                return
+            }
+
+            [System.Windows.Forms.MessageBox]::Show("The Office repair/reset process is complete.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        }
+    })
+$sectionOfficeApps.Controls.Add($linkRepairOffice)
 # ...
 
 # Run the form
