@@ -1453,6 +1453,14 @@ $linkResetEdge.Add_LinkClicked({
         )
 
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            # Check if Edge is running and close it
+            $edgeProcesses = Get-Process -Name "msedge" -ErrorAction SilentlyContinue
+            if ($edgeProcesses) {
+                Write-Host "Microsoft Edge is running. Closing it..."
+                $edgeProcesses | ForEach-Object { $_.CloseMainWindow() | Out-Null; $_.WaitForExit() }
+                Write-Host "Microsoft Edge has been closed." -ForegroundColor Green
+            }
+
             # Step 1: Reset Edge profile silently
             Write-Host "Resetting Edge browser profile..."
             Start-Process "msedge" -ArgumentList "--reset-profile" -NoNewWindow -Wait
