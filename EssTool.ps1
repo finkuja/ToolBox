@@ -94,7 +94,7 @@ switch ($cpuInfo.Architecture) {
 
 Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
 
-#Check if winget is installed
+# Check if winget is installed
 Write-Host "Checking if Windows Package Manager (winget) is installed..."
 $winget = Get-Command winget -ErrorAction SilentlyContinue
 if ($null -eq $winget) {
@@ -104,6 +104,16 @@ if ($null -eq $winget) {
 }
 else {
     Write-Host "Windows Package Manager (winget) is installed." -ForegroundColor Green
+    
+    # Update winget sources
+    Write-Host "Updating winget sources..."
+    try {
+        Start-Process "winget" -ArgumentList "source update" -NoNewWindow -Wait
+        Write-Host "Winget sources updated successfully." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Failed to update winget sources." -ForegroundColor Red
+    }
 }
 
 ###############################
