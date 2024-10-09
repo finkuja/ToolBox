@@ -1544,7 +1544,7 @@ $linkResetEdge.Add_LinkClicked({
             $edgeProcesses = Get-Process -Name "msedge" -ErrorAction SilentlyContinue
             if ($edgeProcesses) {
                 Write-Host "Microsoft Edge is running. Closing it..."
-                $edgeProcesses | ForEach-Object { $_.CloseMainWindow() | Out-Null; $_.WaitForExit() }
+                $edgeProcesses | ForEach-Object { $_.Kill() }
                 Write-Host "Microsoft Edge has been closed." -ForegroundColor Green
             }
 
