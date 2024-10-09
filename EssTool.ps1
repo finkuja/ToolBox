@@ -625,6 +625,295 @@ function Remove-AdobeReader {
     Write-Host "Adobe Reader uninstallation process completed." -ForegroundColor Green
 }
 
+
+# Function to uninstall Edge by changing the region to Ireland and uninstalling Edge, then changing it back From Chris Titus Tech  winutils.ps1 script
+<#
+    .SYNOPSIS
+    This will uninstall Edge by changing the region to Ireland and uninstalling Edge, then changing it back.
+
+    .DESCRIPTION
+    The Uninstall-EdgeBrowser function stops any running instances of Microsoft Edge and Widgets, changes the system region to Ireland, and then uninstalls Microsoft Edge. After the uninstallation, it restores the original region settings.
+
+    .NOTES
+    Author: Chris Titus Tech
+    Date: YYYY-MM-DD
+    #>
+function Uninstall-EdgeBrowser {
+
+    $msedgeProcess = Get-Process -Name "msedge" -ErrorAction SilentlyContinue
+    $widgetsProcess = Get-Process -Name "widgets" -ErrorAction SilentlyContinue
+
+    # Checking if Microsoft Edge is running
+    if ($msedgeProcess) {
+        Stop-Process -Name "msedge" -Force
+    }
+    else {
+        Write-Output "msedge process is not running."
+    }
+
+    # Checking if Widgets is running
+    if ($widgetsProcess) {
+        Stop-Process -Name "widgets" -Force
+    }
+    else {
+        Write-Output "widgets process is not running."
+    }
+
+    function Uninstall-Process {
+        <#
+        .SYNOPSIS
+        Uninstalls a process by modifying registry settings and executing the uninstall command.
+
+        .PARAMETER Key
+        The registry key associated with the process to be uninstalled.
+
+        .DESCRIPTION
+        This function temporarily changes the system region to Ireland, modifies necessary registry settings, and executes the uninstall command for the specified process. After uninstallation, it restores the original region settings and registry permissions.
+
+        .PARAMETER Key
+        The registry key associated with the process to be uninstalled.
+
+        .NOTES
+        Author: Chris Titus Tech
+        Date: YYYY-MM-DD
+        #>
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$Key
+        )
+        $originalNation = [microsoft.win32.registry]::GetValue('HKEY_USERS\.DEFAULT\Control Panel\International\Geo', 'Nation', [Microsoft.Win32.RegistryValueKind]::String)
+        # Set Nation to 84 (Ireland) temporarily
+        [microsoft.win32.registry]::SetValue('HKEY_USERS\.DEFAULT\Control Panel\International\Geo', 'Nation', 68, [Microsoft.Win32.RegistryValueKind]::String) | Out-Null
+        # credits to he3als for the Acl commands
+        $fileName = "IntegratedServicesRegionPolicySet.json"
+        $pathISRPS = [Environment]::SystemDirectory + "\" + $fileName
+        $aclISRPS = Get-Acl -Path $pathISRPS
+        $aclISRPSBackup = [System.Security.AccessControl.FileSecurity]::new()
+        $aclISRPSBackup.SetSecurityDescriptorSddlForm($acl.Sddl)
+        if (Test-Path -Path $pathISRPS) {
+            try {
+                $admin = [System.Security.Principal.NTAccount]$(New-Object System.Security.Principal.SecurityIdentifier('S-1-5-32-544')).Translate([System.Security.Principal.NTAccount]).Value
+                $aclISRPS.SetOwner($admin)
+                $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($admin, 'FullControl', 'Allow')
+                $aclISRPS.AddAccessRule($rule)
+                Set-Acl -Path $pathISRPS -AclObject $aclISRPS
+                Rename-Item -Path $pathISRPS -NewName ($fileName + '.bak') -Force
+            }
+            catch {
+                Write-Error "Failed to set owner for $pathISRPS"
+            }
+        }
+        $baseKey = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate'
+        $registryPath = $baseKey + '\ClientState\' + $Key
+        if (!(Test-Path -Path $registryPath)) {
+            Write-Host "Registry key not found: $registryPath"
+            return
+        }
+        Remove-ItemProperty -Path $registryPath -Name "experiment_control_labels" -ErrorAction SilentlyContinue | Out-Null
+        $uninstallString = (Get-ItemProperty -Path $registryPath).UninstallString
+        $uninstallArguments = (Get-ItemProperty -Path $registryPath).UninstallArguments
+        if ([string]::IsNullOrEmpty($uninstallString) -or [string]::IsNullOrEmpty($uninstallArguments)) {
+            Write-Host "Cannot find uninstall methods for $Mode"
+            return
+        }
+        $uninstallArguments += " --force-uninstall --delete-profile"
+        if (!(Test-Path -Path $uninstallString)) {
+            Write-Host "setup.exe not found at: $uninstallString"
+            return
+        }
+        Start-Process -FilePath $uninstallString -ArgumentList $uninstallArguments -Wait -NoNewWindow -Verbose
+        # Restore Acl
+        if (Test-Path -Path ($pathISRPS + '.bak')) {
+            Rename-Item -Path ($pathISRPS + '.bak') -NewName $fileName -Force
+            Set-Acl -Path $pathISRPS -AclObject $aclISRPSBackup
+        }
+        # Restore Nation
+        [microsoft.win32.registry]::SetValue('HKEY_USERS\.DEFAULT\Control Panel\International\Geo', 'Nation', $originalNation, [Microsoft.Win32.RegistryValueKind]::String) | Out-Null
+        if ((Get-ItemProperty -Path $baseKey).IsEdgeStableUninstalled -eq 1) {
+            Write-Host "Edge Stable has been successfully uninstalled"
+        }
+    }
+
+    function Uninstall-Edge {
+        <#
+        .SYNOPSIS
+        Uninstalls Microsoft Edge.
+
+        .DESCRIPTION
+        This function removes registry entries and shortcuts associated with Microsoft Edge, and then calls the Uninstall-Process function to perform the uninstallation.
+
+        .NOTES
+        Author: Chris Titus Tech
+        Date: YYYY-MM-DD
+        #>
+        Remove-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft Edge" -Name "NoRemove" -ErrorAction SilentlyContinue | Out-Null
+        [microsoft.win32.registry]::SetValue("HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdateDev", "AllowUninstall", 1, [Microsoft.Win32.RegistryValueKind]::DWord) | Out-Null
+        Uninstall-Process -Key '{56EB18F8-B008-4CBD-B6D2-8C97FE7E9062}'
+        @("$env:ProgramData\Microsoft\Windows\Start Menu\Programs",
+            "$env:PUBLIC\Desktop",
+            "$env:USERPROFILE\Desktop") | ForEach-Object {
+            $shortcutPath = Join-Path -Path $_ -ChildPath "Microsoft Edge.lnk"
+            if (Test-Path -Path $shortcutPath) {
+                Remove-Item -Path $shortcutPath -Force
+            }
+        }
+    }
+
+    function Uninstall-WebView {
+        <#
+        .SYNOPSIS
+        Uninstalls Microsoft Edge WebView.
+
+        .DESCRIPTION
+        This function removes registry entries associated with Microsoft Edge WebView and then calls the Uninstall-Process function to perform the uninstallation.
+
+        .NOTES
+        Author: Chris Titus Tech
+        Date: YYYY-MM-DD
+        #>
+        Remove-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView" -Name "NoRemove" -ErrorAction SilentlyContinue | Out-Null
+        Uninstall-Process -Key '{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+    }
+
+    function Uninstall-EdgeUpdate {
+        <#
+        .SYNOPSIS
+        Uninstalls Microsoft Edge Update.
+
+        .DESCRIPTION
+        This function removes registry entries associated with Microsoft Edge Update and then executes the uninstall command.
+
+        .NOTES
+        Author: Chris Titus Tech
+        Date: YYYY-MM-DD
+        #>
+        Remove-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft Edge Update" -Name "NoRemove" -ErrorAction SilentlyContinue | Out-Null
+        $registryPath = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate'
+        if (!(Test-Path -Path $registryPath)) {
+            Write-Host "Registry key not found: $registryPath"
+            return
+        }
+        $uninstallCmdLine = (Get-ItemProperty -Path $registryPath).UninstallCmdLine
+        if ([string]::IsNullOrEmpty($uninstallCmdLine)) {
+            Write-Host "Cannot find uninstall methods for $Mode"
+            return
+        }
+        Write-Output "Uninstalling: $uninstallCmdLine"
+        Start-Process cmd.exe "/c $uninstallCmdLine" -WindowStyle Hidden -Wait
+    }
+
+    Uninstall-Edge
+}
+
+
+# Function to remove OneDrive from the system
+
+ <#
+    .SYNOPSIS
+    Removes OneDrive from the system, including its files, registry entries, and scheduled tasks.
+
+    .DESCRIPTION
+    The Remove-OneDrive function uninstalls OneDrive from the system, removes leftover files and registry entries, and restores default locations for shell folders. It also removes OneDrive from the explorer sidebar and start menu, and unregisters any scheduled tasks related to OneDrive.
+
+    .NOTES
+    Author: Chris Titus Tech
+    Date: YYYY-MM-DD
+
+    .EXAMPLE
+    Remove-OneDrive
+    This command will uninstall OneDrive and remove all associated files and settings from the system.
+
+    .EXAMPLE
+    $result = Remove-OneDrive
+    This command will uninstall OneDrive and store the result in the $result variable.
+    #>
+function Remove-OneDrive {
+    $OneDrivePath = $env:OneDrive
+    Write-Host "Removing OneDrive"
+    $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe"
+    
+    if (Test-Path $regPath) {
+        $OneDriveUninstallString = Get-ItemPropertyValue $regPath -Name "UninstallString"
+        $OneDriveExe, $OneDriveArgs = $OneDriveUninstallString.Split(" ")
+        Start-Process -FilePath $OneDriveExe -ArgumentList "$OneDriveArgs /silent" -NoNewWindow -Wait
+    } else {
+        Write-Host "OneDrive doesn't seem to be installed anymore" -ForegroundColor Red
+        return
+    }
+
+    # Check if OneDrive got Uninstalled
+    if (-not (Test-Path $regPath)) {
+        Write-Host "Copy downloaded Files from the OneDrive Folder to Root UserProfile"
+        Start-Process -FilePath powershell -ArgumentList "robocopy '$OneDrivePath' '$($env:USERPROFILE.TrimEnd())\' /mov /e /xj" -NoNewWindow -Wait
+        
+        Write-Host "Removing OneDrive leftovers"
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "$env:localappdata\Microsoft\OneDrive"
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "$env:localappdata\OneDrive"
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "$env:programdata\Microsoft OneDrive"
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "$env:systemdrive\OneDriveTemp"
+        reg delete "HKEY_CURRENT_USER\Software\Microsoft\OneDrive" -f
+        
+        # Check if directory is empty before removing
+        If ((Get-ChildItem "$OneDrivePath" -Recurse | Measure-Object).Count -eq 0) {
+            Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "$OneDrivePath"
+        }
+
+        Write-Host "Remove OneDrive from explorer sidebar"
+        Set-ItemProperty -Path "HKCR:\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}" -Name "System.IsPinnedToNameSpaceTree" -Value 0
+        Set-ItemProperty -Path "HKCR:\Wow6432Node\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}" -Name "System.IsPinnedToNameSpaceTree" -Value 0
+
+        Write-Host "Removing run hook for new users"
+        reg load hku\Default "C:\Users\Default\NTUSER.DAT"
+        reg delete "HKEY_USERS\Default\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "OneDriveSetup" /f
+        reg unload hku\Default
+
+        Write-Host "Removing start menu entry"
+        Remove-Item -Force -ErrorAction SilentlyContinue "$env:userprofile\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\OneDrive.lnk"
+
+        Write-Host "Removing scheduled task"
+        Get-ScheduledTask -TaskPath '\' -TaskName 'OneDrive*' -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
+
+        # Add Shell folders restoring default locations
+        Write-Host "Shell Fixing"
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "AppData" -Value "$env:userprofile\AppData\Roaming" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "Cache" -Value "$env:userprofile\AppData\Local\Microsoft\Windows\INetCache" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "Cookies" -Value "$env:userprofile\AppData\Local\Microsoft\Windows\INetCookies" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "Favorites" -Value "$env:userprofile\Favorites" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "History" -Value "$env:userprofile\AppData\Local\Microsoft\Windows\History" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "Local AppData" -Value "$env:userprofile\AppData\Local" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "My Music" -Value "$env:userprofile\Music" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "My Video" -Value "$env:userprofile\Videos" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "NetHood" -Value "$env:userprofile\AppData\Roaming\Microsoft\Windows\Network Shortcuts" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "PrintHood" -Value "$env:userprofile\AppData\Roaming\Microsoft\Windows\Printer Shortcuts" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "Programs" -Value "$env:userprofile\AppData\Roaming\Microsoft\Windows\Start Menu\Programs" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "Recent" -Value "$env:userprofile\AppData\Roaming\Microsoft\Windows\Recent" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "SendTo" -Value "$env:userprofile\AppData\Roaming\Microsoft\Windows\SendTo" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "Start Menu" -Value "$env:userprofile\AppData\Roaming\Microsoft\Windows\Start Menu" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "Startup" -Value "$env:userprofile\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "Templates" -Value "$env:userprofile\AppData\Roaming\Microsoft\Windows\Templates" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "{374DE290-123F-4565-9164-39C4925E467B}" -Value "$env:userprofile\Downloads" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "Desktop" -Value "$env:userprofile\Desktop" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "My Pictures" -Value "$env:userprofile\Pictures" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "Personal" -Value "$env:userprofile\Documents" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "{F42EE2D3-909F-4907-8871-4C22FC0BF756}" -Value "$env:userprofile\Documents" -Type ExpandString
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "{0DDD015D-B06C-45D5-8C4C-F59713854639}" -Value "$env:userprofile\Pictures" -Type ExpandString
+        
+        Write-Host "Restarting explorer"
+        taskkill.exe /F /IM "explorer.exe"
+        Start-Process "explorer.exe"
+        
+        Write-Host "Waiting for explorer to complete loading"
+        Write-Host "Please Note - The OneDrive folder at $OneDrivePath may still have items in it. You must manually delete it, but all the files should already be copied to the base user folder."
+        Write-Host "If there are Files missing afterwards, please Login to Onedrive.com and Download them manually" -ForegroundColor Yellow
+        Start-Sleep 5
+    } else {
+        Write-Host "Something went wrong during the uninstallation of OneDrive" -ForegroundColor Red
+    }
+}
+
+
+
+
 ###########################################
 # Check Install Update and Import Modules #
 ###########################################
@@ -700,7 +989,7 @@ $form.Controls.Add($tabControl)
 # Define column positions
 $column1X = 20
 $column2X = 200
-#$column3X = 380
+$column3X = 380
 #Define Section Length
 $sectionLength = 520
 #Define Install and Tweak Tab Buttons y position
@@ -807,47 +1096,69 @@ $checkboxPowerAutomate.AutoSize = $true
 $checkboxPowerAutomate.Location = New-Object System.Drawing.Point($column2X, 80)
 $tabInstall.Controls.Add($checkboxPowerAutomate)
 
+$checkboxPowerBI = New-Object System.Windows.Forms.CheckBox
+$checkboxPowerBI.Text = "Power BI Desktop"
+$checkboxPowerBI.Name = "Power BI Desktop"
+$checkboxPowerBI.AutoSize = $true
+$checkboxPowerBI.Location = New-Object System.Drawing.Point($column2X, 110)
+$tabInstall.Controls.Add($checkboxPowerBI)
+
 $checkboxPowerToys = New-Object System.Windows.Forms.CheckBox
 $checkboxPowerToys.Text = "PowerToys"
 $checkboxPowerToys.Name = "PowerToys"
 $checkboxPowerToys.AutoSize = $true
-$checkboxPowerToys.Location = New-Object System.Drawing.Point($column2X, 110)
+$checkboxPowerToys.Location = New-Object System.Drawing.Point($column2X, 140)
 $tabInstall.Controls.Add($checkboxPowerToys)
 
 $checkboxQuickAssist = New-Object System.Windows.Forms.CheckBox
 $checkboxQuickAssist.Text = "Quick Assist"
 $checkboxQuickAssist.Name = "Quick Assist"
 $checkboxQuickAssist.AutoSize = $true
-$checkboxQuickAssist.Location = New-Object System.Drawing.Point($column2X, 140)
+$checkboxQuickAssist.Location = New-Object System.Drawing.Point($column2X, 170)
 $tabInstall.Controls.Add($checkboxQuickAssist)
 
 $checkboxRemoteDesktop = New-Object System.Windows.Forms.CheckBox
 $checkboxRemoteDesktop.Text = "Remote Desktop"
 $checkboxRemoteDesktop.Name = "Microsoft Remote Desktop"
 $checkboxRemoteDesktop.AutoSize = $true
-$checkboxRemoteDesktop.Location = New-Object System.Drawing.Point($column2X, 170)
+$checkboxRemoteDesktop.Location = New-Object System.Drawing.Point($column2X, 200)
 $tabInstall.Controls.Add($checkboxRemoteDesktop)
 
 $checkboxMicrosoftSARA = New-Object System.Windows.Forms.CheckBox
 $checkboxMicrosoftSARA.Text = "SARA Tool"
 $checkboxMicrosoftSARA.Name = "Microsoft Support and Recovery Assistant"
 $checkboxMicrosoftSARA.AutoSize = $true
-$checkboxMicrosoftSARA.Location = New-Object System.Drawing.Point($column2X, 200)
+$checkboxMicrosoftSARA.Location = New-Object System.Drawing.Point($column2X, 230)
 $tabInstall.Controls.Add($checkboxMicrosoftSARA)
 
 $checkboxSurfaceDiagnosticToolkit = New-Object System.Windows.Forms.CheckBox
 $checkboxSurfaceDiagnosticToolkit.Text = "Surface Diagnostic Toolkit"
 $checkboxSurfaceDiagnosticToolkit.Name = "Surface Diagnostic Toolkit"
 $checkboxSurfaceDiagnosticToolkit.AutoSize = $true
-$checkboxSurfaceDiagnosticToolkit.Location = New-Object System.Drawing.Point($column2X, 230)
+$checkboxSurfaceDiagnosticToolkit.Location = New-Object System.Drawing.Point($column2X, 260)
 $tabInstall.Controls.Add($checkboxSurfaceDiagnosticToolkit)
 
 $checkboxVisio = New-Object System.Windows.Forms.CheckBox
 $checkboxVisio.Text = "Visio Viewer 2016"
 $checkboxVisio.Name = "Microsoft VisioViewer"
 $checkboxVisio.AutoSize = $true
-$checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 260)
+$checkboxVisio.Location = New-Object System.Drawing.Point($column2X, 290)
 $tabInstall.Controls.Add($checkboxVisio)
+
+$checkboxVisualStudioCode = New-Object System.Windows.Forms.CheckBox
+$checkboxVisualStudioCode.Text = "Visual Studio Code"
+$checkboxVisualStudioCode.Name = "Visual Studio Code"
+$checkboxVisualStudioCode.AutoSize = $true
+$checkboxVisualStudioCode.Location = New-Object System.Drawing.Point($column3X, 20)
+$tabInstall.Controls.Add($checkboxVisualStudioCode)
+
+$checkbox7Zip = New-Object System.Windows.Forms.CheckBox
+$checkbox7Zip.Text = "7-Zip"
+$checkbox7Zip.Name = "7-Zip"
+$checkbox7Zip.AutoSize = $true
+$checkbox7Zip.Location = New-Object System.Drawing.Point($column3X, 50)
+$tabInstall.Controls.Add($checkbox7Zip)
+
 
 # Create a checkbox to show in the command promt all pacakges installed
 $checkboxShowInstalled = New-Object System.Windows.Forms.CheckBox
@@ -866,67 +1177,77 @@ $tabInstall.Controls.Add($buttonInstall)
 
 # Define the action for the Install button
 $buttonInstall.Add_Click({
-    if ($checkboxAdobe.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Adobe.Acrobat.Reader.64-bit -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxAdobeCloud.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Adobe.CreativeCloud -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxChrome.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Google.Chrome -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxEdge.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.Edge -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxFiddler.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Telerik.Fiddler.Classic -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxFirefox.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Mozilla.Firefox -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxHWMonitor.Checked) {
-        Start-Process "winget" -ArgumentList "install --id CPUID.HWMonitor -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxMicrosoftSARA.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.SupportAndRecoveryAssistant -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxNetFrameworks.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.3_1 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.6 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.7 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.8 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxOffice.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.Office -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxOneDrive.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.OneDrive -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxOneNote.Checked) {
-        Start-Process "winget" -ArgumentList "install --id XPFFZHVGQWWLHB -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxPowerAutomate.Checked) {
-        Start-Process "winget" -ArgumentList "install --id 9NFTCH6J7FHV -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxPowerToys.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxQuickAssist.Checked) {
-        Start-Process "winget" -ArgumentList "install --id 9P7BP5VNWKX5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxRemoteDesktop.Checked) {
-        Start-Process "winget" -ArgumentList "install --id 9WZDNCRFJ3PS -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxSurfaceDiagnosticToolkit.Checked) {
-        Start-Process "winget" -ArgumentList "install --id 9NF1MR6C60ZF -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxTeams.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
-    if ($checkboxVisio.Checked) {
-        Start-Process "winget" -ArgumentList "install --id Microsoft.VisioViewer -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-    }
+        if ($checkboxAdobe.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Adobe.Acrobat.Reader.64-bit -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxAdobeCloud.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Adobe.CreativeCloud -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxChrome.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Google.Chrome -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxEdge.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.Edge -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxFiddler.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Telerik.Fiddler.Classic -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxFirefox.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Mozilla.Firefox -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxHWMonitor.Checked) {
+            Start-Process "winget" -ArgumentList "install --id CPUID.HWMonitor -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxMicrosoftSARA.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.SupportAndRecoveryAssistant -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxNetFrameworks.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.3_1 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.6 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.7 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.8 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxOffice.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.Office -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxOneDrive.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.OneDrive -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxOneNote.Checked) {
+            Start-Process "winget" -ArgumentList "install --id XPFFZHVGQWWLHB -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxPowerAutomate.Checked) {
+            Start-Process "winget" -ArgumentList "install --id 9NFTCH6J7FHV -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxPowerBI.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.PowerBI -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxPowerToys.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxQuickAssist.Checked) {
+            Start-Process "winget" -ArgumentList "install --id 9P7BP5VNWKX5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxRemoteDesktop.Checked) {
+            Start-Process "winget" -ArgumentList "install --id 9WZDNCRFJ3PS -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxSurfaceDiagnosticToolkit.Checked) {
+            Start-Process "winget" -ArgumentList "install --id 9NF1MR6C60ZF -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxTeams.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxVisio.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.VisioViewer -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkboxVisualStudioCode.Checked) {
+            Start-Process "winget" -ArgumentList "install --id Microsoft.VisualStudioCode -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+        if ($checkbox7Zip.Checked) {
+            Start-Process "winget" -ArgumentList "install --id 7zip.7zip -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+        }
+
         [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
     })
 
@@ -963,30 +1284,31 @@ $tabInstall.Controls.Add($buttonGetPackages)
 
 # Define the action for the Get Packages button
 $buttonGetPackages.Add_Click({
-    # Check if the showInstalled checkbox is checked
-    $showInstalledCheckbox = $tabInstall.Controls | Where-Object { $_.Name -eq "showInstalled" -and $_.Checked }
-    if ($showInstalledCheckbox) {
-        Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
-    }
+        # Check if the showInstalled checkbox is checked
+        $showInstalledCheckbox = $tabInstall.Controls | Where-Object { $_.Name -eq "showInstalled" -and $_.Checked }
+        if ($showInstalledCheckbox) {
+            Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
+        }
 
-    # Run the Get-WinGetPackage command and capture the output directly
-    $output = Get-WinGetPackage
-    # Extract the package names from the output
-    $packageNames = $output | Select-Object -ExpandProperty Name
+        # Run the Get-WinGetPackage command and capture the output directly
+        $output = Get-WinGetPackage
+        # Extract the package names from the output
+        $packageNames = $output | Select-Object -ExpandProperty Name
 
-    # Iterate through each control in the install tab
-    foreach ($control in $tabInstall.Controls) {
-        if ($control -is [System.Windows.Forms.CheckBox]) {
-            $checkboxName = $control.Name
-            # Check if the checkbox name is present in the package names
-            if ($packageNames -contains $checkboxName) {
-                $control.Checked = $true
-            } else {
-                $control.Checked = $false
+        # Iterate through each control in the install tab
+        foreach ($control in $tabInstall.Controls) {
+            if ($control -is [System.Windows.Forms.CheckBox]) {
+                $checkboxName = $control.Name
+                # Check if the checkbox name is present in the package names
+                if ($packageNames -contains $checkboxName) {
+                    $control.Checked = $true
+                }
+                else {
+                    $control.Checked = $false
+                }
             }
         }
-    }
-})
+    })
 
 # Create a Check/Uncheck All button in the Install tab
 $buttonCheckAll = New-Object System.Windows.Forms.Button
@@ -1045,19 +1367,20 @@ $tabTweak.Text = "Tweak"
 $tabControl.Controls.Add($tabTweak)
 
 # Create controls for the Tweak tab
-$checkboxRightClickEndTask = New-Object System.Windows.Forms.CheckBox
-$checkboxRightClickEndTask.Text = "Enable End Task With Right Click"
-$checkboxRightClickEndTask.Name = "EnableRightClickEndTask"
-$checkboxRightClickEndTask.AutoSize = $true
-$checkboxRightClickEndTask.Location = New-Object System.Drawing.Point($column1X, 110)
-$tabTweak.Controls.Add($checkboxRightClickEndTask)
 
-$checkboxRunDiskCleanup = New-Object System.Windows.Forms.CheckBox
-$checkboxRunDiskCleanup.Text = "Run Disk Cleanup"
-$checkboxRunDiskCleanup.Name = "RunDiskCleanup"
-$checkboxRunDiskCleanup.AutoSize = $true
-$checkboxRunDiskCleanup.Location = New-Object System.Drawing.Point($column1X, 230)
-$tabTweak.Controls.Add($checkboxRunDiskCleanup)
+$checkboxCleanBoot = New-Object System.Windows.Forms.CheckBox
+$checkboxCleanBoot.Text = "Clean Boot"
+$checkboxCleanBoot.Name = "CleanBoot"
+$checkboxCleanBoot.AutoSize = $true
+$checkboxCleanBoot.Location = New-Object System.Drawing.Point($column1X, 20)
+$tabTweak.Controls.Add($checkboxCleanBoot)
+
+$checkboxDeleteTempFiles = New-Object System.Windows.Forms.CheckBox
+$checkboxDeleteTempFiles.Text = "Delete Temporary Files"
+$checkboxDeleteTempFiles.Name = "DeleteTempFiles"
+$checkboxDeleteTempFiles.AutoSize = $true
+$checkboxDeleteTempFiles.Location = New-Object System.Drawing.Point($column1X, 50)
+$tabTweak.Controls.Add($checkboxDeleteTempFiles)
 
 $checkboxDetailedBSOD = New-Object System.Windows.Forms.CheckBox
 $checkboxDetailedBSOD.Text = "Enable Detailed BSOD Information"
@@ -1066,40 +1389,47 @@ $checkboxDetailedBSOD.AutoSize = $true
 $checkboxDetailedBSOD.Location = New-Object System.Drawing.Point($column1X, 80)
 $tabTweak.Controls.Add($checkboxDetailedBSOD)
 
-$checkboxVerboseLogon = New-Object System.Windows.Forms.CheckBox
-$checkboxVerboseLogon.Text = "Enable Verbose Logon Messages"
-$checkboxVerboseLogon.Name = "EnableVerboseLogon"
-$checkboxVerboseLogon.AutoSize = $true
-$checkboxVerboseLogon.Location = New-Object System.Drawing.Point($column1X, 170)
-$tabTweak.Controls.Add($checkboxVerboseLogon)
-
-$checkboxDeleteTempFiles = New-Object System.Windows.Forms.CheckBox
-$checkboxDeleteTempFiles.Text = "Delete Temporary Files"
-$checkboxDeleteTempFiles.Name = "DeleteTempFiles"
-$checkboxDeleteTempFiles.AutoSize = $true
-$checkboxDeleteTempFiles.Location = New-Object System.Drawing.Point($column1X, 20)
-$tabTweak.Controls.Add($checkboxDeleteTempFiles)
+$checkboxGodMode = New-Object System.Windows.Forms.CheckBox
+$checkboxGodMode.Text = "Enable God Mode"
+$checkboxGodMode.Name = "EnableGodMode"
+$checkboxGodMode.AutoSize = $true
+$checkboxGodMode.Location = New-Object System.Drawing.Point($column1X, 110)
+$tabTweak.Controls.Add($checkboxGodMode)
 
 $checkboxClassicRightClickMenu = New-Object System.Windows.Forms.CheckBox
 $checkboxClassicRightClickMenu.Text = "Enable Classic Right Click Menu"
 $checkboxClassicRightClickMenu.Name = "EnableClassicRightClickMenu"
 $checkboxClassicRightClickMenu.AutoSize = $true
-$checkboxClassicRightClickMenu.Location = New-Object System.Drawing.Point($column1X, 50)
+$checkboxClassicRightClickMenu.Location = New-Object System.Drawing.Point($column1X, 140)
 $tabTweak.Controls.Add($checkboxClassicRightClickMenu)
 
-$checkboxGodMode = New-Object System.Windows.Forms.CheckBox
-$checkboxGodMode.Text = "Enable God Mode"
-$checkboxGodMode.Name = "EnableGodMode"
-$checkboxGodMode.AutoSize = $true
-$checkboxGodMode.Location = New-Object System.Drawing.Point($column1X, 140)
-$tabTweak.Controls.Add($checkboxGodMode)
+$checkboxRightClickEndTask = New-Object System.Windows.Forms.CheckBox
+$checkboxRightClickEndTask.Text = "Enable End Task With Right Click"
+$checkboxRightClickEndTask.Name = "EnableRightClickEndTask"
+$checkboxRightClickEndTask.AutoSize = $true
+$checkboxRightClickEndTask.Location = New-Object System.Drawing.Point($column1X, 170)
+$tabTweak.Controls.Add($checkboxRightClickEndTask)
+
+$checkboxVerboseLogon = New-Object System.Windows.Forms.CheckBox
+$checkboxVerboseLogon.Text = "Enable Verbose Logon Messages"
+$checkboxVerboseLogon.Name = "EnableVerboseLogon"
+$checkboxVerboseLogon.AutoSize = $true
+$checkboxVerboseLogon.Location = New-Object System.Drawing.Point($column1X, 200)
+$tabTweak.Controls.Add($checkboxVerboseLogon)
 
 $checkboxOptimizeDrives = New-Object System.Windows.Forms.CheckBox
 $checkboxOptimizeDrives.Text = "Optimize Drives"
 $checkboxOptimizeDrives.Name = "OptimizeDrives"
 $checkboxOptimizeDrives.AutoSize = $true
-$checkboxOptimizeDrives.Location = New-Object System.Drawing.Point($column1X, 200)
+$checkboxOptimizeDrives.Location = New-Object System.Drawing.Point($column1X, 230)
 $tabTweak.Controls.Add($checkboxOptimizeDrives)
+
+$checkboxRunDiskCleanup = New-Object System.Windows.Forms.CheckBox
+$checkboxRunDiskCleanup.Text = "Run Disk Cleanup"
+$checkboxRunDiskCleanup.Name = "RunDiskCleanup"
+$checkboxRunDiskCleanup.AutoSize = $true
+$checkboxRunDiskCleanup.Location = New-Object System.Drawing.Point($column1X, 260)
+$tabTweak.Controls.Add($checkboxRunDiskCleanup)
 
 # Create Apply and Undo buttons in the Tweak tab
 $buttonApply = New-Object System.Windows.Forms.Button
@@ -1123,6 +1453,55 @@ $tabTweak.Controls.Add($buttonSystemPerformance)
 
 # Define the action for the Apply button
 $buttonApply.Add_Click({
+
+    if ($checkboxCleanBoot.Checked) {
+        # Prompt the user
+        $result = [System.Windows.Forms.MessageBox]::Show(
+            "This action will disable all non-Microsoft services. Do you want to proceed?",
+            "Clean Boot",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+    
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            # Perform a clean boot
+            Write-Host "Performing a clean boot..." -ForegroundColor Yellow
+    
+            # Get all non-Microsoft services
+            $nonMicrosoftServices = Get-Service | Where-Object { $_.DisplayName -notmatch "^(Microsoft|Windows)" }
+    
+            # Backup the services to a file
+            $backupFilePath = "$env:USERPROFILE\Documents\DisabledServicesBackup.txt"
+            $nonMicrosoftServices | Select-Object Name, DisplayName, Status | Export-Csv -Path $backupFilePath -NoTypeInformation
+            Write-Host "Backup of disabled services saved to $backupFilePath" -ForegroundColor Green
+    
+            # Disable all non-Microsoft services
+            foreach ($service in $nonMicrosoftServices) {
+                try {
+                    Set-Service -Name $service.Name -StartupType Disabled
+                    Write-Host "Disabled service: $($service.DisplayName)" -ForegroundColor Green
+                } catch {
+                    Write-Host "Failed to disable service: $($service.DisplayName)" -ForegroundColor Red
+                }
+            }
+    
+            # Disable all startup items using Task Scheduler
+            $startupTasks = Get-ScheduledTask | Where-Object { $_.TaskPath -notlike "\Microsoft\*" }
+            foreach ($task in $startupTasks) {
+                try {
+                    Disable-ScheduledTask -TaskName $task.TaskName -TaskPath $task.TaskPath
+                    Write-Host "Disabled startup task: $($task.TaskName)" -ForegroundColor Green
+                } catch {
+                    Write-Host "Failed to disable startup task: $($task.TaskName)" -ForegroundColor Red
+                }
+            }
+    
+            # Open System Configuration to verify changes
+            Start-Process "msconfig.exe" -ArgumentList "/4" -NoNewWindow -Wait
+        } else {
+            Write-Host "Clean boot operation canceled by the user." -ForegroundColor Yellow
+        }
+    }
         if ($checkboxRightClickEndTask.Checked) {
             # Add registry key to enable right click end task
             $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
@@ -1290,6 +1669,40 @@ $buttonApply.Add_Click({
 
 # Define the action for the Undo button
 $buttonUndo.Add_Click({
+
+    if ($checkboxCleanBoot.Checked) {
+        # Undo clean boot
+        Write-Host "Undoing clean boot..." -ForegroundColor Yellow
+
+        # Path to the backup file
+        $backupFilePath = "$env:USERPROFILE\Documents\DisabledServicesBackup.txt"
+
+        # Check if the backup file exists
+        if (Test-Path $backupFilePath) {
+            try {
+                # Read the backup file
+                $disabledServices = Import-Csv -Path $backupFilePath
+
+                # Re-enable the services
+                foreach ($service in $disabledServices) {
+                    try {
+                        Set-Service -Name $service.Name -StartupType Automatic
+                        Write-Host "Re-enabled service: $($service.DisplayName)" -ForegroundColor Green
+                    } catch {
+                        Write-Host "Failed to re-enable service: $($service.DisplayName)" -ForegroundColor Red
+                    }
+                }
+
+                # Remove the backup file after re-enabling services
+                Remove-Item -Path $backupFilePath -Force
+                Write-Host "Clean boot undo completed." -ForegroundColor Green
+            } catch {
+                Write-Host "Failed to undo clean boot. Error: $_" -ForegroundColor Red
+            }
+        } else {
+            Write-Host "No backup file found for clean boot undo." -ForegroundColor Red
+        }
+    }
         if ($checkboxRightClickEndTask.Checked) {
             # Remove registry key to disable right click end task
             $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
@@ -1424,35 +1837,35 @@ $linkRemoveAdobeCloud.Text = "Remove Adobe Creative Cloud"
 $linkRemoveAdobeCloud.AutoSize = $true
 $linkRemoveAdobeCloud.Location = New-Object System.Drawing.Point($column1X, 30)
 $linkRemoveAdobeCloud.Add_LinkClicked({
-    # Remove Adobe Cloud
-    Write-Host "Removing Adobe Cloud..."
-    # Code snipet from https://github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/RunAdobeCCCleanerTool.md
-    [string]$url = "https://swupmf.adobe.com/webfeed/CleanerTool/win/AdobeCreativeCloudCleanerTool.exe"
+        # Remove Adobe Cloud
+        Write-Host "Removing Adobe Cloud..."
+        # Code snipet from https://github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/RunAdobeCCCleanerTool.md
+        [string]$url = "https://swupmf.adobe.com/webfeed/CleanerTool/win/AdobeCreativeCloudCleanerTool.exe"
 
-    Write-Host "The Adobe Creative Cloud Cleaner tool is hosted at"
-    Write-Host "$url"
+        Write-Host "The Adobe Creative Cloud Cleaner tool is hosted at"
+        Write-Host "$url"
 
-    try {
-        # Don't show the progress because it will slow down the download speed
-        $ProgressPreference = 'SilentlyContinue'
+        try {
+            # Don't show the progress because it will slow down the download speed
+            $ProgressPreference = 'SilentlyContinue'
 
-        Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -UseBasicParsing -ErrorAction SilentlyContinue -Verbose
+            Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -UseBasicParsing -ErrorAction SilentlyContinue -Verbose
 
-        # Revert back the ProgressPreference variable to the default value since we got the file desired
-        $ProgressPreference = 'Continue'
+            # Revert back the ProgressPreference variable to the default value since we got the file desired
+            $ProgressPreference = 'Continue'
 
-        Start-Process -FilePath "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Wait -ErrorAction SilentlyContinue -Verbose
-    }
-    catch {
-        Write-Error $_.Exception.Message
-    }
-    finally {
-        if (Test-Path -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe") {
-            Write-Host "Cleaning up..."
-            Remove-Item -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Verbose
+            Start-Process -FilePath "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Wait -ErrorAction SilentlyContinue -Verbose
         }
-    }
-})
+        catch {
+            Write-Error $_.Exception.Message
+        }
+        finally {
+            if (Test-Path -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe") {
+                Write-Host "Cleaning up..."
+                Remove-Item -Path "$env:TEMP\AdobeCreativeCloudCleanerTool.exe" -Verbose
+            }
+        }
+    })
 $sectionApps.Controls.Add($linkRemoveAdobeCloud)
 
 # Create a hyperlink to remove Adobe Reader
@@ -1461,11 +1874,11 @@ $linkRemoveAdobeReader.Text = "Remove Adobe Reader"
 $linkRemoveAdobeReader.AutoSize = $true
 $linkRemoveAdobeReader.Location = New-Object System.Drawing.Point($column1X, 60)
 $linkRemoveAdobeReader.Add_LinkClicked({
-    # Remove Adobe Reader
-    Write-Output "Removing Adobe Reader..."
-    # Call the function to remove Adobe Reader
-    Remove-AdobeReader
-})
+        # Remove Adobe Reader
+        Write-Output "Removing Adobe Reader..."
+        # Call the function to remove Adobe Reader
+        Remove-AdobeReader
+    })
 $sectionApps.Controls.Add($linkRemoveAdobeReader)
 
 # Create a new form for Edge Fixes
@@ -1483,27 +1896,27 @@ $linkResetEdgeCache.Text = "Reset Edge Browser Cache"
 $linkResetEdgeCache.AutoSize = $true
 $linkResetEdgeCache.Location = New-Object System.Drawing.Point(10, 10)
 $linkResetEdgeCache.Add_LinkClicked({
-    try {
-        # Open Edge browser
-        $edgeProcess = Start-Process "msedge" -ArgumentList "about:blank" -PassThru
+        try {
+            # Open Edge browser
+            $edgeProcess = Start-Process "msedge" -ArgumentList "about:blank" -PassThru
 
-        # Wait for Edge to open
-        Start-Sleep -Seconds 3
+            # Wait for Edge to open
+            Start-Sleep -Seconds 3
 
-        # Simulate key presses to navigate to the settings page for clearing browsing data
-        $shell = New-Object -ComObject "WScript.Shell"
-        $shell.AppActivate($edgeProcess.Id)
-        Start-Sleep -Milliseconds 500
-        $shell.SendKeys("^+{DEL}")  # Ctrl+Shift+Delete to open the Clear browsing data dialog
-        Start-Sleep -Milliseconds 500
-        $shell.SendKeys("{ENTER}")  # Press Enter to confirm
+            # Simulate key presses to navigate to the settings page for clearing browsing data
+            $shell = New-Object -ComObject "WScript.Shell"
+            $shell.AppActivate($edgeProcess.Id)
+            Start-Sleep -Milliseconds 500
+            $shell.SendKeys("^+{DEL}")  # Ctrl+Shift+Delete to open the Clear browsing data dialog
+            Start-Sleep -Milliseconds 500
+            $shell.SendKeys("{ENTER}")  # Press Enter to confirm
 
-        Write-Host "Edge settings page for clearing browsing data has been opened." -ForegroundColor Green
-    }
-    catch {
-        Write-Host "Failed to open Edge settings page. Error: $_" -ForegroundColor Red
-    }
-})
+            Write-Host "Edge settings page for clearing browsing data has been opened." -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to open Edge settings page. Error: $_" -ForegroundColor Red
+        }
+    })
 $formEdgeFixes.Controls.Add($linkResetEdgeCache)
 
 # Create a hyperlink to reset Edge Profile
@@ -1512,16 +1925,16 @@ $linkResetEdgeProfile.Text = "Reset Edge Profile"
 $linkResetEdgeProfile.AutoSize = $true
 $linkResetEdgeProfile.Location = New-Object System.Drawing.Point(10, 40)
 $linkResetEdgeProfile.Add_LinkClicked({
-    try {
-        # Step 1: Reset Edge profile silently
-        Write-Host "Resetting Edge browser profile..."
-        Start-Process "msedge" -ArgumentList "--reset-profile" -NoNewWindow -Wait
-        Write-Host "Edge browser profile has been reset." -ForegroundColor Green
-    }
-    catch {
-        Write-Host "Failed to reset Edge profile. Error: $_" -ForegroundColor Red
-    }
-})
+        try {
+            # Step 1: Reset Edge profile silently
+            Write-Host "Resetting Edge browser profile..."
+            Start-Process "msedge" -ArgumentList "--reset-profile" -NoNewWindow -Wait
+            Write-Host "Edge browser profile has been reset." -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to reset Edge profile. Error: $_" -ForegroundColor Red
+        }
+    })
 $formEdgeFixes.Controls.Add($linkResetEdgeProfile)
 
 # Create a hyperlink to fully reset Edge Browser
@@ -1530,96 +1943,85 @@ $linkResetEdge.Text = "Remove Edge Browser"
 $linkResetEdge.AutoSize = $true
 $linkResetEdge.Location = New-Object System.Drawing.Point(10, 70)
 $linkResetEdge.Add_LinkClicked({
-    $errors = @()
-    try {
-        # Show a message box to advise the user
-        $result = [System.Windows.Forms.MessageBox]::Show(
-            "This action will fully remove Microsoft Edge and all cached files from the system. Do you want to proceed?",
-            "Warning",
-            [System.Windows.Forms.MessageBoxButtons]::YesNo,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
-
-        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-            # Step 1: Check if Edge is running and close it
-            $edgeProcesses = Get-Process -Name "msedge" -ErrorAction SilentlyContinue
-            if ($edgeProcesses) {
-                Write-Host "Microsoft Edge is running. Closing it..."
-                $edgeProcesses | ForEach-Object { $_.Kill() }
-                Write-Host "Microsoft Edge has been closed." -ForegroundColor Green
-            }
-
-            # Step 2: Remove Edge cache and temporary files
-            Write-Host "Removing Edge cache and temporary files..."
-            $edgeCachePaths = @(
-                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Cache",
-                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Code Cache",
-                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\GPUCache",
-                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Media Cache",
-                "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\ShaderCache"
+        $errors = @()
+        try {
+            # Show a message box to advise the user
+            $result = [System.Windows.Forms.MessageBox]::Show(
+                "This action will fully remove Microsoft Edge and all cached files from the system. Do you want to proceed?",
+                "Warning",
+                [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                [System.Windows.Forms.MessageBoxIcon]::Warning
             )
-            $failedRemovals = @()
-            foreach ($path in $edgeCachePaths) {
-                try {
-                    if (Test-Path $path) {
-                        Remove-Item -Path $path -Recurse -Force
-                        Write-Host "Removed: $path" -ForegroundColor Green
-                    }
-                    else {
-                        Write-Host "Path not found: $path" -ForegroundColor Yellow
-                    }
-                }
-                catch {
-                    Write-Host "Failed to remove: $path" -ForegroundColor Red
-                    $failedRemovals += $path
-                }
-            }
 
-            # Step 3: Uninstall all Edge packages using Get-AppxPackage and Remove-AppxPackage
-            Write-Host "Uninstalling Edge browser..."
-            try {
-                $edgePackages = Get-AppxPackage -Name "*MicrosoftEdge*" -AllUsers -ErrorAction Stop
-                foreach ($package in $edgePackages) {
+            if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                # Step 1: Check if Edge is running and close it
+                $edgeProcesses = Get-Process -Name "msedge" -ErrorAction SilentlyContinue
+                if ($edgeProcesses) {
+                    Write-Host "Microsoft Edge is running. Closing it..."
+                    $edgeProcesses | ForEach-Object { $_.Kill() }
+                    Write-Host "Microsoft Edge has been closed." -ForegroundColor Green
+                }
+
+                # Step 2: Remove Edge cache and temporary files
+                Write-Host "Removing Edge cache and temporary files..."
+                $edgeCachePaths = @(
+                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Cache",
+                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Code Cache",
+                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\GPUCache",
+                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Media Cache",
+                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\ShaderCache"
+                )
+                $failedRemovals = @()
+                foreach ($path in $edgeCachePaths) {
                     try {
-                        Remove-AppxPackage -Package $package.PackageFullName -AllUsers -ErrorAction Stop
-                        Write-Host "Removed package: $($package.PackageFullName)" -ForegroundColor Green
+                        if (Test-Path $path) {
+                            Remove-Item -Path $path -Recurse -Force
+                            Write-Host "Removed: $path" -ForegroundColor Green
+                        }
+                        else {
+                            Write-Host "Path not found: $path" -ForegroundColor Yellow
+                        }
                     }
                     catch {
-                        $errorMessage = "Failed to remove package: $($package.PackageFullName). Error: $_"
-                        Write-Host $errorMessage -ForegroundColor Red
-                        $errors += $errorMessage
+                        Write-Host "Failed to remove: $path" -ForegroundColor Red
+                        $failedRemovals += $path
                     }
                 }
-                Write-Host "Edge browser has been uninstalled." -ForegroundColor Green
-            }
-            catch {
-                $errorMessage = "Failed to uninstall Edge browser. Error: $_"
-                Write-Host $errorMessage -ForegroundColor Red
-                $errors += $errorMessage
-            }
 
-            # Prompt user with the list of files/folders that could not be removed
-            if ($failedRemovals.Count -gt 0) {
-                $failedRemovalsMessage = "The following files/folders could not be removed:`n" + ($failedRemovals -join "`n")
-                [System.Windows.Forms.MessageBox]::Show($failedRemovalsMessage, "Removal Errors", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
+                # Step 3: Uninstall Edge using the provided function
+                Write-Host "Uninstalling Edge browser..."
+                try {
+                    Uninstall-EdgeBrowser
+                    Write-Host "Edge browser has been uninstalled." -ForegroundColor Green
+                }
+                catch {
+                    $errorMessage = "Failed to uninstall Edge browser. Error: $_"
+                    Write-Host $errorMessage -ForegroundColor Red
+                    $errors += $errorMessage
+                }
+
+                # Prompt user with the list of files/folders that could not be removed
+                if ($failedRemovals.Count -gt 0) {
+                    $failedRemovalsMessage = "The following files/folders could not be removed:`n" + ($failedRemovals -join "`n")
+                    [System.Windows.Forms.MessageBox]::Show($failedRemovalsMessage, "Removal Errors", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
+                }
+            }
+            else {
+                Write-Host "Action canceled by the user." -ForegroundColor Yellow
             }
         }
-        else {
-            Write-Host "Action canceled by the user." -ForegroundColor Yellow
+        catch {
+            $errorMessage = "Failed to reset Edge browser. Error: $_"
+            Write-Host $errorMessage -ForegroundColor Red
+            $errors += $errorMessage
         }
-    }
-    catch {
-        $errorMessage = "Failed to reset Edge browser. Error: $_"
-        Write-Host $errorMessage -ForegroundColor Red
-        $errors += $errorMessage
-    }
-    finally {
-        if ($errors.Count -gt 0) {
-            $errorSummary = "The following errors occurred during the reset process:`n" + ($errors -join "`n")
-            [System.Windows.Forms.MessageBox]::Show($errorSummary, "Errors", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        finally {
+            if ($errors.Count -gt 0) {
+                $errorSummary = "The following errors occurred during the reset process:`n" + ($errors -join "`n")
+                [System.Windows.Forms.MessageBox]::Show($errorSummary, "Errors", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            }
         }
-    }
-})
+    })
 $formEdgeFixes.Controls.Add($linkResetEdge)
 
 # Create a hyperlink to close the Edge Fixes window
@@ -1628,8 +2030,18 @@ $linkCloseWindow.Text = "Close Window"
 $linkCloseWindow.AutoSize = $true
 $linkCloseWindow.Location = New-Object System.Drawing.Point(10, 100)
 $linkCloseWindow.Add_LinkClicked({
-    $formEdgeFixes.Close()
-})
+        $formEdgeFixes.Close()
+    })
+$formEdgeFixes.Controls.Add($linkCloseWindow)
+
+# Create a hyperlink to close the Edge Fixes window
+$linkCloseWindow = New-Object System.Windows.Forms.LinkLabel
+$linkCloseWindow.Text = "Close Window"
+$linkCloseWindow.AutoSize = $true
+$linkCloseWindow.Location = New-Object System.Drawing.Point(10, 100)
+$linkCloseWindow.Add_LinkClicked({
+        $formEdgeFixes.Close()
+    })
 $formEdgeFixes.Controls.Add($linkCloseWindow)
 
 # Create a hyperlink to open the Edge Fixes window
@@ -1638,9 +2050,22 @@ $linkMicrosoftEdge.Text = "Microsoft Edge"
 $linkMicrosoftEdge.AutoSize = $true
 $linkMicrosoftEdge.Location = New-Object System.Drawing.Point($column2X, 30)
 $linkMicrosoftEdge.Add_LinkClicked({
-    $formEdgeFixes.ShowDialog()
-})
+        $formEdgeFixes.ShowDialog()
+    })
 $sectionApps.Controls.Add($linkMicrosoftEdge)
+
+# Create a hyperlink to remove OneDrive
+$linkRemoveOneDrive = New-Object System.Windows.Forms.LinkLabel
+$linkRemoveOneDrive.Text = "Remove OneDrive"
+$linkRemoveOneDrive.AutoSize = $true
+$linkRemoveOneDrive.Location = New-Object System.Drawing.Point($column2X, 60)
+$linkRemoveOneDrive.Add_LinkClicked({
+    # Remove OneDrive
+    Write-Output "Removing OneDrive..."
+    # Call the function to remove OneDrive
+    Remove-OneDrive
+})
+$sectionApps.Controls.Add($linkRemoveOneDrive)
 
 #################
 # System section#
@@ -1648,7 +2073,7 @@ $sectionApps.Controls.Add($linkMicrosoftEdge)
 
 $sectionSystem = New-Object System.Windows.Forms.GroupBox
 $sectionSystem.Text = "System"
-$sectionSystem.Size = New-Object System.Drawing.Size($sectionLength, 100)
+$sectionSystem.Size = New-Object System.Drawing.Size($sectionLength, 140)
 $sectionSystem.Location = New-Object System.Drawing.Point($column1X, 260)
 $tabFix.Controls.Add($sectionSystem)
 
@@ -1659,7 +2084,7 @@ $linkResetWinUpdate.AutoSize = $true
 $linkResetWinUpdate.Location = New-Object System.Drawing.Point($column1X, 30)
 $linkResetWinUpdate.Add_LinkClicked({
         # Reset Windows Update
-        Write-Output "Resetting Windows Update..."
+        Write-Host "Resetting Windows Update..." -ForegroundColor Yellow
         # Add your code here
         $fixWindowsUpdate = [System.Windows.Forms.MessageBox]::Show("We will attempt to fix Windows Update service. Do you want to run the fix in aggressive mode?", "Fix Windows Update", "YesNoCancel", "Question")
 
@@ -1682,7 +2107,7 @@ $linkResetNetwork.AutoSize = $true
 $linkResetNetwork.Location = New-Object System.Drawing.Point($column1X, 60)
 $linkResetNetwork.Add_LinkClicked({
         # Reset network
-        Write-Host "Resetting network..."
+        Write-Host "Resetting network..." -ForegroundColor Yellow
 
         # Reset network using netsh
         netsh winsock reset | Out-Null
@@ -1714,7 +2139,7 @@ $linkSysRepair.AutoSize = $true
 $linkSysRepair.Location = New-Object System.Drawing.Point($column2X, 30)
 $linkSysRepair.Add_LinkClicked({
         # Run system repair
-        Write-Output "Running system repair..."
+        Write-Host "Running system repair..." -ForegroundColor Yellow
         <#  From ChrisTitusTech/winutil repo github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/RunSystemRepair.md
     System Repair Steps:
         1. Chkdsk    - Fixes disk and filesystem corruption
@@ -1729,6 +2154,30 @@ $linkSysRepair.Add_LinkClicked({
     Read-Host '`nPress Enter to Continue'" -verb runas
     })
 $sectionSystem.Controls.Add($linkSysRepair)
+
+# Create a hyperlink to open Windows System Troubleshooters window
+$linkOpenTroubleshooters = New-Object System.Windows.Forms.LinkLabel
+$linkOpenTroubleshooters.Text = "Open Troubleshooters"
+$linkOpenTroubleshooters.AutoSize = $true
+$linkOpenTroubleshooters.Location = New-Object System.Drawing.Point($column2X, 60)
+$linkOpenTroubleshooters.Add_LinkClicked({
+        # Open Windows System Troubleshooters window
+        Write-Host "Opening Windows System Troubleshooters..." -ForegroundColor Yellow
+        Start-Process ms-settings:troubleshoot
+    })
+$sectionSystem.Controls.Add($linkOpenTroubleshooters)
+
+# Create a hyperlink to run Windows Memory Test
+$linkRunMemoryTest = New-Object System.Windows.Forms.LinkLabel
+$linkRunMemoryTest.Text = "Run Memory Test"
+$linkRunMemoryTest.AutoSize = $true
+$linkRunMemoryTest.Location = New-Object System.Drawing.Point($column2X, 90)
+$linkRunMemoryTest.Add_LinkClicked({
+        # Run Windows Memory Test
+        Write-Host "Running Windows Memory Test..." -ForegroundColor Yellow
+        Start-Process mdsched.exe
+    })
+$sectionSystem.Controls.Add($linkRunMemoryTest)
 
 ######################
 # Office Apps section#
