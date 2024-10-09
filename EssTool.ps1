@@ -855,7 +855,7 @@ $buttonInstall.Add_Click({
             Start-Process "winget" -ArgumentList "install --id 9WZDNCRFJ3PS -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
         }
         if ($checkboxMicrosoftSARA.Checked) {
-            Start-Process "winget" -ArgumentList "install --id Microsoft.SupportandRecoveryAssistant -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            Start-Process "winget" -ArgumentList "install --id Microsoft.SupportAndRecoveryAssistant -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
         }
         [System.Windows.Forms.MessageBox]::Show("Selected packages have been installed.")
     })
@@ -893,32 +893,30 @@ $tabInstall.Controls.Add($buttonGetPackages)
 
 # Define the action for the Get Packages button
 $buttonGetPackages.Add_Click({
-        # Check if the showInstalled checkbox is checked
+    # Check if the showInstalled checkbox is checked
+    $showInstalledCheckbox = $tabInstall.Controls | Where-Object { $_.Name -eq "showInstalled" -and $_.Checked }
+    if ($showInstalledCheckbox) {
+        Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
+    }
 
-        $showInstalledCheckbox = $tabInstall.Controls | Where-Object { $_.Name -eq "showInstalled" -and $_.Checked }
-        if ($showInstalledCheckbox) {
-            Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
-        }
+    # Run the Get-WinGetPackage command and capture the output directly
+    $output = Get-WinGetPackage
+    # Extract the package names from the output
+    $packageNames = $output | Select-Object -ExpandProperty Name
 
-        # Run the winget list command and capture the output directly
-        $output = & winget list
-        # Split the output into lines and skip the first two lines (headers)
-        $outputLines = $output -split '\r?\n'
-
-        # Iterate through each control in the install tab
-        foreach ($control in $tabInstall.Controls) {
-            if ($control -is [System.Windows.Forms.CheckBox]) {
-                $checkboxName = $control.Name
-                # Check if the checkbox name is present in the output lines
-                if ($outputLines -match $checkboxName) {
-                    $control.Checked = $true
-                }
-                else {
-                    $control.Checked = $false
-                }
+    # Iterate through each control in the install tab
+    foreach ($control in $tabInstall.Controls) {
+        if ($control -is [System.Windows.Forms.CheckBox]) {
+            $checkboxName = $control.Name
+            # Check if the checkbox name is present in the package names
+            if ($packageNames -contains $checkboxName) {
+                $control.Checked = $true
+            } else {
+                $control.Checked = $false
             }
         }
-    })
+    }
+})
 
 # Create a Check/Uncheck All button in the Install tab
 $buttonCheckAll = New-Object System.Windows.Forms.Button
