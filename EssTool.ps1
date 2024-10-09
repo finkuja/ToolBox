@@ -1575,16 +1575,15 @@ $linkResetEdge.Add_LinkClicked({
                 }
             }
 
-            # Step 3: Uninstall Edge using setup.exe
+            # Step 3: Uninstall Edge using Get-AppxPackage and Remove-AppxPackage
             Write-Host "Uninstalling Edge browser..."
-            $edgeInstallPath = "$env:ProgramFiles (x86)\Microsoft\Edge\Application"
-            $setupExePath = Get-ChildItem -Path $edgeInstallPath -Recurse -Filter "setup.exe" | Select-Object -First 1 -ExpandProperty FullName
-            if ($setupExePath) {
-                Start-Process $setupExePath -ArgumentList "--uninstall --system-level --force-uninstall --verbose-logging --do-not-launch-chrome" -NoNewWindow -Wait
+            try {
+                $edgePackage = Get-AppxPackage -Name "Microsoft.MicrosoftEdge.Stable" -ErrorAction Stop
+                Remove-AppxPackage -Package $edgePackage.PackageFullName -AllUsers -ErrorAction Stop
                 Write-Host "Edge browser has been uninstalled." -ForegroundColor Green
             }
-            else {
-                $errorMessage = "Edge setup path not found."
+            catch {
+                $errorMessage = "Failed to uninstall Edge browser. Error: $_"
                 Write-Host $errorMessage -ForegroundColor Red
                 $errors += $errorMessage
             }
