@@ -1030,7 +1030,7 @@ $tabInstall.Controls.Add($checkboxChrome)
 
 $checkboxFiddler = New-Object System.Windows.Forms.CheckBox
 $checkboxFiddler.Text = "Fiddler"
-$checkboxFiddler.Name = "Fiddler"
+$checkboxFiddler.Name = "Fiddler Classic"
 $checkboxFiddler.AutoSize = $true
 $checkboxFiddler.Location = New-Object System.Drawing.Point($column1X, 110)
 $tabInstall.Controls.Add($checkboxFiddler)
@@ -1149,7 +1149,7 @@ $tabInstall.Controls.Add($checkboxVisio)
 
 $checkboxVisualStudioCode = New-Object System.Windows.Forms.CheckBox
 $checkboxVisualStudioCode.Text = "Visual Studio Code"
-$checkboxVisualStudioCode.Name = "Visual Studio Code"
+$checkboxVisualStudioCode.Name = "Microsoft Visual Studio Code"
 $checkboxVisualStudioCode.AutoSize = $true
 $checkboxVisualStudioCode.Location = New-Object System.Drawing.Point($column3X, 20)
 $tabInstall.Controls.Add($checkboxVisualStudioCode)
