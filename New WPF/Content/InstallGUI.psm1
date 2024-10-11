@@ -2,7 +2,7 @@ function Invoke-Install {
     [CmdletBinding()]
     param (
         [switch]$DisableInstall,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [System.Windows.Window]$MainWindow
     )
 
@@ -96,15 +96,16 @@ function Invoke-Install {
         </Grid>
 "@
 
-#################
-## End of XAML ##
-#################
+    #################
+    ## End of XAML ##
+    #################
 
-# Load the XAML
+    # Load the XAML
     try {
         $reader = (New-Object System.Xml.XmlTextReader -ArgumentList (New-Object System.IO.StringReader -ArgumentList $xaml))
         $installTabContent = [Windows.Markup.XamlReader]::Load($reader)
-    } catch {
+    }
+    catch {
         Write-Host "Failed to load XAML: $_" -ForegroundColor Red
         return
     }
@@ -137,179 +138,79 @@ function Invoke-Install {
         $checkAllButton.IsEnabled = $false
     }
 
+    function Invoke-WingetCommand($action, $id) {
+        Start-Process "winget" -ArgumentList "$action --id $id -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    }
+
+    $checkboxActions = @{
+        "AdobeAcrobat"                         = "Adobe.Acrobat.Reader.64-bit"
+        "AdobeCreativeCloud"                   = "Adobe.CreativeCloud"
+        "GoogleChrome"                         = "Google.Chrome"
+        "MicrosoftEdge"                        = "Microsoft.Edge"
+        "FiddlerClassic"                       = "Telerik.Fiddler.Classic"
+        "MozillaFirefox"                       = "Mozilla.Firefox"
+        "HWMonitor"                            = "CPUID.HWMonitor"
+        "MicrosoftSupportAndRecoveryAssistant" = "Microsoft.SupportAndRecoveryAssistant"
+        "MicrosoftDotNetRuntime"               = @("Microsoft.DotNet.DesktopRuntime.3_1", "Microsoft.DotNet.DesktopRuntime.5", "Microsoft.DotNet.DesktopRuntime.6", "Microsoft.DotNet.DesktopRuntime.7", "Microsoft.DotNet.DesktopRuntime.8")
+        "Microsoft365AppsForEnterprise"        = "Microsoft.Office"
+        "MicrosoftOneDrive"                    = "Microsoft.OneDrive"
+        "MicrosoftOneNote"                     = "XPFFZHVGQWWLHB"
+        "PowerAutomate"                        = "9NFTCH6J7FHV"
+        "PowerBIDesktop"                       = "Microsoft.PowerBI"
+        "PowerToys"                            = "Microsoft.PowerToys"
+        "QuickAssist"                          = "9P7BP5VNWKX5"
+        "MicrosoftRemoteDesktop"               = "9WZDNCRFJ3PS"
+        "SurfaceDiagnosticToolkit"             = "9NF1MR6C60ZF"
+        "MicrosoftTeams"                       = "Microsoft.Teams"
+        "MicrosoftVisioViewer"                 = "Microsoft.VisioViewer"
+        "MicrosoftVisualStudioCode"            = "Microsoft.VisualStudioCode"
+        "SevenZip"                             = "7zip.7zip"
+    }
+
     # Define the action for the Install button
     $installButton.Add_Click({
-        $checkboxes = $installTabContent.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] -and $_.IsChecked }
-        foreach ($checkbox in $checkboxes) {
-            switch ($checkbox.Name) {
-                "AdobeAcrobat" {
-                    Start-Process "winget" -ArgumentList "install --id Adobe.Acrobat.Reader.64-bit -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            $checkboxes = $installTabContent.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] -and $_.IsChecked }
+            foreach ($checkbox in $checkboxes) {
+                $id = $checkboxActions[$checkbox.Name]
+                if ($id -is [Array]) {
+                    foreach ($subId in $id) {
+                        Invoke-WingetCommand "install" $subId
+                    }
                 }
-                "AdobeCreativeCloud" {
-                    Start-Process "winget" -ArgumentList "install --id Adobe.CreativeCloud -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+                else {
+                    Invoke-WingetCommand "install" $id
                 }
-                "GoogleChrome" {
-                    Start-Process "winget" -ArgumentList "install --id Google.Chrome -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftEdge" {
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.Edge -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "FiddlerClassic" {
-                    Start-Process "winget" -ArgumentList "install --id Telerik.Fiddler.Classic -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MozillaFirefox" {
-                    Start-Process "winget" -ArgumentList "install --id Mozilla.Firefox -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "HWMonitor" {
-                    Start-Process "winget" -ArgumentList "install --id CPUID.HWMonitor -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftSupportAndRecoveryAssistant" {
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.SupportAndRecoveryAssistant -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftDotNetRuntime" {
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.3_1 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.6 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.7 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.DotNet.DesktopRuntime.8 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "Microsoft365AppsForEnterprise" {
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.Office -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftOneDrive" {
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.OneDrive -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftOneNote" {
-                    Start-Process "winget" -ArgumentList "install --id XPFFZHVGQWWLHB -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "PowerAutomate" {
-                    Start-Process "winget" -ArgumentList "install --id 9NFTCH6J7FHV -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "PowerBIDesktop" {
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.PowerBI -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "PowerToys" {
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.PowerToys -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "QuickAssist" {
-                    Start-Process "winget" -ArgumentList "install --id 9P7BP5VNWKX5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftRemoteDesktop" {
-                    Start-Process "winget" -ArgumentList "install --id 9WZDNCRFJ3PS -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "SurfaceDiagnosticToolkit" {
-                    Start-Process "winget" -ArgumentList "install --id 9NF1MR6C60ZF -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftTeams" {
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.Teams -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftVisioViewer" {
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.VisioViewer -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftVisualStudioCode" {
-                    Start-Process "winget" -ArgumentList "install --id Microsoft.VisualStudioCode -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "SevenZip" {
-                    Start-Process "winget" -ArgumentList "install --id 7zip.7zip -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-
             }
-        }
-    })
+        })
 
     # Define the action for the Uninstall button
     $uninstallButton.Add_Click({
-        $checkboxes = $installTabContent.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] -and $_.IsChecked }
-        foreach ($checkbox in $checkboxes) {
-            switch ($checkbox.Name) {
-                "AdobeAcrobat" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Adobe.Acrobat.Reader.64-bit -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+            $checkboxes = $installTabContent.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] -and $_.IsChecked }
+            foreach ($checkbox in $checkboxes) {
+                $id = $checkboxActions[$checkbox.Name]
+                if ($id -is [Array]) {
+                    foreach ($subId in $id) {
+                        Invoke-WingetCommand "uninstall" $subId
+                    }
                 }
-                "AdobeCreativeCloud" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Adobe.CreativeCloud -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+                else {
+                    Invoke-WingetCommand "uninstall" $id
                 }
-                "GoogleChrome" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Google.Chrome -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftEdge" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.Edge -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "FiddlerClassic" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Telerik.Fiddler.Classic -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MozillaFirefox" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Mozilla.Firefox -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "HWMonitor" {
-                    Start-Process "winget" -ArgumentList "uninstall --id CPUID.HWMonitor -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftSupportAndRecoveryAssistant" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.SupportAndRecoveryAssistant -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftDotNetRuntime" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.DotNet.DesktopRuntime.3_1 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.DotNet.DesktopRuntime.5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.DotNet.DesktopRuntime.6 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.DotNet.DesktopRuntime.7 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.DotNet.DesktopRuntime.8 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "Microsoft365AppsForEnterprise" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.Office -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftOneDrive" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.OneDrive -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftOneNote" {
-                    Start-Process "winget" -ArgumentList "uninstall --id XPFFZHVGQWWLHB -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "PowerAutomate" {
-                    Start-Process "winget" -ArgumentList "uninstall --id 9NFTCH6J7FHV -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "PowerBIDesktop" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.PowerBI -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "PowerToys" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.PowerToys -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "QuickAssist" {
-                    Start-Process "winget" -ArgumentList "uninstall --id 9P7BP5VNWKX5 -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftRemoteDesktop" {
-                    Start-Process "winget" -ArgumentList "uninstall --id 9WZDNCRFJ3PS -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "SurfaceDiagnosticToolkit" {
-                    Start-Process "winget" -ArgumentList "uninstall --id 9NF1MR6C60ZF -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftTeams" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.Teams -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftVisioViewer" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.VisioViewer -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "MicrosoftVisualStudioCode" {
-                    Start-Process "winget" -ArgumentList "uninstall --id Microsoft.VisualStudioCode -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                "SevenZip" {
-                    Start-Process "winget" -ArgumentList "uninstall --id 7zip.7zip -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-
-                # Add more cases for other checkboxes as needed
             }
-        }
-    })
+        })
 
     # Define the action for the Get Installed button
     $getPackagesButton.Add_Click({
-        Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
-    })
+            Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
+        })
 
     # Define the action for the Check All button
     $checkAllButton.Add_Click({
-        foreach ($control in $installTabContent.Children) {
-            if ($control -is [System.Windows.Controls.CheckBox]) {
-                $control.IsChecked = $true
+            foreach ($control in $installTabContent.Children) {
+                if ($control -is [System.Windows.Controls.CheckBox]) {
+                    $control.IsChecked = $true
+                }
             }
-        }
-    })
+        })
 }
 Export-ModuleMember -Function Invoke-Install
