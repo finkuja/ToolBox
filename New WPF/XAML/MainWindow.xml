@@ -1,0 +1,80 @@
+<!-- This XAML Document is used to define all the controls of the main window -->
+$xaml = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="ESSToolBox" Height="450" Width="800" WindowStartupLocation="CenterScreen" AllowsTransparency="True" WindowStyle="None" Background="Transparent" ResizeMode="NoResize">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CornerRadius="10" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+    <Border Background="#383131" CornerRadius="10" BorderBrush="Gray" BorderThickness="1">
+        <Grid Name="WindowControlPanel">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <DockPanel LastChildFill="True">
+                <Button Name="CloseButton" DockPanel.Dock="Right" Width="40" Height="40" Margin="5" Background="Transparent" BorderBrush="Transparent" Foreground="White" Cursor="Hand">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                <TextBlock x:Name="CloseIcon" Text="&#xE10A;" FontFamily="Segoe MDL2 Assets" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="CloseIcon" Property="Foreground" Value="#E30101"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="ESSToolBox" Margin="10,0,0,0" FontSize="16" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="Beta v 0.2" Margin="5,0,0,0" FontSize="16" Foreground="White"/>
+                </StackPanel>
+            </DockPanel>
+            <TabControl Grid.Row="1" Name="MainTabControl" Background="Transparent" BorderBrush="Transparent" BorderThickness="0">
+                <TabControl.Resources>
+                    <Style TargetType="TabItem">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TabItem">
+                                    <Border Name="Border" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" CornerRadius="10" Margin="2">
+                                        <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" Margin="10,2"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Border" Property="Background" Value="#185FF8"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="False">
+                                            <Setter Property="Foreground" Value="#185FF8"/>
+                                        </Trigger>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Foreground" Value="Gray"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TabControl.Resources>
+                <TabItem Header="Install" Name="InstallTab" FontSize="14">
+                    <Grid Name="InstallTabGrid" Background="Transparent">
+                        <TextBlock Text="Install Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Tweak" Name="TweakTab" FontSize="14">
+                    <Grid Background="Transparent">
+                        <TextBlock Text="Tweak Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Fix" Name="FixTab" FontSize="14">
+                    <Grid Background="Transparent">
+                        <TextBlock Text="Fix Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </Border>
+</Window>
+"@

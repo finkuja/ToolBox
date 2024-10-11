@@ -82,93 +82,6 @@ else {
     Write-Host "Running with administrator privileges." -ForegroundColor Green
 }
 
-# Check the system architecture
-$cpuInfo = Get-WmiObject -Class Win32_Processor | Select-Object -First 1 -Property Name, Manufacturer, Description, Architecture
-
-switch ($cpuInfo.Architecture) {
-    0 {
-        Write-Host "CPU Architecture: x86 (32-bit)"
-        $disableInstall = $false
-    }
-    9 {
-        Write-Host "CPU Architecture: x64 (64-bit)"
-        $disableInstall = $false
-    }
-    5 {
-        Write-Host "CPU Architecture: ARM"
-        $disableInstall = $true
-    }
-    default {
-        Write-Host "CPU Architecture: Unknown"
-        $disableInstall = $true
-    }
-}
-
-Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
-
-# Check if winget is installed
-Write-Host "Checking if Windows Package Manager (winget) is installed..."
-$winget = Get-Command winget -ErrorAction SilentlyContinue
-if ($null -eq $winget) {
-    [System.Windows.Forms.MessageBox]::Show("Windows Package Manager (winget) is not installed. Please install it from https://github.com/microsoft/winget-cli/releases")
-    Start-Process "https://github.com/microsoft/winget-cli/releases"
-    exit
-}
-else {
-    Write-Host "Windows Package Manager (winget) is installed." -ForegroundColor Green
-    
-    # Update winget sources
-    Write-Host "Updating winget sources..."
-    try {
-        Start-Process "winget" -ArgumentList "source update" -NoNewWindow -Wait
-        Write-Host "Winget sources updated successfully." -ForegroundColor Green
-    }
-    catch {
-        Write-Host "Failed to update winget sources." -ForegroundColor Red
-    }
-}
-
-# Check if winget module is installed and up to date, if not install or update it
-$moduleName = "Microsoft.WinGet.Client"
-$module = Get-Module -Name $moduleName -ListAvailable -ErrorAction SilentlyContinue
-
-if (-not $module) {
-    Write-Host "Installing the $moduleName module..." -ForegroundColor Yellow
-    try {
-        Install-Module -Name $moduleName -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
-        Write-Host "$moduleName module installed successfully." -ForegroundColor Green
-    }
-    catch {
-        Write-Warning "Failed to install the $moduleName module"
-    }
-}
-else {
-    Write-Host "$moduleName module is already installed. Checking for updates..." -ForegroundColor Yellow
-    try {
-        $updateAvailable = Find-Module -Name $moduleName | Where-Object { $_.Version -gt $module.Version }
-        if ($updateAvailable) {
-            Write-Host "Updating the $moduleName module to the latest version..." -ForegroundColor Yellow
-            Update-Module -Name $moduleName -Force -ErrorAction Stop
-            Write-Host "$moduleName module updated successfully." -ForegroundColor Green
-        }
-        else {
-            Write-Host "$moduleName module is up to date." -ForegroundColor Green
-        }
-    }
-    catch {
-        Write-Warning "Failed to check for updates or update the $moduleName module."
-    }
-}
-
-# Import the winget module
-try {
-    Import-Module -Name Microsoft.WinGet.Client -ErrorAction Stop
-    Write-Host "Microsoft.WinGet.Client module is imported." -ForegroundColor Green
-}
-catch {
-    Write-Warning "Failed to import the Microsoft.WinGet.Client module. The Install Tab will not work properly."
-}
-
 # Determine the script directory
 if ($PSScriptRoot) {
     $scriptDir = $PSScriptRoot
@@ -180,146 +93,83 @@ else {
     $scriptDir = [System.IO.Path]::GetDirectoryName([System.Reflection.Assembly]::GetExecutingAssembly().Location)
 }
 
-# Define the paths to the modules in the script directory
-$installModulePath = [System.IO.Path]::Combine($scriptDir, "Content", "InstallGUI.psm1")
-$tweakModulePath = [System.IO.Path]::Combine($scriptDir, "Content", "TweakGUI.psm1")
-$fixModulePath = [System.IO.Path]::Combine($scriptDir, "Content", "FixGUI.psm1")
+# Define the paths to the Content and Functions folders
+$contentDir = [System.IO.Path]::Combine($scriptDir, "Content")
+$functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 
-if (-not $OfflineMode) {
-    # Define the URLs for the module files
-    $installModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Content/InstallGUI.psm1"
-    $tweakModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Content/TweakGUI.psm1"
-    $fixModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Content/FixGUI.psm1"
+# Debugging output
+Write-Host "Script Directory: $scriptDir" -ForegroundColor Cyan
+Write-Host "Content Directory: $contentDir" -ForegroundColor Cyan
+Write-Host "Functions Directory: $functionsDir" -ForegroundColor Cyan
 
-    # Define the paths to the modules in the temporary directory
-    $tempDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
-    if (-not (Test-Path -Path $tempDir)) {
-        New-Item -ItemType Directory -Path $tempDir | Out-Null
+# List the contents of the script directory
+Write-Host "Listing contents of the script directory:" -ForegroundColor Cyan
+Get-ChildItem -Path $scriptDir | ForEach-Object { Write-Host $_.FullName -ForegroundColor Cyan }
+
+# Check if the Content and Functions folders exist
+$contentExists = Test-Path -Path $contentDir
+$functionsExists = Test-Path -Path $functionsDir
+
+Write-Host "Content Directory Exists: $contentExists" -ForegroundColor Cyan
+Write-Host "Functions Directory Exists: $functionsExists" -ForegroundColor Cyan
+
+if (-not $contentExists -or -not $functionsExists) {
+    Write-Host "Content or Functions folder is missing." -ForegroundColor Red
+    if (-not $OfflineMode) {
+        # Define the URLs for the Content and Functions folders
+        $contentUrl = "https://github.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Content"
+        $functionsUrl = "https://github.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Functions"
+
+        # Define the paths to the temporary directories
+        $tempDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
+        if (-not (Test-Path -Path $tempDir)) {
+            New-Item -ItemType Directory -Path $tempDir | Out-Null
+        }
+
+        $contentDir = [System.IO.Path]::Combine($tempDir, "Content")
+        $functionsDir = [System.IO.Path]::Combine($tempDir, "Functions")
+
+        # Download the Content and Functions folders
+        Invoke-RestMethod -Uri "$contentUrl/MainWindow.xml" -OutFile [System.IO.Path]::Combine($contentDir, "MainWindow.xml")
+        Invoke-RestMethod -Uri "$functionsUrl/Install.ps1" -OutFile [System.IO.Path]::Combine($functionsDir, "Install.ps1")
+        Invoke-RestMethod -Uri "$functionsUrl/Tweak.ps1" -OutFile [System.IO.Path]::Combine($functionsDir, "Tweak.ps1")
+        Invoke-RestMethod -Uri "$functionsUrl/Fix.ps1" -OutFile [System.IO.Path]::Combine($functionsDir, "Fix.ps1")
     }
-
-    $installModulePath = [System.IO.Path]::Combine($tempDir, "InstallGUI.psm1")
-    $tweakModulePath = [System.IO.Path]::Combine($tempDir, "TweakGUI.psm1")
-    $fixModulePath = [System.IO.Path]::Combine($tempDir, "FixGUI.psm1")
-
-    # Download the module files
-    Invoke-RestMethod -Uri $installModuleUrl -OutFile $installModulePath
-    Invoke-RestMethod -Uri $tweakModuleUrl -OutFile $tweakModulePath
-    Invoke-RestMethod -Uri $fixModuleUrl -OutFile $fixModulePath
+    else {
+        Write-Host "The Content and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
+        exit
+    }
 }
 
-# Check if the Install module exists and import it
-if (Test-Path -Path $installModulePath) {
-    Import-Module -Name $installModulePath -Force
-}
-else {
-    Write-Host "The Install module at path '$installModulePath' cannot be found." -ForegroundColor Red
+# Check if the Content folder and MainWindow.xml file exist
+$mainWindowExists = Test-Path -Path [System.IO.Path]::Combine($contentDir, "MainWindow.xml")
+Write-Host "MainWindow.xml Exists: $mainWindowExists" -ForegroundColor Cyan
+
+if (-not $mainWindowExists) {
+    Write-Host "The Content folder or MainWindow.xml file cannot be found." -ForegroundColor Red
+    exit
 }
 
-# Check if the Tweak module exists and import it
-if (Test-Path -Path $tweakModulePath) {
-    Import-Module -Name $tweakModulePath -Force
+# Check if the Functions folder and required .ps1 files exist
+$requiredFunctions = @("Install.ps1", "Tweak.ps1", "Fix.ps1")
+foreach ($function in $requiredFunctions) {
+    $functionPath = [System.IO.Path]::Combine($functionsDir, $function)
+    $functionExists = Test-Path -Path $functionPath
+    Write-Host "Checking for ${functionPath}: $functionExists" -ForegroundColor Cyan
+    if (-not $functionExists) {
+        Write-Host "The Functions folder or $function file cannot be found." -ForegroundColor Red
+        exit
+    }
 }
-else {
-    Write-Host "The Tweak module at path '$tweakModulePath' cannot be found." -ForegroundColor Red
-}
-
-# Check if the Fix module exists and import it
-if (Test-Path -Path $fixModulePath) {
-    Import-Module -Name $fixModulePath -Force
-}
-else {
-    Write-Host "The Fix module at path '$fixModulePath' cannot be found." -ForegroundColor Red
-}
-
-################################
-# Main Menu Display  using WPF #
-################################
 
 # Load the PresentationFramework assembly for XAML support
 Add-Type -AssemblyName PresentationFramework
-# Load teh winforms assembly for message box support
+# Load the winforms assembly for message box support
 Add-Type -AssemblyName System.Windows.Forms
 
-# Define the XAML for the main window with rounded corners using WindowChrome
-$xaml = @"
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="ESSToolBox" Height="450" Width="800" WindowStartupLocation="CenterScreen" AllowsTransparency="True" WindowStyle="None" Background="Transparent" ResizeMode="NoResize">
-    <WindowChrome.WindowChrome>
-        <WindowChrome CornerRadius="10" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
-    </WindowChrome.WindowChrome>
-    <Border Background="#383131" CornerRadius="10" BorderBrush="Gray" BorderThickness="1">
-        <Grid Name="WindowControlPanel">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <DockPanel LastChildFill="True">
-                <Button Name="CloseButton" DockPanel.Dock="Right" Width="40" Height="40" Margin="5" Background="Transparent" BorderBrush="Transparent" Foreground="White" Cursor="Hand">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
-                                <TextBlock x:Name="CloseIcon" Text="&#xE10A;" FontFamily="Segoe MDL2 Assets" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="CloseIcon" Property="Foreground" Value="#E30101"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="ESSToolBox" Margin="10,0,0,0" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Text="Beta v 0.2" Margin="5,0,0,0" FontSize="16" Foreground="White"/>
-                </StackPanel>
-            </DockPanel>
-            <TabControl Grid.Row="1" Name="MainTabControl" Background="Transparent" BorderBrush="Transparent" BorderThickness="0">
-                <TabControl.Resources>
-                    <Style TargetType="TabItem">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="TabItem">
-                                    <Border Name="Border" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" CornerRadius="10" Margin="2">
-                                        <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" Margin="10,2"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="Border" Property="Background" Value="#185FF8"/>
-                                            <Setter Property="Foreground" Value="White"/>
-                                        </Trigger>
-                                        <Trigger Property="IsSelected" Value="False">
-                                            <Setter Property="Foreground" Value="#185FF8"/>
-                                        </Trigger>
-                                        <Trigger Property="IsEnabled" Value="False">
-                                            <Setter Property="Foreground" Value="Gray"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </TabControl.Resources>
-                <TabItem Header="Install" Name="InstallTab" FontSize="14">
-                    <Grid Name="InstallTabGrid" Background="Transparent">
-                        <TextBlock Text="Install Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
-                    </Grid>
-                </TabItem>
-                <TabItem Header="Tweak" Name="TweakTab" FontSize="14">
-                    <Grid Background="Transparent">
-                        <TextBlock Text="Tweak Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
-                    </Grid>
-                </TabItem>
-                <TabItem Header="Fix" Name="FixTab" FontSize="14">
-                    <Grid Background="Transparent">
-                        <TextBlock Text="Fix Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
-                    </Grid>
-                </TabItem>
-            </TabControl>
-        </Grid>
-    </Border>
-</Window>
-"@
+# Read the XAML file content
+$xamlFilePath = [System.IO.Path]::Combine($contentDir, "MainWindow.xml")
+$xaml = Get-Content -Path $xamlFilePath -Raw
 
 # Load the XAML
 try {
@@ -398,13 +248,22 @@ $mainTabControl.Add_SelectionChanged({
         $selectedTab = $source.SelectedItem
         switch ($selectedTab.Name) {
             "InstallTab" {
-                Invoke-Install -MainWindow $window
+                $installScriptPath = [System.IO.Path]::Combine($functionsDir, "Install.ps1")
+                if (Test-Path -Path $installScriptPath) {
+                    Invoke-Expression -Command (Get-Content -Path $installScriptPath -Raw)
+                }
             }
             "TweakTab" {
-                # Add corresponding function call for TweakTab if needed
+                $tweakScriptPath = [System.IO.Path]::Combine($functionsDir, "Tweak.ps1")
+                if (Test-Path -Path $tweakScriptPath) {
+                    Invoke-Expression -Command (Get-Content -Path $tweakScriptPath -Raw)
+                }
             }
             "FixTab" {
-                # Add corresponding function call for FixTab if needed
+                $fixScriptPath = [System.IO.Path]::Combine($functionsDir, "Fix.ps1")
+                if (Test-Path -Path $fixScriptPath) {
+                    Invoke-Expression -Command (Get-Content -Path $fixScriptPath -Raw)
+                }
             }
         }
     })
