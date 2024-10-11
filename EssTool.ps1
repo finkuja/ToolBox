@@ -953,7 +953,7 @@ else {
 }
 
 # Add Microsoft Corporation to the trusted list
-Add-PublisherToTrustedList -publisher "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
+#Add-PublisherToTrustedList -publisher "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
 
 # Import the winget module
 try {
@@ -2275,140 +2275,142 @@ $linkFixOutlook.Add_LinkClicked({
         $formFixOutlook.MinimizeBox = $false
 
         # Create a hyperlink to rebuild .OST file
-$linkRebuildOST = New-Object System.Windows.Forms.LinkLabel
-$linkRebuildOST.Text = "Rebuild .OST file"
-$linkRebuildOST.AutoSize = $true
-$linkRebuildOST.Location = New-Object System.Drawing.Point(10, 10)
-$linkRebuildOST.Add_LinkClicked({
-    # Prompt the user for confirmation
-    $result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
-    if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-        # Check if Outlook and Teams are running
-        $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
-        $teamsRunning = @()
-        $teamsRunning += Get-Process -Name Teams -ErrorAction SilentlyContinue
-        $teamsRunning += Get-Process -Name ms-teams -ErrorAction SilentlyContinue
-        $teamsRunning = $teamsRunning | Where-Object { $_ -ne $null }
+        $linkRebuildOST = New-Object System.Windows.Forms.LinkLabel
+        $linkRebuildOST.Text = "Rebuild .OST file"
+        $linkRebuildOST.AutoSize = $true
+        $linkRebuildOST.Location = New-Object System.Drawing.Point(10, 10)
+        $linkRebuildOST.Add_LinkClicked({
+                # Prompt the user for confirmation
+                $result = [System.Windows.Forms.MessageBox]::Show("This action will force quit Outlook and Teams. Please save any important work before proceeding. Do you want to continue?", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+                if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                    # Check if Outlook and Teams are running
+                    $outlookRunning = Get-Process -Name Outlook -ErrorAction SilentlyContinue
+                    $teamsRunning = @()
+                    $teamsRunning += Get-Process -Name Teams -ErrorAction SilentlyContinue
+                    $teamsRunning += Get-Process -Name ms-teams -ErrorAction SilentlyContinue
+                    $teamsRunning = $teamsRunning | Where-Object { $_ -ne $null }
 
-        # Terminate Outlook and Teams
-        if ($outlookRunning) {
-            Stop-Process -Name Outlook -Force
-        }
-        foreach ($teamProcess in $teamsRunning) {
-            Stop-Process -Id $teamProcess.Id -Force
-        }
+                    # Terminate Outlook and Teams
+                    if ($outlookRunning) {
+                        Stop-Process -Name Outlook -Force
+                    }
+                    foreach ($teamProcess in $teamsRunning) {
+                        Stop-Process -Id $teamProcess.Id -Force
+                    }
 
-        # Path to the Outlook .ost files
-        $ostPath = "$env:LOCALAPPDATA\Microsoft\Outlook"
+                    # Path to the Outlook .ost files
+                    $ostPath = "$env:LOCALAPPDATA\Microsoft\Outlook"
 
-        # Check if the path exists
-        if (Test-Path $ostPath) {
-            # Function to load files into the CheckedListBox
-            function Get-Files {
-                param (
-                    [System.Windows.Forms.CheckedListBox]$checkedListBox,
-                    [bool]$showBackups
-                )
-                $checkedListBox.Items.Clear()
-                $filter = if ($showBackups) { "*.bak" } else { "*.ost" }
-                $files = Get-ChildItem -Path $ostPath -Filter $filter -Recurse -ErrorAction SilentlyContinue
-                foreach ($file in $files) {
-                    $checkedListBox.Items.Add($file.FullName)
+                    # Check if the path exists
+                    if (Test-Path $ostPath) {
+                        # Function to load files into the CheckedListBox
+                        function Get-Files {
+                            param (
+                                [System.Windows.Forms.CheckedListBox]$checkedListBox,
+                                [bool]$showBackups
+                            )
+                            $checkedListBox.Items.Clear()
+                            $filter = if ($showBackups) { "*.bak" } else { "*.ost" }
+                            $files = Get-ChildItem -Path $ostPath -Filter $filter -Recurse -ErrorAction SilentlyContinue
+                            foreach ($file in $files) {
+                                $checkedListBox.Items.Add($file.FullName)
+                            }
+                        }
+
+                        # Create a form to display the list of .ost files
+                        $form = New-Object System.Windows.Forms.Form
+                        $form.Text = "Select .OST Files"
+                        $form.Size = New-Object System.Drawing.Size(800, 400)  # Set a wider form size
+                        $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+
+                        $label = New-Object System.Windows.Forms.Label
+                        $label.Text = "Select the .ost files to delete or rename:"
+                        $label.AutoSize = $true
+                        $label.Location = New-Object System.Drawing.Point(10, 10)
+                        $form.Controls.Add($label)
+
+                        $checkedListBox = New-Object System.Windows.Forms.CheckedListBox
+                        $checkedListBox.Size = New-Object System.Drawing.Size(760, 280)  # Adjust the size to fit within the form
+                        $checkedListBox.Location = New-Object System.Drawing.Point(10, 40)
+                        $form.Controls.Add($checkedListBox)
+
+                        $seeBackupsCheckbox = New-Object System.Windows.Forms.CheckBox
+                        $seeBackupsCheckbox.Text = "Show .bak files"
+                        $seeBackupsCheckbox.AutoSize = $true
+                        $seeBackupsCheckbox.Location = New-Object System.Drawing.Point(280, 330)
+                        $seeBackupsCheckbox.Add_CheckedChanged({
+                                Get-Files -checkedListBox $checkedListBox -showBackups $seeBackupsCheckbox.Checked
+                            })
+                        $form.Controls.Add($seeBackupsCheckbox)
+
+                        $deleteButton = New-Object System.Windows.Forms.Button
+                        $deleteButton.Text = "Delete"
+                        $deleteButton.Location = New-Object System.Drawing.Point(10, 330)
+                        $deleteButton.Add_Click({
+                                $deletedFiles = $checkedListBox.CheckedItems | ForEach-Object {
+                                    Remove-Item -Path $_ -Force
+                                    $_
+                                }
+                                if ($seeBackupsCheckbox.Checked) {
+                                    Write-Host "Selected .bak files have been deleted:" -ForegroundColor Green
+                                }
+                                else {
+                                    Write-Host "Selected .ost files have been deleted:" -ForegroundColor Green
+                                }
+                                $deletedFiles | ForEach-Object { Write-Host $_ -ForegroundColor Green }
+                                $form.Close()
+                            })
+                        $form.Controls.Add($deleteButton)
+
+                        $renameButton = New-Object System.Windows.Forms.Button
+                        $renameButton.Text = "Rename"
+                        $renameButton.Location = New-Object System.Drawing.Point(100, 330)
+                        $renameButton.Add_Click({
+                                $renamedFiles = $checkedListBox.CheckedItems | ForEach-Object {
+                                    $newName = "$($_.FullName).bak"
+                                    Rename-Item -Path $_ -NewName $newName
+                                    $newName
+                                }
+                                if ($seeBackupsCheckbox.Checked) {
+                                    Write-Host "Selected .bak files have been renamed:" -ForegroundColor Green
+                                }
+                                else {
+                                    Write-Host "Selected .ost files have been renamed:" -ForegroundColor Green
+                                }
+                                $renamedFiles | ForEach-Object { Write-Host $_ -ForegroundColor Green }
+                                $form.Close()
+                            })
+                        $form.Controls.Add($renameButton)
+
+                        $cancelButton = New-Object System.Windows.Forms.Button
+                        $cancelButton.Text = "Cancel"
+                        $cancelButton.Location = New-Object System.Drawing.Point(190, 330)
+                        $cancelButton.Add_Click({
+                                $form.Close()
+                            })
+                        $form.Controls.Add($cancelButton)
+
+                        # Load initial .ost files
+                        Get-Files -checkedListBox $checkedListBox -showBackups $false
+
+                        $form.ShowDialog()
+                    }
+                    else {
+                        Write-Host "The path to .ost files does not exist." -ForegroundColor Red
+                    }
+
+                    # Reopen Outlook and Teams if they were running before
+                    if ($outlookRunning) {
+                        Start-Process "Outlook"
+                    }
+                    foreach ($teamProcess in $teamsRunning) {
+                        Start-Process $teamProcess.Name
+                    }
+
+                    [System.Windows.Forms.MessageBox]::Show("The process is complete. Outlook and Teams have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
                 }
-            }
-
-            # Create a form to display the list of .ost files
-            $form = New-Object System.Windows.Forms.Form
-            $form.Text = "Select .OST Files"
-            $form.Size = New-Object System.Drawing.Size(800, 400)  # Set a wider form size
-            $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
-
-            $label = New-Object System.Windows.Forms.Label
-            $label.Text = "Select the .ost files to delete or rename:"
-            $label.AutoSize = $true
-            $label.Location = New-Object System.Drawing.Point(10, 10)
-            $form.Controls.Add($label)
-
-            $checkedListBox = New-Object System.Windows.Forms.CheckedListBox
-            $checkedListBox.Size = New-Object System.Drawing.Size(760, 280)  # Adjust the size to fit within the form
-            $checkedListBox.Location = New-Object System.Drawing.Point(10, 40)
-            $form.Controls.Add($checkedListBox)
-
-            $seeBackupsCheckbox = New-Object System.Windows.Forms.CheckBox
-            $seeBackupsCheckbox.Text = "Show .bak files"
-            $seeBackupsCheckbox.AutoSize = $true
-            $seeBackupsCheckbox.Location = New-Object System.Drawing.Point(280, 330)
-            $seeBackupsCheckbox.Add_CheckedChanged({
-                Get-Files -checkedListBox $checkedListBox -showBackups $seeBackupsCheckbox.Checked
             })
-            $form.Controls.Add($seeBackupsCheckbox)
-
-            $deleteButton = New-Object System.Windows.Forms.Button
-            $deleteButton.Text = "Delete"
-            $deleteButton.Location = New-Object System.Drawing.Point(10, 330)
-            $deleteButton.Add_Click({
-                $deletedFiles = $checkedListBox.CheckedItems | ForEach-Object {
-                    Remove-Item -Path $_ -Force
-                    $_
-                }
-                if ($seeBackupsCheckbox.Checked) {
-                    Write-Host "Selected .bak files have been deleted:" -ForegroundColor Green
-                } else {
-                    Write-Host "Selected .ost files have been deleted:" -ForegroundColor Green
-                }
-                $deletedFiles | ForEach-Object { Write-Host $_ -ForegroundColor Green }
-                $form.Close()
-            })
-            $form.Controls.Add($deleteButton)
-
-            $renameButton = New-Object System.Windows.Forms.Button
-            $renameButton.Text = "Rename"
-            $renameButton.Location = New-Object System.Drawing.Point(100, 330)
-            $renameButton.Add_Click({
-                $renamedFiles = $checkedListBox.CheckedItems | ForEach-Object {
-                    $newName = "$($_.FullName).bak"
-                    Rename-Item -Path $_ -NewName $newName
-                    $newName
-                }
-                if ($seeBackupsCheckbox.Checked) {
-                    Write-Host "Selected .bak files have been renamed:" -ForegroundColor Green
-                } else {
-                    Write-Host "Selected .ost files have been renamed:" -ForegroundColor Green
-                }
-                $renamedFiles | ForEach-Object { Write-Host $_ -ForegroundColor Green }
-                $form.Close()
-            })
-            $form.Controls.Add($renameButton)
-
-            $cancelButton = New-Object System.Windows.Forms.Button
-            $cancelButton.Text = "Cancel"
-            $cancelButton.Location = New-Object System.Drawing.Point(190, 330)
-            $cancelButton.Add_Click({
-                $form.Close()
-            })
-            $form.Controls.Add($cancelButton)
-
-            # Load initial .ost files
-            Get-Files -checkedListBox $checkedListBox -showBackups $false
-
-            $form.ShowDialog()
-        }
-        else {
-            Write-Host "The path to .ost files does not exist." -ForegroundColor Red
-        }
-
-        # Reopen Outlook and Teams if they were running before
-        if ($outlookRunning) {
-            Start-Process "Outlook"
-        }
-        foreach ($teamProcess in $teamsRunning) {
-            Start-Process $teamProcess.Name
-        }
-
-        [System.Windows.Forms.MessageBox]::Show("The process is complete. Outlook and Teams have been restarted if they were running before.", "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-    }
-})
-$formFixOutlook.Controls.Add($linkRebuildOST)
+        $formFixOutlook.Controls.Add($linkRebuildOST)
 
         # Create a hyperlink for Missing Teams Add-In
         $linkMissingTeamsAddIn = New-Object System.Windows.Forms.LinkLabel

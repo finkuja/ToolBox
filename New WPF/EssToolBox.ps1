@@ -82,6 +82,52 @@ else {
     Write-Host "Running with administrator privileges." -ForegroundColor Green
 }
 
+# Check the system architecture
+$cpuInfo = Get-WmiObject -Class Win32_Processor | Select-Object -First 1 -Property Name, Manufacturer, Description, Architecture
+
+switch ($cpuInfo.Architecture) {
+    0 {
+        Write-Host "CPU Architecture: x86 (32-bit)"
+        $disableInstall = $false
+    }
+    9 {
+        Write-Host "CPU Architecture: x64 (64-bit)"
+        $disableInstall = $false
+    }
+    5 {
+        Write-Host "CPU Architecture: ARM"
+        $disableInstall = $true
+    }
+    default {
+        Write-Host "CPU Architecture: Unknown"
+        $disableInstall = $true
+    }
+}
+
+Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
+
+# Check if winget is installed
+Write-Host "Checking if Windows Package Manager (winget) is installed..."
+$winget = Get-Command winget -ErrorAction SilentlyContinue
+if ($null -eq $winget) {
+    [System.Windows.Forms.MessageBox]::Show("Windows Package Manager (winget) is not installed. Please install it from https://github.com/microsoft/winget-cli/releases")
+    Start-Process "https://github.com/microsoft/winget-cli/releases"
+    exit
+}
+else {
+    Write-Host "Windows Package Manager (winget) is installed." -ForegroundColor Green
+    
+    # Update winget sources
+    Write-Host "Updating winget sources..."
+    try {
+        Start-Process "winget" -ArgumentList "source update" -NoNewWindow -Wait
+        Write-Host "Winget sources updated successfully." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Failed to update winget sources." -ForegroundColor Red
+    }
+}
+
 # Determine the script directory
 if ($PSScriptRoot) {
     $scriptDir = $PSScriptRoot
@@ -119,9 +165,14 @@ if (-not $xamlExists -or -not $functionsExists) {
 
         # Download the XAML and Functions folders
         Invoke-RestMethod -Uri "$xamlUrl/MainWindow.xml" -OutFile [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
-        Invoke-RestMethod -Uri "$functionsUrl/Install.ps1" -OutFile [System.IO.Path]::Combine($functionsDir, "Install.ps1")
-        Invoke-RestMethod -Uri "$functionsUrl/Tweak.ps1" -OutFile [System.IO.Path]::Combine($functionsDir, "Tweak.ps1")
-        Invoke-RestMethod -Uri "$functionsUrl/Fix.ps1" -OutFile [System.IO.Path]::Combine($functionsDir, "Fix.ps1")
+        # Get the list of .ps1 files in the functions directory
+        $ps1Files = Invoke-RestMethod -Uri "$functionsUrl" | Where-Object { $_ -match "\.ps1$" }
+
+        # Download each .ps1 file
+        foreach ($file in $ps1Files) {
+            $fileName = [System.IO.Path]::GetFileName($file)
+            Invoke-RestMethod -Uri "$functionsUrl/$fileName" -OutFile [System.IO.Path]::Combine($functionsDir, $fileName)
+        }
     }
     else {
         Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
@@ -129,24 +180,16 @@ if (-not $xamlExists -or -not $functionsExists) {
     }
 }
 
-# Check if the XAML folder and MainWindow.xml file exist
+# Check if the MainWindow.xml file exists
 $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
-$mainWindowExists = Test-Path -Path $mainWindowPath
-
-if (-not $mainWindowExists) {
+if (-not (Test-Path -Path $mainWindowPath)) {
     Write-Host "The XAML folder or MainWindow.xml file cannot be found." -ForegroundColor Red
     exit
 }
 
-# Check if the Functions folder and required .ps1 files exist
-$requiredFunctions = @("Install.ps1", "Tweak.ps1", "Fix.ps1")
-foreach ($function in $requiredFunctions) {
-    $functionPath = [System.IO.Path]::Combine($functionsDir, $function)
-    $functionExists = Test-Path -Path $functionPath
-    if (-not $functionExists) {
-        Write-Host "The Functions folder or $function file cannot be found." -ForegroundColor Red
-        exit
-    }
+# Source all .ps1 files in the Functions directory
+Get-ChildItem -Path $functionsDir -Filter *.ps1 | ForEach-Object {
+    . $_.FullName
 }
 
 # Load the PresentationFramework assembly for XAML support
@@ -155,8 +198,7 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Windows.Forms
 
 # Read the XAML file content
-$xamlFilePath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
-$xaml = Get-Content -Path $xamlFilePath -Raw
+$xaml = Get-Content -Path $mainWindowPath -Raw
 
 # Load the XAML directly using XamlReader
 try {
@@ -232,52 +274,115 @@ if ($disableInstall) {
 $mainTabControl.Add_SelectionChanged({
         param ($source, $e)
         $selectedTab = $source.SelectedItem
-        switch ($selectedTab.Name) {
-            "InstallTab" {
-                $installScriptPath = [System.IO.Path]::Combine($functionsDir, "Install.ps1")
-                if (Test-Path -Path $installScriptPath) {
-                    $installScriptContent = Get-Content -Path $installScriptPath -Raw
-                    if ($installScriptContent) {
-                        Invoke-Expression -Command $installScriptContent
-                    }
-                    else {
-                        Write-Host "Install script is empty: $installScriptPath" -ForegroundColor Red
-                    }
+        if ($selectedTab) {
+            $selectedTabName = $selectedTab.Name
+            switch ($selectedTabName) {
+                "InstallTab" {
+                    # Refresh the content of the InstallTab
+                    $installTabContent = $selectedTab.Content
+                    $selectedTab.Content = $null
+                    $selectedTab.Content = $installTabContent
                 }
-                else {
-                    Write-Host "Install script not found at path: $installScriptPath" -ForegroundColor Red
+                "TweakTab" {
+                    # Refresh the content of the TweakTab
+                    $tweakTabContent = $selectedTab.Content
+                    $selectedTab.Content = $null
+                    $selectedTab.Content = $tweakTabContent
                 }
-            }
-            "TweakTab" {
-                $tweakScriptPath = [System.IO.Path]::Combine($functionsDir, "Tweak.ps1")
-                if (Test-Path -Path $tweakScriptPath) {
-                    $tweakScriptContent = Get-Content -Path $tweakScriptPath -Raw
-                    if ($tweakScriptContent) {
-                        Invoke-Expression -Command $tweakScriptContent
-                    }
-                    else {
-                        Write-Host "Tweak script is empty: $tweakScriptPath" -ForegroundColor Red
-                    }
-                }
-                else {
-                    Write-Host "Tweak script not found at path: $tweakScriptPath" -ForegroundColor Red
+                "FixTab" {
+                    # Refresh the content of the FixTab
+                    $fixTabContent = $selectedTab.Content
+                    $selectedTab.Content = $null
+                    $selectedTab.Content = $fixTabContent
                 }
             }
-            "FixTab" {
-                $fixScriptPath = [System.IO.Path]::Combine($functionsDir, "Fix.ps1")
-                if (Test-Path -Path $fixScriptPath) {
-                    $fixScriptContent = Get-Content -Path $fixScriptPath -Raw
-                    if ($fixScriptContent) {
-                        Invoke-Expression -Command $fixScriptContent
-                    }
-                    else {
-                        Write-Host "Fix script is empty: $fixScriptPath" -ForegroundColor Red
-                    }
-                }
-                else {
-                    Write-Host "Fix script not found at path: $fixScriptPath" -ForegroundColor Red
-                }
+        }
+    })
+
+# Find all checkboxes in the InstallTab
+$checkboxes = @(
+    $window.FindName("AdobeCreativeCloud"),
+    $window.FindName("AdobeReaderDC"),
+    $window.FindName("GoogleChrome"),
+    $window.FindName("Fiddler"),
+    $window.FindName("HWMonitor"),
+    $window.FindName("DotNetAllVersions"),
+    $window.FindName("MicrosoftEdge"),
+    $window.FindName("MicrosoftOffice365"),
+    $window.FindName("MicrosoftOneDrive"),
+    $window.FindName("MicrosoftOneNote"),
+    $window.FindName("MicrosoftTeams"),
+    $window.FindName("MozillaFirefox"),
+    $window.FindName("PowerAutomate"),
+    $window.FindName("PowerBIDesktop"),
+    $window.FindName("PowerToys"),
+    $window.FindName("QuickAssist"),
+    $window.FindName("RemoteDesktop"),
+    $window.FindName("SARATool"),
+    $window.FindName("SurfaceDiagnosticToolkit"),
+    $window.FindName("VisioViewer2016"),
+    $window.FindName("VisualStudioCode"),
+    $window.FindName("SevenZip")
+)
+
+# Find the CheckAllButton and add a Click event handler
+$checkAllButton = $window.FindName("CheckAllButton")
+if ($null -eq $checkAllButton) {
+    Write-Host "CheckAllButton not found in XAML." -ForegroundColor Red
+    exit
+}
+
+$checkAllButton.Add_Click({
+        $allChecked = $checkboxes | ForEach-Object { $_.IsChecked } | Where-Object { $_ -eq $false } | Measure-Object | Select-Object -ExpandProperty Count
+
+        if ($allChecked -eq 0) {
+            # Uncheck all checkboxes
+            foreach ($checkbox in $checkboxes) {
+                $checkbox.IsChecked = $false
             }
+            $checkAllButton.Content = "Check All"
+        }
+        else {
+            # Check all checkboxes
+            foreach ($checkbox in $checkboxes) {
+                $checkbox.IsChecked = $true
+            }
+            $checkAllButton.Content = "Uncheck All"
+        }
+    })
+
+# Find the InstallButton and add a Click event handler
+$installButton = $window.FindName("InstallButton")
+if ($null -eq $installButton) {
+    Write-Host "InstallButton not found in XAML." -ForegroundColor Red
+    exit
+}
+
+$installButton.Add_Click({
+        # Get the names of the checked checkboxes
+        $checkedItems = $checkboxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Tag }
+
+        # Invoke the Invoke-WinGet script with the checked items
+        foreach ($item in $checkedItems) {
+            Write-Host "Installing $item..."
+            Invoke-WinGet -PackageName $item -Action Install -window $window
+        }
+    })
+
+# Find the UninstallButton and add a Click event handler
+$uninstallButton = $window.FindName("UninstallButton")
+if ($null -eq $uninstallButton) {
+    Write-Host "UninstallButton not found in XAML." -ForegroundColor Red
+    exit
+}
+$uninstallButton.Add_Click({
+        # Get the names of the checked checkboxes
+        $checkedItems = $checkboxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Tag }
+
+        # Invoke the Invoke-WinGet script with the checked items
+        foreach ($item in $checkedItems) {
+            Write-Host "Uninstalling $item..."
+            Invoke-WinGet -PackageName $item -Action Uninstall -window $window
         }
     })
 
