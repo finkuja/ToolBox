@@ -1,7 +1,6 @@
 function Invoke-Install {
     [CmdletBinding()]
     param (
-        [switch]$DisableInstall,
         [Parameter(Mandatory = $true)]
         [System.Windows.Window]$MainWindow
     )
@@ -57,42 +56,10 @@ function Invoke-Install {
             <CheckBox Content='Visual Studio Code' x:Name='MicrosoftVisualStudioCode' Grid.Row='6' Grid.Column='2' Margin='10'/>
             <CheckBox Content='7-Zip' x:Name='SevenZip' Grid.Row='7' Grid.Column='0' Margin='10'/>
             <CheckBox Content='Show All Installed' x:Name='ShowInstalled' Grid.Row='7' Grid.Column='1' Margin='10'/>
-            <Button Content='Install' x:Name='InstallButton' Grid.Row='10' Grid.Column='0' Margin='10' Background='#0D9D3B' Foreground='White' HorizontalAlignment='Stretch' VerticalAlignment='Stretch' Padding='30,15' Cursor='Hand'>
-                <Button.Template>
-                    <ControlTemplate TargetType='Button'>
-                        <Border Background='{TemplateBinding Background}' CornerRadius='5'>
-                            <ContentPresenter HorizontalAlignment='Stretch' VerticalAlignment='Stretch'/>
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
-            <Button Content='Uninstall' x:Name='UninstallButton' Grid.Row='10' Grid.Column='1' Margin='10' Background='#E30101' Foreground='White' HorizontalAlignment='Stretch' VerticalAlignment='Stretch' Padding='30,15' Cursor='Hand'>
-                <Button.Template>
-                    <ControlTemplate TargetType='Button'>
-                        <Border Background='{TemplateBinding Background}' CornerRadius='5'>
-                            <ContentPresenter HorizontalAlignment='Stretch' VerticalAlignment='Stretch'/>
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
-            <Button Content='Get Installed' x:Name='GetPackagesButton' Grid.Row='10' Grid.Column='2' Margin='10' Background='#185FF8' Foreground='White' HorizontalAlignment='Stretch' VerticalAlignment='Stretch' Padding='30,15' Cursor='Hand'>
-                <Button.Template>
-                    <ControlTemplate TargetType='Button'>
-                        <Border Background='{TemplateBinding Background}' CornerRadius='5'>
-                            <ContentPresenter HorizontalAlignment='Stretch' VerticalAlignment='Stretch'/>
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
-            <Button Content='Check All' x:Name='CheckAllButton' Grid.Row='10' Grid.Column='3' Margin='10' Background='#185FF8' Foreground='White' HorizontalAlignment='Stretch' VerticalAlignment='Stretch' Padding='30,15' Cursor='Hand'>
-                <Button.Template>
-                    <ControlTemplate TargetType='Button'>
-                        <Border Background='{TemplateBinding Background}' CornerRadius='5'>
-                            <ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center'/>
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
+            <Button Content='Install' x:Name='InstallButton' Grid.Row='10' Grid.Column='0' Margin='10'/>
+            <Button Content='Uninstall' x:Name='UninstallButton' Grid.Row='10' Grid.Column='1' Margin='10'/>
+            <Button Content='Get Installed' x:Name='GetPackagesButton' Grid.Row='10' Grid.Column='2' Margin='10'/>
+            <Button Content='Check All' x:Name='CheckAllButton' Grid.Row='10' Grid.Column='3' Margin='10'/>
         </Grid>
 "@
 
@@ -125,21 +92,51 @@ function Invoke-Install {
     $getPackagesButton = $installTabContent.FindName("GetPackagesButton")
     $checkAllButton = $installTabContent.FindName("CheckAllButton")
 
-    # Disable the Install Tab if $DisableInstall is $true
-    if ($DisableInstall) {
-        foreach ($control in $installTabContent.Children) {
-            if ($control -is [System.Windows.Controls.CheckBox]) {
-                $control.IsEnabled = $false
-            }
-        }
-        $installButton.IsEnabled = $false
-        $uninstallButton.IsEnabled = $false
-        $getPackagesButton.IsEnabled = $false
-        $checkAllButton.IsEnabled = $false
+    # Ensure buttons are found
+    if ($null -eq $installButton -or $null -eq $uninstallButton -or $null -eq $getPackagesButton -or $null -eq $checkAllButton) {
+        Write-Host "One or more buttons not found in the XAML." -ForegroundColor Red
+        return
     }
 
-    function Invoke-WingetCommand($action, $id) {
-        Start-Process "winget" -ArgumentList "$action --id $id -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
+    # Recursive function to find all checkboxes
+    function Get-AllCheckboxes {
+        param (
+            [System.Windows.DependencyObject]$parent
+        )
+        $checkboxes = @()
+        for ($i = 0; $i -lt [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($parent); $i++) {
+            $child = [System.Windows.Media.VisualTreeHelper]::GetChild($parent, $i)
+            if ($child -is [System.Windows.Controls.CheckBox]) {
+                $checkboxes += $child
+            }
+            $checkboxes += Get-AllCheckboxes -parent $child
+        }
+        return $checkboxes
+    }
+
+    # Find all checkboxes
+    $checkboxes = Get-AllCheckboxes -parent $installTabContent
+
+    # Set the initial state of all checkboxes to checked
+    foreach ($checkbox in $checkboxes) {
+        $checkbox.IsChecked = $true
+    }
+
+    function Invoke-WingetCommand {
+        param (
+            [string]$action,
+            [string]$id
+        )
+        switch ($action) {
+            "install" {
+                Write-Host "Installing package: $id"
+                Install-WinGetPackage -Id $id -AcceptSourceAgreements -AcceptPackageAgreements -Interactive
+            }
+            "uninstall" {
+                Write-Host "Uninstalling package: $id"
+                Uninstall-WinGetPackage -Id $id -AcceptSourceAgreements -AcceptPackageAgreements
+            }
+        }
     }
 
     $checkboxActions = @{
@@ -169,48 +166,85 @@ function Invoke-Install {
 
     # Define the action for the Install button
     $installButton.Add_Click({
-            $checkboxes = $installTabContent.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] -and $_.IsChecked }
-            foreach ($checkbox in $checkboxes) {
+            Write-Host "Install button clicked"
+            $selectedCheckboxes = $checkboxes | Where-Object { $_.IsChecked -eq $true }
+            foreach ($checkbox in $selectedCheckboxes) {
                 $id = $checkboxActions[$checkbox.Name]
                 if ($id -is [Array]) {
                     foreach ($subId in $id) {
-                        Invoke-WingetCommand "install" $subId
+                        Invoke-WingetCommand -action "install" -id $subId
                     }
                 }
                 else {
-                    Invoke-WingetCommand "install" $id
+                    Invoke-WingetCommand -action "install" -id $id
                 }
             }
         })
 
     # Define the action for the Uninstall button
     $uninstallButton.Add_Click({
-            $checkboxes = $installTabContent.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] -and $_.IsChecked }
-            foreach ($checkbox in $checkboxes) {
+            Write-Host "Uninstall button clicked"
+            $selectedCheckboxes = $checkboxes | Where-Object { $_.IsChecked -eq $true }
+            foreach ($checkbox in $selectedCheckboxes) {
                 $id = $checkboxActions[$checkbox.Name]
                 if ($id -is [Array]) {
                     foreach ($subId in $id) {
-                        Invoke-WingetCommand "uninstall" $subId
+                        Invoke-WingetCommand -action "uninstall" -id $subId
                     }
                 }
                 else {
-                    Invoke-WingetCommand "uninstall" $id
+                    Invoke-WingetCommand -action "uninstall" -id $id
                 }
             }
         })
 
     # Define the action for the Get Installed button
     $getPackagesButton.Add_Click({
-            Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
+            Write-Host "Get Installed button clicked"
+            # Run the Get-WinGetPackage command and capture the output directly
+            $output = Get-WinGetPackage
+
+            # Extract the package names from the output
+            $packageNames = $output | Select-Object -ExpandProperty Name
+
+            # Iterate through the checkboxes and check the ones that match the installed software
+            foreach ($checkbox in $checkboxes) {
+                $checkboxName = $checkbox.Name
+                if ($packageNames -contains $checkboxName) {
+                    $checkbox.IsChecked = $true
+                }
+                else {
+                    $checkbox.IsChecked = $false
+                }
+            }
         })
 
     # Define the action for the Check All button
     $checkAllButton.Add_Click({
-            foreach ($control in $installTabContent.Children) {
-                if ($control -is [System.Windows.Controls.CheckBox]) {
-                    $control.IsChecked = $true
+            Write-Host "Check All button clicked"
+            $allChecked = $true
+
+            # Check the state of each checkbox
+            foreach ($checkbox in $checkboxes) {
+                if ($checkbox.IsChecked -eq $false) {
+                    $allChecked = $false
+                    break
                 }
             }
+
+            # Set the state of each checkbox
+            foreach ($checkbox in $checkboxes) {
+                $checkbox.IsChecked = -not $allChecked
+            }
+
+            # Update button content
+            if ($allChecked) {
+                $checkAllButton.Content = "Check All"
+            }
+            else {
+                $checkAllButton.Content = "Uncheck All"
+            }
         })
+
+    Export-ModuleMember -Function Invoke-Install
 }
-Export-ModuleMember -Function Invoke-Install

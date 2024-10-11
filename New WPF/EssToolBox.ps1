@@ -1,3 +1,7 @@
+param (
+    [switch]$OfflineMode
+)
+
 <#
 .SYNOPSIS
     This script is the ESSToolBox, a tool for system administration tasks.
@@ -5,8 +9,8 @@
 .DESCRIPTION
     The ESSToolBox is a PowerShell script designed to perform various system administration tasks. It includes features such as repairing Windows Update, checking for the installation of Windows Package Manager (winget), and more.
 
-.PARAMETER None
-    This script does not accept any parameters.
+.PARAMETER OfflineMode
+    If specified, the script will run in offline mode and will not download the modules. It will assume the dependencies are in the same folder as the script.
 
 .NOTES
     - This script must be run with administrator privileges.
@@ -168,50 +172,62 @@ catch {
 # Determine the script directory
 if ($PSScriptRoot) {
     $scriptDir = $PSScriptRoot
-} elseif ($MyInvocation.MyCommand.Path) {
+}
+elseif ($MyInvocation.MyCommand.Path) {
     $scriptDir = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
-} else {
+}
+else {
     $scriptDir = [System.IO.Path]::GetDirectoryName([System.Reflection.Assembly]::GetExecutingAssembly().Location)
 }
 
-# Define the URLs for the module files
-$installModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/main/Content/InstallGUI.psm1"
-$tweakModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/main/Content/TweakGUI.psm1"
-$fixModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/main/Content/FixGUI.psm1"
+# Define the paths to the modules in the script directory
+$installModulePath = [System.IO.Path]::Combine($scriptDir, "Content", "InstallGUI.psm1")
+$tweakModulePath = [System.IO.Path]::Combine($scriptDir, "Content", "TweakGUI.psm1")
+$fixModulePath = [System.IO.Path]::Combine($scriptDir, "Content", "FixGUI.psm1")
 
-# Define the paths to the modules in the temporary directory
-$tempDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
-if (-not (Test-Path -Path $tempDir)) {
-    New-Item -ItemType Directory -Path $tempDir | Out-Null
+if (-not $OfflineMode) {
+    # Define the URLs for the module files
+    $installModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Content/InstallGUI.psm1"
+    $tweakModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Content/TweakGUI.psm1"
+    $fixModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Content/FixGUI.psm1"
+
+    # Define the paths to the modules in the temporary directory
+    $tempDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
+    if (-not (Test-Path -Path $tempDir)) {
+        New-Item -ItemType Directory -Path $tempDir | Out-Null
+    }
+
+    $installModulePath = [System.IO.Path]::Combine($tempDir, "InstallGUI.psm1")
+    $tweakModulePath = [System.IO.Path]::Combine($tempDir, "TweakGUI.psm1")
+    $fixModulePath = [System.IO.Path]::Combine($tempDir, "FixGUI.psm1")
+
+    # Download the module files
+    Invoke-RestMethod -Uri $installModuleUrl -OutFile $installModulePath
+    Invoke-RestMethod -Uri $tweakModuleUrl -OutFile $tweakModulePath
+    Invoke-RestMethod -Uri $fixModuleUrl -OutFile $fixModulePath
 }
-
-$installModulePath = [System.IO.Path]::Combine($tempDir, "InstallGUI.psm1")
-$tweakModulePath = [System.IO.Path]::Combine($tempDir, "TweakGUI.psm1")
-$fixModulePath = [System.IO.Path]::Combine($tempDir, "FixGUI.psm1")
-
-# Download the module files
-Invoke-RestMethod -Uri $installModuleUrl -OutFile $installModulePath
-Invoke-RestMethod -Uri $tweakModuleUrl -OutFile $tweakModulePath
-Invoke-RestMethod -Uri $fixModuleUrl -OutFile $fixModulePath
 
 # Check if the Install module exists and import it
 if (Test-Path -Path $installModulePath) {
     Import-Module -Name $installModulePath -Force
-} else {
+}
+else {
     Write-Host "The Install module at path '$installModulePath' cannot be found." -ForegroundColor Red
 }
 
 # Check if the Tweak module exists and import it
 if (Test-Path -Path $tweakModulePath) {
     Import-Module -Name $tweakModulePath -Force
-} else {
+}
+else {
     Write-Host "The Tweak module at path '$tweakModulePath' cannot be found." -ForegroundColor Red
 }
 
 # Check if the Fix module exists and import it
 if (Test-Path -Path $fixModulePath) {
     Import-Module -Name $fixModulePath -Force
-} else {
+}
+else {
     Write-Host "The Fix module at path '$fixModulePath' cannot be found." -ForegroundColor Red
 }
 
@@ -219,8 +235,10 @@ if (Test-Path -Path $fixModulePath) {
 # Main Menu Display  using WPF #
 ################################
 
-# Load the XAML form
+# Load the PresentationFramework assembly for XAML support
 Add-Type -AssemblyName PresentationFramework
+# Load teh winforms assembly for message box support
+Add-Type -AssemblyName System.Windows.Forms
 
 # Define the XAML for the main window with rounded corners using WindowChrome
 $xaml = @"
@@ -308,7 +326,8 @@ try {
     [xml]$xamlWindow = $xaml
     $reader = (New-Object System.Xml.XmlNodeReader $xamlWindow)
     $window = [Windows.Markup.XamlReader]::Load($reader)
-} catch {
+}
+catch {
     Write-Host "Failed to load XAML: $_" -ForegroundColor Red
     exit
 }
@@ -320,9 +339,9 @@ if ($null -eq $windowControlPanel) {
     exit
 }
 $windowControlPanel.Add_MouseLeftButtonDown({
-    param ($source, $e)
-    $window.DragMove()
-})
+        param ($source, $e)
+        $window.DragMove()
+    })
 
 # Find the CloseButton and add a Click event handler
 $closeButton = $window.FindName("CloseButton")
@@ -331,12 +350,21 @@ if ($null -eq $closeButton) {
     exit
 }
 $closeButton.Add_Click({
-    # Clean up the temporary directory and its contents
-    if (Test-Path -Path $tempDir) {
-        Remove-Item -Path $tempDir -Recurse -Force
-    }
-    $window.Close()
-})
+        try {
+            # Clean up the temporary directory and its contents
+            if (Test-Path -Path $tempDir) {
+                Remove-Item -Path $tempDir -Recurse -Force
+            }
+        }
+        catch {
+            # Handle any errors that occur during the removal
+            Write-Host "An error occurred while cleaning up the temporary directory: $_" -ForegroundColor Red
+        }
+        finally {
+            # Close the window
+            $window.Close()
+        }
+    })
 
 # Find the MainTabControl
 $mainTabControl = $window.FindName("MainTabControl")
@@ -345,22 +373,41 @@ if ($null -eq $mainTabControl) {
     exit
 }
 
+# Hide the InstallTab if $disableInstall is $true
+if ($disableInstall) {
+    $installTab = $mainTabControl.Items | Where-Object { $_.Name -eq "InstallTab" }
+    if ($installTab) {
+        $installTab.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+
+    # Set the default selected tab to Tweak
+    $tweakTab = $mainTabControl.Items | Where-Object { $_.Name -eq "TweakTab" }
+    if ($tweakTab) {
+        $mainTabControl.SelectedItem = $tweakTab
+
+        # Refresh the content of the TweakTab
+        $tweakTabContent = $tweakTab.Content
+        $tweakTab.Content = $null
+        $tweakTab.Content = $tweakTabContent
+    }
+}
+
 # Event handler for tab selection change
 $mainTabControl.Add_SelectionChanged({
-    param ($source, $e)
-    $selectedTab = $source.SelectedItem
-    switch ($selectedTab.Name) {
-        "InstallTab" {
-            Invoke-Install -DisableInstall:$disableInstall -MainWindow $window
+        param ($source, $e)
+        $selectedTab = $source.SelectedItem
+        switch ($selectedTab.Name) {
+            "InstallTab" {
+                Invoke-Install -MainWindow $window
+            }
+            "TweakTab" {
+                # Add corresponding function call for TweakTab if needed
+            }
+            "FixTab" {
+                # Add corresponding function call for FixTab if needed
+            }
         }
-        "TweakTab" {
-            # Add corresponding function call for TweakTab if needed
-        }
-        "FixTab" {
-            # Add corresponding function call for FixTab if needed
-        }
-    }
-})
+    })
 
 # Show the window
 $window.ShowDialog() | Out-Null
