@@ -93,31 +93,19 @@ else {
     $scriptDir = [System.IO.Path]::GetDirectoryName([System.Reflection.Assembly]::GetExecutingAssembly().Location)
 }
 
-# Define the paths to the Content and Functions folders
-$contentDir = [System.IO.Path]::Combine($scriptDir, "Content")
+# Define the paths to the XAML and Functions folders
+$xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
 $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 
-# Debugging output
-Write-Host "Script Directory: $scriptDir" -ForegroundColor Cyan
-Write-Host "Content Directory: $contentDir" -ForegroundColor Cyan
-Write-Host "Functions Directory: $functionsDir" -ForegroundColor Cyan
-
-# List the contents of the script directory
-Write-Host "Listing contents of the script directory:" -ForegroundColor Cyan
-Get-ChildItem -Path $scriptDir | ForEach-Object { Write-Host $_.FullName -ForegroundColor Cyan }
-
-# Check if the Content and Functions folders exist
-$contentExists = Test-Path -Path $contentDir
+# Check if the XAML and Functions folders exist
+$xamlExists = Test-Path -Path $xamlDir
 $functionsExists = Test-Path -Path $functionsDir
 
-Write-Host "Content Directory Exists: $contentExists" -ForegroundColor Cyan
-Write-Host "Functions Directory Exists: $functionsExists" -ForegroundColor Cyan
-
-if (-not $contentExists -or -not $functionsExists) {
-    Write-Host "Content or Functions folder is missing." -ForegroundColor Red
+if (-not $xamlExists -or -not $functionsExists) {
+    Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
     if (-not $OfflineMode) {
-        # Define the URLs for the Content and Functions folders
-        $contentUrl = "https://github.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Content"
+        # Define the URLs for the XAML and Functions folders
+        $xamlUrl = "https://github.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/XAML"
         $functionsUrl = "https://github.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Functions"
 
         # Define the paths to the temporary directories
@@ -126,27 +114,27 @@ if (-not $contentExists -or -not $functionsExists) {
             New-Item -ItemType Directory -Path $tempDir | Out-Null
         }
 
-        $contentDir = [System.IO.Path]::Combine($tempDir, "Content")
+        $xamlDir = [System.IO.Path]::Combine($tempDir, "XAML")
         $functionsDir = [System.IO.Path]::Combine($tempDir, "Functions")
 
-        # Download the Content and Functions folders
-        Invoke-RestMethod -Uri "$contentUrl/MainWindow.xml" -OutFile [System.IO.Path]::Combine($contentDir, "MainWindow.xml")
+        # Download the XAML and Functions folders
+        Invoke-RestMethod -Uri "$xamlUrl/MainWindow.xml" -OutFile [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
         Invoke-RestMethod -Uri "$functionsUrl/Install.ps1" -OutFile [System.IO.Path]::Combine($functionsDir, "Install.ps1")
         Invoke-RestMethod -Uri "$functionsUrl/Tweak.ps1" -OutFile [System.IO.Path]::Combine($functionsDir, "Tweak.ps1")
         Invoke-RestMethod -Uri "$functionsUrl/Fix.ps1" -OutFile [System.IO.Path]::Combine($functionsDir, "Fix.ps1")
     }
     else {
-        Write-Host "The Content and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
+        Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
         exit
     }
 }
 
-# Check if the Content folder and MainWindow.xml file exist
-$mainWindowExists = Test-Path -Path [System.IO.Path]::Combine($contentDir, "MainWindow.xml")
-Write-Host "MainWindow.xml Exists: $mainWindowExists" -ForegroundColor Cyan
+# Check if the XAML folder and MainWindow.xml file exist
+$mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
+$mainWindowExists = Test-Path -Path $mainWindowPath
 
 if (-not $mainWindowExists) {
-    Write-Host "The Content folder or MainWindow.xml file cannot be found." -ForegroundColor Red
+    Write-Host "The XAML folder or MainWindow.xml file cannot be found." -ForegroundColor Red
     exit
 }
 
@@ -155,7 +143,6 @@ $requiredFunctions = @("Install.ps1", "Tweak.ps1", "Fix.ps1")
 foreach ($function in $requiredFunctions) {
     $functionPath = [System.IO.Path]::Combine($functionsDir, $function)
     $functionExists = Test-Path -Path $functionPath
-    Write-Host "Checking for ${functionPath}: $functionExists" -ForegroundColor Cyan
     if (-not $functionExists) {
         Write-Host "The Functions folder or $function file cannot be found." -ForegroundColor Red
         exit
@@ -168,13 +155,12 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Windows.Forms
 
 # Read the XAML file content
-$xamlFilePath = [System.IO.Path]::Combine($contentDir, "MainWindow.xml")
+$xamlFilePath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
 $xaml = Get-Content -Path $xamlFilePath -Raw
 
-# Load the XAML
+# Load the XAML directly using XamlReader
 try {
-    [xml]$xamlWindow = $xaml
-    $reader = (New-Object System.Xml.XmlNodeReader $xamlWindow)
+    $reader = (New-Object System.Xml.XmlTextReader (New-Object System.IO.StringReader $xaml))
     $window = [Windows.Markup.XamlReader]::Load($reader)
 }
 catch {
@@ -250,19 +236,46 @@ $mainTabControl.Add_SelectionChanged({
             "InstallTab" {
                 $installScriptPath = [System.IO.Path]::Combine($functionsDir, "Install.ps1")
                 if (Test-Path -Path $installScriptPath) {
-                    Invoke-Expression -Command (Get-Content -Path $installScriptPath -Raw)
+                    $installScriptContent = Get-Content -Path $installScriptPath -Raw
+                    if ($installScriptContent) {
+                        Invoke-Expression -Command $installScriptContent
+                    }
+                    else {
+                        Write-Host "Install script is empty: $installScriptPath" -ForegroundColor Red
+                    }
+                }
+                else {
+                    Write-Host "Install script not found at path: $installScriptPath" -ForegroundColor Red
                 }
             }
             "TweakTab" {
                 $tweakScriptPath = [System.IO.Path]::Combine($functionsDir, "Tweak.ps1")
                 if (Test-Path -Path $tweakScriptPath) {
-                    Invoke-Expression -Command (Get-Content -Path $tweakScriptPath -Raw)
+                    $tweakScriptContent = Get-Content -Path $tweakScriptPath -Raw
+                    if ($tweakScriptContent) {
+                        Invoke-Expression -Command $tweakScriptContent
+                    }
+                    else {
+                        Write-Host "Tweak script is empty: $tweakScriptPath" -ForegroundColor Red
+                    }
+                }
+                else {
+                    Write-Host "Tweak script not found at path: $tweakScriptPath" -ForegroundColor Red
                 }
             }
             "FixTab" {
                 $fixScriptPath = [System.IO.Path]::Combine($functionsDir, "Fix.ps1")
                 if (Test-Path -Path $fixScriptPath) {
-                    Invoke-Expression -Command (Get-Content -Path $fixScriptPath -Raw)
+                    $fixScriptContent = Get-Content -Path $fixScriptPath -Raw
+                    if ($fixScriptContent) {
+                        Invoke-Expression -Command $fixScriptContent
+                    }
+                    else {
+                        Write-Host "Fix script is empty: $fixScriptPath" -ForegroundColor Red
+                    }
+                }
+                else {
+                    Write-Host "Fix script not found at path: $fixScriptPath" -ForegroundColor Red
                 }
             }
         }

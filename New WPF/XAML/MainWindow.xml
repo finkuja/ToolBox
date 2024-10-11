@@ -1,5 +1,4 @@
-<!-- This XAML Document is used to define all the controls of the main window -->
-$xaml = @"
+<?xml version="1.0" encoding="utf-8"?>
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="ESSToolBox" Height="450" Width="800" WindowStartupLocation="CenterScreen" AllowsTransparency="True" WindowStyle="None" Background="Transparent" ResizeMode="NoResize">
@@ -60,7 +59,135 @@ $xaml = @"
                 </TabControl.Resources>
                 <TabItem Header="Install" Name="InstallTab" FontSize="14">
                     <Grid Name="InstallTabGrid" Background="Transparent">
-                        <TextBlock Text="Install Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
+                        <Grid Margin="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="50" /> <!-- Increased height for spacing -->
+                                <RowDefinition Height="Auto" /> <!-- Row for buttons -->
+                            </Grid.RowDefinitions>
+
+                            <CheckBox Content="Adobe Creative Cloud" Tag="Adobe Creative Cloud" Margin="0,5" Grid.Row="0" Grid.Column="0" Foreground="White"/>
+                            <CheckBox Content="Adobe Reader DC 64-Bit" Tag="Adobe Acrobat" Margin="0,5" Grid.Row="1" Grid.Column="0" Foreground="White"/>
+                            <CheckBox Content="Google Chrome" Tag="Google Chrome" Margin="0,5" Grid.Row="2" Grid.Column="0" Foreground="White"/>
+                            <CheckBox Content="Fiddler" Tag="Fiddler Classic" Margin="0,5" Grid.Row="3" Grid.Column="0" Foreground="White"/>
+                            <CheckBox Content="HWMonitor" Tag="HWMonitor" Margin="0,5" Grid.Row="4" Grid.Column="0" Foreground="White"/>
+                            <CheckBox Content=".NET All Versions" Tag="Microsoft .Net Runtime" Margin="0,5" Grid.Row="5" Grid.Column="0" Foreground="White"/>
+                            <CheckBox Content="Microsoft Edge" Tag="Microsoft Edge" Margin="0,5" Grid.Row="6" Grid.Column="0" Foreground="White"/>
+                            <CheckBox Content="Microsoft Office 365" Tag="Microsoft 365 Apps for Enterprise" Margin="0,5" Grid.Row="7" Grid.Column="0" Foreground="White"/>
+                            <CheckBox Content="Microsoft OneDrive" Tag="Microsoft OneDrive" Margin="0,5" Grid.Row="8" Grid.Column="0" Foreground="White"/>
+
+                            <CheckBox Content="Microsoft OneNote (UWP)" Tag="Microsoft OneNote" Margin="0,5" Grid.Row="0" Grid.Column="1" Foreground="White"/>
+                            <CheckBox Content="Microsoft Teams" Tag="Microsoft Teams" Margin="0,5" Grid.Row="1" Grid.Column="1" Foreground="White"/>
+                            <CheckBox Content="Mozilla Firefox" Tag="Mozilla Firefox" Margin="0,5" Grid.Row="2" Grid.Column="1" Foreground="White"/>
+                            <CheckBox Content="Power Automate" Tag="Power Automate" Margin="0,5" Grid.Row="3" Grid.Column="1" Foreground="White"/>
+                            <CheckBox Content="Power BI Desktop" Tag="Power BI Desktop" Margin="0,5" Grid.Row="4" Grid.Column="1" Foreground="White"/>
+                            <CheckBox Content="PowerToys" Tag="PowerToys" Margin="0,5" Grid.Row="5" Grid.Column="1" Foreground="White"/>
+                            <CheckBox Content="Quick Assist" Tag="Quick Assist" Margin="0,5" Grid.Row="6" Grid.Column="1" Foreground="White"/>
+                            <CheckBox Content="Remote Desktop" Tag="Microsoft Remote Desktop" Margin="0,5" Grid.Row="7" Grid.Column="1" Foreground="White"/>
+                            <CheckBox Content="SARA Tool" Tag="Microsoft Support and Recovery Assistant" Margin="0,5" Grid.Row="8" Grid.Column="1" Foreground="White"/>
+
+                            <CheckBox Content="Surface Diagnostic Toolkit" Tag="Surface Diagnostic Toolkit" Margin="0,5" Grid.Row="0" Grid.Column="2" Foreground="White"/>
+                            <CheckBox Content="Visio Viewer 2016" Tag="Microsoft VisioViewer" Margin="0,5" Grid.Row="1" Grid.Column="2" Foreground="White"/>
+                            <CheckBox Content="Visual Studio Code" Tag="Microsoft Visual Studio Code" Margin="0,5" Grid.Row="2" Grid.Column="2" Foreground="White"/>
+                            <CheckBox Content="7-Zip" Tag="7-Zip" Margin="0,5" Grid.Row="3" Grid.Column="2" Foreground="White"/>
+                            <CheckBox Content="Show All Installed" Tag="ShowInstalled" Margin="0,5" Grid.Row="4" Grid.Column="2" Foreground="White"/>
+
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10" Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="3">
+                                <Button Content="Install" Width="100" Height="30" Margin="5" Cursor="Hand">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Cursor" Value="Hand"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Content="Uninstall" Width="100" Height="30" Margin="5" Cursor="Hand">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Cursor" Value="Hand"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Content="Get Installed" Width="100" Height="30" Margin="5" Cursor="Hand">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Cursor" Value="Hand"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Content="Check All" Width="100" Height="30" Margin="5" Cursor="Hand">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Cursor" Value="Hand"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
                     </Grid>
                 </TabItem>
                 <TabItem Header="Tweak" Name="TweakTab" FontSize="14">
@@ -77,4 +204,3 @@ $xaml = @"
         </Grid>
     </Border>
 </Window>
-"@
