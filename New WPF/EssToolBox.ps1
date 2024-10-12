@@ -260,6 +260,8 @@ if ($null -eq $closeButton) {
 }
 $closeButton.Add_Click({
         if ($tempDir) {
+            Write-Host "Inseide Loop temp dire is true" -ForegroundColor Red
+            Write-Host $scriptDir -ForegroundColor Yellow
             try {
                 # Clean up the temporary directory and its contents
                 if (Test-Path -Path $scirptDir) {
