@@ -219,6 +219,102 @@ catch {
 # END of Check Install Update and Import Modules #
 ##################################################
 
+# Function to initialize directories
+function Initialize-Directories {
+    param (
+        [string]$scriptDir,
+        [string]$xamlDir,
+        [string]$functionsDir
+    )
+
+    if (-not (Test-Path -Path $xamlDir)) {
+        New-Item -ItemType Directory -Path $xamlDir | Out-Null
+        Write-Host "Created directory: $xamlDir" -ForegroundColor Green
+    }
+    if (-not (Test-Path -Path $functionsDir)) {
+        New-Item -ItemType Directory -Path $functionsDir | Out-Null
+        Write-Host "Created directory: $functionsDir" -ForegroundColor Green
+    }
+}
+
+# Function to download content from GitHub
+function Download-GitHubContent {
+    param (
+        [string]$repoOwner,
+        [string]$repoName,
+        [string]$path,
+        [string]$branch
+    )
+
+    $url = "https://api.github.com/repos/$repoOwner/$repoName/contents/$path?ref=$branch"
+    $response = Invoke-RestMethod -Uri $url -Headers @{ "User-Agent" = "PowerShell" }
+    return $response
+}
+
+# Function to download XAML file
+function Download-XAMLFile {
+    param (
+        [string]$repoOwner,
+        [string]$repoName,
+        [string]$xamlPath,
+        [string]$branch,
+        [string]$mainWindowPath
+    )
+
+    if (-not (Test-Path -Path $mainWindowPath)) {
+        try {
+            $xamlContent = Download-GitHubContent -repoOwner $repoOwner -repoName $repoName -path $xamlPath -branch $branch
+            [System.IO.File]::WriteAllText($mainWindowPath, [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($xamlContent.content)))
+            Write-Host "Downloaded XAML file to $mainWindowPath" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to download XAML file: $_" -ForegroundColor Red
+            exit
+        }
+    }
+}
+
+# Function to download PS1 files
+function Download-PS1Files {
+    param (
+        [string]$repoOwner,
+        [string]$repoName,
+        [string]$functionsPath,
+        [string]$branch,
+        [string]$functionsDir
+    )
+
+    try {
+        $ps1Files = Download-GitHubContent -repoOwner $repoOwner -repoName $repoName -path $functionsPath -branch $branch | Where-Object { $_.type -eq "file" -and $_.name -match "\.ps1$" }
+    }
+    catch {
+        Write-Host "Failed to retrieve Functions folder: $_" -ForegroundColor Red
+        exit
+    }
+
+    if ($null -eq $ps1Files -or $ps1Files.Count -eq 0) {
+        Write-Host "No files found in the Functions folder or the response is empty." -ForegroundColor Red
+        Read-Host -Prompt "Press Enter to exit"
+        exit
+    }
+
+    foreach ($file in $ps1Files) {
+        $fileName = $file.name
+        $filePath = [System.IO.Path]::Combine($functionsDir, $fileName)
+        if (-not (Test-Path -Path $filePath)) {
+            try {
+                $fileContent = Download-GitHubContent -repoOwner $repoOwner -repoName $repoName -path $file.path -branch $branch
+                [System.IO.File]::WriteAllText($filePath, [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($fileContent.content)))
+                Write-Host "Downloaded $fileName to $filePath" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Failed to download `${fileName}`: $_" -ForegroundColor Red
+            }
+        }
+    }
+}
+
+# Main script logic
 # Initialize the tempDir flag
 $tempDir = $false
 
@@ -243,10 +339,6 @@ else {
 $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
 $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 
-# Initialize variables
-$xamlExists = $false
-$functionsExists = $false
-
 # Check if the XAML and Functions directories exist
 $xamlExists = Test-Path -Path $xamlDir -ErrorAction SilentlyContinue
 $functionsExists = Test-Path -Path $functionsDir -ErrorAction SilentlyContinue
@@ -261,7 +353,6 @@ Read-Host -Prompt "Press Enter to continue"
 # Check if either directory does not exist
 if (-not $xamlExists -or -not $functionsExists) {
     Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
-    # Additional code to handle the missing folders
     if (-not $OfflineMode) {
         Read-Host -Prompt "Press Enter to continue"
         # Define the repository and paths
@@ -270,62 +361,16 @@ if (-not $xamlExists -or -not $functionsExists) {
         $branch = "Test"
         $xamlPath = "Test/New WPF/XAML/MainWindow.xml"
         $functionsPath = "Test/New WPF/Functions"
-        Read-Host -Prompt "Press Enter to continue"
 
-        # Ensure the directories exist
-        if (-not (Test-Path -Path $xamlDir)) {
-            New-Item -ItemType Directory -Path $xamlDir | Out-Null
-        }
-        if (-not (Test-Path -Path $functionsDir)) {
-            New-Item -ItemType Directory -Path $functionsDir | Out-Null
-        }
-        Read-Host -Prompt "Press Enter to continue"
-        # Download the XAML file if it doesn't exist
+        # Initialize directories
+        Initialize-Directories -scriptDir $scriptDir -xamlDir $xamlDir -functionsDir $functionsDir
+
+        # Download the XAML file
         $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
-        if (-not (Test-Path -Path $mainWindowPath)) {
-            try {
-                $xamlContent = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path $xamlPath -Ref $branch
-                [System.IO.File]::WriteAllText($mainWindowPath, [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($xamlContent.content)))
-                Write-Host "Downloaded XAML file to $mainWindowPath" -ForegroundColor Green
-            }
-            catch {
-                Write-Host "Failed to download XAML file: $_" -ForegroundColor Red
-                exit
-            }
-        }
-        Read-Host -Prompt "Press Enter to continue"
+        Download-XAMLFile -repoOwner $repoOwner -repoName $repoName -xamlPath $xamlPath -branch $branch -mainWindowPath $mainWindowPath
 
-        # Get the list of .ps1 files in the functions directory
-        try {
-            $ps1Files = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path $functionsPath -Ref $branch | Where-Object { $_.type -eq "file" -and $_.name -match "\.ps1$" }
-        }
-        catch {
-            Write-Host "Failed to retrieve Functions folder: $_" -ForegroundColor Red
-            exit
-        }
-
-        # Check if the response is empty or not as expected
-        if ($null -eq $ps1Files -or $ps1Files.Count -eq 0) {
-            Write-Host "No files found in the Functions folder or the response is empty." -ForegroundColor Red
-            Read-Host -Prompt "Press Enter to exit"
-            exit
-        }
-
-        # Download each .ps1 file if it doesn't exist
-        foreach ($file in $ps1Files) {
-            $fileName = $file.name
-            $filePath = [System.IO.Path]::Combine($functionsDir, $fileName)
-            if (-not (Test-Path -Path $filePath)) {
-                try {
-                    $fileContent = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path $file.path -Ref $branch
-                    [System.IO.File]::WriteAllText($filePath, [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($fileContent.content)))
-                    Write-Host "Downloaded $fileName to $filePath" -ForegroundColor Green
-                }
-                catch {
-                    Write-Host "Failed to download `${fileName}`: $_" -ForegroundColor Red
-                }
-            }
-        }
+        # Download the PS1 files
+        Download-PS1Files -repoOwner $repoOwner -repoName $repoName -functionsPath $functionsPath -branch $branch -functionsDir $functionsDir
 
         # Add a small delay to ensure files are fully written to disk
         Start-Sleep -Seconds 2
@@ -335,15 +380,21 @@ if (-not $xamlExists -or -not $functionsExists) {
             Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
             exit
         }
-        else {
-            Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
-            exit
-        }
+    }
+    else {
+        Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
+        exit
     }
 }
 else {
     Write-Host "Both XAML and Functions folders are present." -ForegroundColor Green
 }
+
+
+#################
+##############
+################
+
 
 # Check if the MainWindow.xml file exists
 $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
