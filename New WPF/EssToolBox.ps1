@@ -191,12 +191,14 @@ if (-not $xamlExists -or -not $functionsExists) {
         }
         catch {
             Write-Host "Failed to retrieve Functions folder: $_" -ForegroundColor Red
+            Read-Host -Prompt "Press Enter to exit"
             exit
         }
 
         # Check if the response is empty or not as expected
         if ($ps1Files -eq $null -or $ps1Files.Count -eq 0) {
             Write-Host "No files found in the Functions folder or the response is empty." -ForegroundColor Red
+            Read-Host -Prompt "Press Enter to exit"
             exit
         }
 
@@ -214,6 +216,7 @@ if (-not $xamlExists -or -not $functionsExists) {
                     }
                     catch {
                         Write-Host "Failed to download `${fileName}`: $_" -ForegroundColor Red
+                        Read-Host -Prompt "Press Enter to exit"
                     }
                 }
             }
@@ -225,6 +228,7 @@ if (-not $xamlExists -or -not $functionsExists) {
         # Recheck the existence of the XAML file
         if (-not (Test-Path -Path $mainWindowPath)) {
             Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
+            Read-Host -Prompt "Press Enter to exit"
             exit
         }
 
@@ -234,6 +238,7 @@ if (-not $xamlExists -or -not $functionsExists) {
         # Recheck the existence of the XAML file
         if (-not (Test-Path -Path $mainWindowPath)) {
             Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
+            Read-Host -Prompt "Press Enter to exit"
             exit
         }
 
@@ -243,8 +248,12 @@ if (-not $xamlExists -or -not $functionsExists) {
         # Recheck the existence of the XAML file
         if (-not (Test-Path -Path $mainWindowPath)) {
             Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
+            Read-Host -Prompt "Press Enter to exit"
             exit
         }
+
+        # Pause at the end of the script to allow reading any messages
+        Read-Host -Prompt "Press Enter to exit"
     }
     else {
         Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
