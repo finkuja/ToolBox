@@ -1,6 +1,6 @@
 function Invoke-WinGet { 
     param (
-        [ValidateSet("Install", "Uninstall", "Installed")]
+        [ValidateSet("Install", "Uninstall")]
         [string]$Action,
         [System.Windows.Window]$window,
         [string]$PackageName
@@ -75,8 +75,6 @@ function Invoke-WinGet {
                 [System.Windows.MessageBox]::Show("Package '$PackageName' not found.")
             }
         }
-        "Installed" {
-            # Code to check installed
-        }
+        
     }
 }

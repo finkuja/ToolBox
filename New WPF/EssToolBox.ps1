@@ -251,6 +251,11 @@ if ($null -eq $mainTabControl) {
     exit
 }
 
+
+###########################################
+# INSTALL TAB Event Handlers and Functions#
+###########################################
+
 # Hide the InstallTab if $disableInstall is $true
 if ($disableInstall) {
     $installTab = $mainTabControl.Items | Where-Object { $_.Name -eq "InstallTab" }
@@ -368,7 +373,7 @@ $installButton.Add_Click({
             Invoke-WinGet -PackageName $item -Action Install -window $window
         }
     })
-
+    
 # Find the UninstallButton and add a Click event handler
 $uninstallButton = $window.FindName("UninstallButton")
 if ($null -eq $uninstallButton) {
@@ -385,6 +390,59 @@ $uninstallButton.Add_Click({
             Invoke-WinGet -PackageName $item -Action Uninstall -window $window
         }
     })
+
+# Find the InstalledButton and add a Click event handler
+$installedButton = $window.FindName("InstalledButton")
+if ($null -eq $installedButton) {
+    Write-Host "InstalledButton not found in XAML." -ForegroundColor Red
+    exit
+}
+$installedButton.Add_Click({
+        # Check if the ShowAllInstalled checkbox is checked
+        $showAllInstalledCheckbox = $window.FindName("ShowAllInstalled")
+        if ($showAllInstalledCheckbox -and $showAllInstalledCheckbox.IsChecked) {
+            # Run WinGet List and display the results in the console
+            Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
+            return
+        }
+
+        # Run the Get-WinGetPackage command and capture the output directly
+        $output = Get-WinGetPackage
+        # Extract the package names from the output
+        $packageNames = $output | Select-Object -ExpandProperty Name
+
+        # Iterate through each checkbox in the $checkboxes array
+        foreach ($checkbox in $checkboxes) {
+            $checkboxName = $checkbox.Tag
+            # Check if the checkbox name is present in the package names
+            if ($packageNames -contains $checkboxName) {
+                $checkbox.IsChecked = $true
+            }
+            else {
+                $checkbox.IsChecked = $false
+            }
+        }
+    })
+
+###################################################
+# END OF INSTALL TAB Event Handlers and Functions #
+###################################################
+
+##########################################
+# TWEAK TAB Event Handlers and Functions #
+##########################################
+
+#################################################
+# END OF TWEAK TAB Event Handlers and Functions #
+#################################################
+
+########################################
+# FIX TAB Event Handlers and Functions #
+########################################
+
+###############################################
+# END OF FIX TAB Event Handlers and Functions #
+###############################################
 
 # Show the window
 $window.ShowDialog() | Out-Null

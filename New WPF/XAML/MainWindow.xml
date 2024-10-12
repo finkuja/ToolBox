@@ -1,7 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="ESSToolBox" Height="450" Width="800" WindowStartupLocation="CenterScreen" AllowsTransparency="True" WindowStyle="None" Background="Transparent" ResizeMode="NoResize">
+    Title="ESSToolBox" Height="450" Width="720" WindowStartupLocation="CenterScreen" AllowsTransparency="True" WindowStyle="None" Background="Transparent" ResizeMode="NoResize">
     <WindowChrome.WindowChrome>
         <WindowChrome CornerRadius="10" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
@@ -27,8 +26,8 @@
                     </Button.Template>
                 </Button>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="ESSToolBox" Margin="10,0,0,0" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Text="Beta v 0.2" Margin="5,0,0,0" FontSize="16" Foreground="White"/>
+                    <TextBlock Text="ESSToolBox" Margin="20,0,0,0" FontSize="16" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="(Beta) v0.2" Margin="5,0,0,0" FontSize="16" Foreground="White"/>
                 </StackPanel>
             </DockPanel>
             <TabControl Grid.Row="1" Name="MainTabControl" Background="Transparent" BorderBrush="Transparent" BorderThickness="0">
@@ -37,19 +36,20 @@
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="TabItem">
-                                    <Border Name="Border" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" CornerRadius="10" Margin="2">
+                                    <Border Name="Border" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" CornerRadius="5,5,0,0" Margin="10,0,0,0">
                                         <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" Margin="10,2"/>
                                     </Border>
                                     <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Border" Property="Background" Value="#185FF8"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
                                             <Setter TargetName="Border" Property="Background" Value="#185FF8"/>
                                             <Setter Property="Foreground" Value="White"/>
                                         </Trigger>
-                                        <Trigger Property="IsSelected" Value="False">
-                                            <Setter Property="Foreground" Value="#185FF8"/>
-                                        </Trigger>
-                                        <Trigger Property="IsEnabled" Value="False">
-                                            <Setter Property="Foreground" Value="Gray"/>
+                                        <Trigger Property="IsEnabled" Value="True">
+                                            <Setter Property="Foreground" Value="White"/>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
@@ -58,137 +58,143 @@
                     </Style>
                 </TabControl.Resources>
                 <TabItem Header="Install" Name="InstallTab" FontSize="14">
-                    <Grid Name="InstallTabGrid" Background="Transparent">
-                        <Grid Margin="10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="50" /> <!-- Increased height for spacing -->
-                                <RowDefinition Height="Auto" /> <!-- Row for buttons and checkbox -->
-                            </Grid.RowDefinitions>
+                    <Border CornerRadius="0,0,10,10" Background="#185FF8"> <!-- Added Border with CornerRadius -->
+                        <Grid Name="InstallTabGrid" Background="Transparent">
+                            <Grid Margin="50,10,0,10"> <!-- Reduced right margin -->
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="20" /> <!-- Reduced height for spacing -->
+                                    <RowDefinition Height="Auto" /> <!-- Row for buttons and checkbox -->
+                                </Grid.RowDefinitions>
 
-                            <CheckBox Name="AdobeCreativeCloud" Content="Adobe Creative Cloud" Tag="Adobe Creative Cloud" Margin="0,5" Grid.Row="0" Grid.Column="0" Foreground="White"/>
-                            <CheckBox Name="AdobeReaderDC" Content="Adobe Reader DC 64-Bit" Tag="Adobe Acrobat" Margin="0,5" Grid.Row="1" Grid.Column="0" Foreground="White"/>
-                            <CheckBox Name="GoogleChrome" Content="Google Chrome" Tag="Google Chrome" Margin="0,5" Grid.Row="2" Grid.Column="0" Foreground="White"/>
-                            <CheckBox Name="Fiddler" Content="Fiddler" Tag="Fiddler Classic" Margin="0,5" Grid.Row="3" Grid.Column="0" Foreground="White"/>
-                            <CheckBox Name="HWMonitor" Content="HWMonitor" Tag="HWMonitor" Margin="0,5" Grid.Row="4" Grid.Column="0" Foreground="White"/>
-                            <CheckBox Name="DotNetAllVersions" Content=".NET All Versions" Tag="Microsoft .Net Runtime" Margin="0,5" Grid.Row="5" Grid.Column="0" Foreground="White"/>
-                            <CheckBox Name="MicrosoftEdge" Content="Microsoft Edge" Tag="Microsoft Edge" Margin="0,5" Grid.Row="6" Grid.Column="0" Foreground="White"/>
-                            <CheckBox Name="MicrosoftOffice365" Content="Microsoft Office 365" Tag="Microsoft 365 Apps for Enterprise" Margin="0,5" Grid.Row="7" Grid.Column="0" Foreground="White"/>
-                            <CheckBox Name="MicrosoftOneDrive" Content="Microsoft OneDrive" Tag="Microsoft OneDrive" Margin="0,5" Grid.Row="8" Grid.Column="0" Foreground="White"/>
+                                <!-- Column 0 -->
+                                <CheckBox Name="AdobeCreativeCloud" Content="Adobe Creative Cloud" Tag="Adobe Creative Cloud" Margin="10,5" Grid.Row="0" Grid.Column="0" Foreground="White"/>
+                                <CheckBox Name="AdobeReaderDC" Content="Adobe Reader DC 64-Bit" Tag="Adobe Acrobat" Margin="10,5" Grid.Row="1" Grid.Column="0" Foreground="White"/>
+                                <CheckBox Name="GoogleChrome" Content="Google Chrome" Tag="Google Chrome" Margin="10,5" Grid.Row="2" Grid.Column="0" Foreground="White"/>
+                                <CheckBox Name="Fiddler" Content="Fiddler" Tag="Fiddler Classic" Margin="10,5" Grid.Row="3" Grid.Column="0" Foreground="White"/>
+                                <CheckBox Name="HWMonitor" Content="HWMonitor" Tag="HWMonitor" Margin="10,5" Grid.Row="4" Grid.Column="0" Foreground="White"/>
+                                <CheckBox Name="DotNetAllVersions" Content=".NET All Versions" Tag="Microsoft .Net Runtime" Margin="10,5" Grid.Row="5" Grid.Column="0" Foreground="White"/>
+                                <CheckBox Name="MicrosoftEdge" Content="Microsoft Edge" Tag="Microsoft Edge" Margin="10,5" Grid.Row="6" Grid.Column="0" Foreground="White"/>
+                                <CheckBox Name="MicrosoftOffice365" Content="Microsoft Office 365" Tag="Microsoft 365 Apps for Enterprise" Margin="10,5" Grid.Row="7" Grid.Column="0" Foreground="White"/>
+                                <CheckBox Name="MicrosoftOneDrive" Content="Microsoft OneDrive" Tag="Microsoft OneDrive" Margin="10,5" Grid.Row="8" Grid.Column="0" Foreground="White"/>
+                                <CheckBox Name="MicrosoftOneNote" Content="Microsoft OneNote (UWP)" Tag="Microsoft OneNote" Margin="10,5" Grid.Row="9" Grid.Column="0" Foreground="White"/>
 
-                            <CheckBox Name="MicrosoftOneNote" Content="Microsoft OneNote (UWP)" Tag="Microsoft OneNote" Margin="0,5" Grid.Row="0" Grid.Column="1" Foreground="White"/>
-                            <CheckBox Name="MicrosoftTeams" Content="Microsoft Teams" Tag="Microsoft Teams" Margin="0,5" Grid.Row="1" Grid.Column="1" Foreground="White"/>
-                            <CheckBox Name="MozillaFirefox" Content="Mozilla Firefox" Tag="Mozilla Firefox" Margin="0,5" Grid.Row="2" Grid.Column="1" Foreground="White"/>
-                            <CheckBox Name="PowerAutomate" Content="Power Automate" Tag="Power Automate" Margin="0,5" Grid.Row="3" Grid.Column="1" Foreground="White"/>
-                            <CheckBox Name="PowerBIDesktop" Content="Power BI Desktop" Tag="Power BI Desktop" Margin="0,5" Grid.Row="4" Grid.Column="1" Foreground="White"/>
-                            <CheckBox Name="PowerToys" Content="PowerToys" Tag="PowerToys" Margin="0,5" Grid.Row="5" Grid.Column="1" Foreground="White"/>
-                            <CheckBox Name="QuickAssist" Content="Quick Assist" Tag="Quick Assist" Margin="0,5" Grid.Row="6" Grid.Column="1" Foreground="White"/>
-                            <CheckBox Name="RemoteDesktop" Content="Remote Desktop" Tag="Microsoft Remote Desktop" Margin="0,5" Grid.Row="7" Grid.Column="1" Foreground="White"/>
-                            <CheckBox Name="SARATool" Content="SARA Tool" Tag="Microsoft Support and Recovery Assistant" Margin="0,5" Grid.Row="8" Grid.Column="1" Foreground="White"/>
+                                <!-- Column 1 -->
+                                <CheckBox Name="MicrosoftTeams" Content="Microsoft Teams" Tag="Microsoft Teams" Margin="10,5" Grid.Row="0" Grid.Column="1" Foreground="White"/>
+                                <CheckBox Name="MozillaFirefox" Content="Mozilla Firefox" Tag="Mozilla Firefox" Margin="10,5" Grid.Row="1" Grid.Column="1" Foreground="White"/>
+                                <CheckBox Name="PowerAutomate" Content="Power Automate" Tag="Power Automate" Margin="10,5" Grid.Row="2" Grid.Column="1" Foreground="White"/>
+                                <CheckBox Name="PowerBIDesktop" Content="Power BI Desktop" Tag="Power BI Desktop" Margin="10,5" Grid.Row="3" Grid.Column="1" Foreground="White"/>
+                                <CheckBox Name="PowerToys" Content="PowerToys" Tag="PowerToys" Margin="10,5" Grid.Row="4" Grid.Column="1" Foreground="White"/>
+                                <CheckBox Name="QuickAssist" Content="Quick Assist" Tag="Quick Assist" Margin="10,5" Grid.Row="5" Grid.Column="1" Foreground="White"/>
+                                <CheckBox Name="RemoteDesktop" Content="Remote Desktop" Tag="Microsoft Remote Desktop" Margin="10,5" Grid.Row="6" Grid.Column="1" Foreground="White"/>
+                                <CheckBox Name="SARATool" Content="SARA Tool" Tag="Microsoft Support and Recovery Assistant" Margin="10,5" Grid.Row="7" Grid.Column="1" Foreground="White"/>
+                                <CheckBox Name="SurfaceDiagnosticToolkit" Content="Surface Diagnostic Toolkit" Tag="Surface Diagnostic Toolkit" Margin="10,5" Grid.Row="8" Grid.Column="1" Foreground="White"/>
+                                <CheckBox Name="VisioViewer2016" Content="Visio Viewer 2016" Tag="Microsoft VisioViewer" Margin="10,5" Grid.Row="9" Grid.Column="1" Foreground="White"/>
 
-                            <CheckBox Name="SurfaceDiagnosticToolkit" Content="Surface Diagnostic Toolkit" Tag="Surface Diagnostic Toolkit" Margin="0,5" Grid.Row="0" Grid.Column="2" Foreground="White"/>
-                            <CheckBox Name="VisioViewer2016" Content="Visio Viewer 2016" Tag="Microsoft VisioViewer" Margin="0,5" Grid.Row="1" Grid.Column="2" Foreground="White"/>
-                            <CheckBox Name="VisualStudioCode" Content="Visual Studio Code" Tag="Microsoft Visual Studio Code" Margin="0,5" Grid.Row="2" Grid.Column="2" Foreground="White"/>
-                            <CheckBox Name="SevenZip" Content="7-Zip" Tag="7-Zip" Margin="0,5" Grid.Row="3" Grid.Column="2" Foreground="White"/>
+                                <!-- Column 2 -->
+                                <CheckBox Name="VisualStudioCode" Content="Visual Studio Code" Tag="Microsoft Visual Studio Code" Margin="10,5" Grid.Row="0" Grid.Column="2" Foreground="White"/>
+                                <CheckBox Name="SevenZip" Content="7-Zip" Tag="7-Zip" Margin="10,5" Grid.Row="1" Grid.Column="2" Foreground="White"/>
 
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10" Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2">
-                                <Button Name="InstallButton" Content="Install" Width="100" Height="30" Margin="5" Cursor="Hand">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
-                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                        </Border>
-                                                        <ControlTemplate.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter Property="Cursor" Value="Hand"/>
-                                                            </Trigger>
-                                                        </ControlTemplate.Triggers>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                                <Button x:Name="UninstallButton" Content="Uninstall" Width="100" Height="30" Margin="5" Cursor="Hand">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
-                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                        </Border>
-                                                        <ControlTemplate.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter Property="Cursor" Value="Hand"/>
-                                                            </Trigger>
-                                                        </ControlTemplate.Triggers>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                                <Button x:Name="InstalledButton" Content="Installed" Width="100" Height="30" Margin="5" Cursor="Hand">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
-                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                        </Border>
-                                                        <ControlTemplate.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter Property="Cursor" Value="Hand"/>
-                                                            </Trigger>
-                                                        </ControlTemplate.Triggers>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                                <Button Name="CheckAllButton" Content="Check All" Width="100" Height="30" Margin="5" Cursor="Hand">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
-                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                        </Border>
-                                                        <ControlTemplate.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter Property="Cursor" Value="Hand"/>
-                                                            </Trigger>
-                                                        </ControlTemplate.Triggers>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                            </StackPanel>
-                            <CheckBox Name="ShowAllInstalled" Content="Show All Installed" Tag="ShowInstalled" Margin="0,10" HorizontalAlignment="Right" VerticalAlignment="Center" Grid.Row="10" Grid.Column="2" Foreground="White"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,5" Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="2">
+                                    <Button Name="InstallButton" Content="Install" Width="100" Height="30" Margin="5" Cursor="Hand">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter Property="Cursor" Value="Hand"/>
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button x:Name="UninstallButton" Content="Uninstall" Width="100" Height="30" Margin="5" Cursor="Hand">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter Property="Cursor" Value="Hand"/>
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button x:Name="InstalledButton" Content="Installed" Width="100" Height="30" Margin="5" Cursor="Hand">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter Property="Cursor" Value="Hand"/>
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button Name="CheckAllButton" Content="Check All" Width="100" Height="30" Margin="5" Cursor="Hand">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter Property="Cursor" Value="Hand"/>
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </StackPanel>
+                                <CheckBox Name="ShowAllInstalled" Content="Show All Installed" Tag="ShowInstalled" Margin="20,5" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Row="11" Grid.Column="2" Foreground="White"/>
+                            </Grid>
                         </Grid>
-                    </Grid>
+                    </Border>
                 </TabItem>
                 <TabItem Header="Tweak" Name="TweakTab" FontSize="14">
                     <Grid Background="Transparent">
