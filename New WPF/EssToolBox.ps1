@@ -236,6 +236,15 @@ if (-not $xamlExists -or -not $functionsExists) {
             Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
             exit
         }
+
+        # Add a small delay to ensure files are fully written to disk
+        Start-Sleep -Seconds 2
+
+        # Recheck the existence of the XAML file
+        if (-not (Test-Path -Path $mainWindowPath)) {
+            Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
+            exit
+        }
     }
     else {
         Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
