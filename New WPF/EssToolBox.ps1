@@ -187,7 +187,7 @@ if (-not $xamlExists -or -not $functionsExists) {
         # Get the list of .ps1 files in the functions directory
         try {
             $ps1Files = Invoke-RestMethod -Uri $functionsUrl -Headers @{ "User-Agent" = "PowerShell" }
-            Write-Host "Retrieved list of functions files" -ForegroundColor Green
+            Write-Host "Retrieved list of functions files: $($ps1Files | ConvertTo-Json -Depth 3)" -ForegroundColor Green
         }
         catch {
             Write-Host "Failed to retrieve Functions folder: $_" -ForegroundColor Red
@@ -208,11 +208,12 @@ if (-not $xamlExists -or -not $functionsExists) {
                 if (-not (Test-Path -Path $filePath)) {
                     try {
                         $fileUrl = $file.download_url
+                        Write-Host "Downloading $fileName from $fileUrl" -ForegroundColor Yellow
                         Invoke-RestMethod -Uri $fileUrl -OutFile $filePath
                         Write-Host "Downloaded $fileName to $filePath" -ForegroundColor Green
                     }
                     catch {
-                        Write-Host "Failed to download ${fileName}: $_" -ForegroundColor Red
+                        Write-Host "Failed to download `${fileName}`: $_" -ForegroundColor Red
                     }
                 }
             }
