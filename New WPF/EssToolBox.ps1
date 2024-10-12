@@ -135,9 +135,13 @@ if ($PSScriptRoot) {
 elseif ($MyInvocation.MyCommand.Path) {
     $scriptDir = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
 }
-else {
-    $scriptDir = [System.IO.Path]::GetDirectoryName([System.Reflection.Assembly]::GetExecutingAssembly().Location)
-}
+<# else {
+    # Use a temporary directory if the script directory cannot be determined
+    $scriptDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
+    if (-not (Test-Path -Path $scriptDir)) {
+        New-Item -ItemType Directory -Path $scriptDir | Out-Null
+    }
+} #>
 
 # Define the paths to the XAML and Functions folders
 $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
@@ -150,28 +154,37 @@ $functionsExists = Test-Path -Path $functionsDir
 if (-not $xamlExists -or -not $functionsExists) {
     Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
     if (-not $OfflineMode) {
-        # Define the URLs for the XAML and Functions folders
-        $xamlUrl = "https://github.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/XAML"
-        $functionsUrl = "https://github.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Functions"
+        # Define the raw URLs for the XAML and Functions folders
+        $xamlUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/Test/New%20WPF/XAML/MainWindow.xml"
+        $functionsUrl = "https://api.github.com/repos/finkuja/ToolBox/contents/Test/New%20WPF/Functions"
 
-        # Define the paths to the temporary directories
-        $tempDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
-        if (-not (Test-Path -Path $tempDir)) {
-            New-Item -ItemType Directory -Path $tempDir | Out-Null
+        # Ensure the directories exist
+        if (-not (Test-Path -Path $xamlDir)) {
+            New-Item -ItemType Directory -Path $xamlDir | Out-Null
+        }
+        if (-not (Test-Path -Path $functionsDir)) {
+            New-Item -ItemType Directory -Path $functionsDir | Out-Null
         }
 
-        $xamlDir = [System.IO.Path]::Combine($tempDir, "XAML")
-        $functionsDir = [System.IO.Path]::Combine($tempDir, "Functions")
+        # Download the XAML file if it doesn't exist
+        $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
+        if (-not (Test-Path -Path $mainWindowPath)) {
+            Invoke-RestMethod -Uri $xamlUrl -OutFile $mainWindowPath
+        }
 
-        # Download the XAML and Functions folders
-        Invoke-RestMethod -Uri "$xamlUrl/MainWindow.xml" -OutFile [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
         # Get the list of .ps1 files in the functions directory
-        $ps1Files = Invoke-RestMethod -Uri "$functionsUrl" | Where-Object { $_ -match "\.ps1$" }
+        $ps1Files = Invoke-RestMethod -Uri $functionsUrl
 
-        # Download each .ps1 file
+        # Download each .ps1 file if it doesn't exist
         foreach ($file in $ps1Files) {
-            $fileName = [System.IO.Path]::GetFileName($file)
-            Invoke-RestMethod -Uri "$functionsUrl/$fileName" -OutFile [System.IO.Path]::Combine($functionsDir, $fileName)
+            if ($file.name -match "\.ps1$") {
+                $fileName = $file.name
+                $filePath = [System.IO.Path]::Combine($functionsDir, $fileName)
+                if (-not (Test-Path -Path $filePath)) {
+                    $fileUrl = $file.download_url
+                    Invoke-RestMethod -Uri $fileUrl -OutFile $filePath
+                }
+            }
         }
     }
     else {
@@ -199,6 +212,23 @@ Add-Type -AssemblyName System.Windows.Forms
 
 # Read the XAML file content
 $xaml = Get-Content -Path $mainWindowPath -Raw
+
+# Load the XAML directly using XamlReader
+try {
+    $reader = (New-Object System.Xml.XmlTextReader (New-Object System.IO.StringReader $xaml))
+    $window = [Windows.Markup.XamlReader]::Load($reader)
+}
+catch {
+    Write-Host "Failed to load XAML: $_" -ForegroundColor Red
+    exit
+}
+
+# Add the MouseLeftButtonDown event handler to make the window draggable
+$windowControlPanel = $window.FindName("WindowControlPanel")
+if ($null -eq $windowControlPanel) {
+    Write-Host "WindowControlPanel not found in XAML." -ForegroundColor Red
+    exit
+}
 
 # Load the XAML directly using XamlReader
 try {
