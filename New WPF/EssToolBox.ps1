@@ -149,8 +149,8 @@ $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
 $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 
 # Check if the XAML and Functions folders exist
-$xamlExists = Test-Path -Path $xamlDir
-$functionsExists = Test-Path -Path $functionsDir
+$xamlExists = Test-Path -Path $xamlDir -ErrorAction SilentlyContinue
+$functionsExists = Test-Path -Path $functionsDir -ErrorAction SilentlyContinue
 
 if (-not $xamlExists -or -not $functionsExists) {
     Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
@@ -260,13 +260,10 @@ if ($null -eq $closeButton) {
 }
 $closeButton.Add_Click({
         if ($tempDir) {
-            Write-Host "Inseide Loop temp dire is true" -ForegroundColor Red
-            Write-Host $scriptDir -ForegroundColor Yellow
             try {
                 # Clean up the temporary directory and its contents
                 if (Test-Path -Path $scirptDir) {
-                    Write-Host $scriptDir -ForegroundColor Violet
-                    Remove-Item -Path  -Recurse -Force
+                    Remove-Item -Path $scirptDir  -Recurse -Force
                 }
             }
             catch {
