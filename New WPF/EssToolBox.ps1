@@ -161,7 +161,7 @@ if (-not $xamlExists -or -not $functionsExists) {
     if (-not $OfflineMode) {
         # Define the raw URLs for the XAML and Functions folders Change from Test To main when ready.
         $xamlUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/Test/New%20WPF/XAML/MainWindow.xml"
-        $functionsUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Functions"
+        $functionsUrl = "https://api.github.com/repos/finkuja/ToolBox/contents/Test/New%20WPF/Functions?ref=Test"
 
         # Ensure the directories exist
         if (-not (Test-Path -Path $xamlDir)) {
@@ -178,7 +178,7 @@ if (-not $xamlExists -or -not $functionsExists) {
         }
 
         # Get the list of .ps1 files in the functions directory
-        $ps1Files = Invoke-RestMethod -Uri $functionsUrl
+        $ps1Files = Invoke-RestMethod -Uri $functionsUrl -Headers @{ "User-Agent" = "PowerShell" }
 
         # Download each .ps1 file if it doesn't exist
         foreach ($file in $ps1Files) {
