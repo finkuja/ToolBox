@@ -135,13 +135,13 @@ if ($PSScriptRoot) {
 elseif ($MyInvocation.MyCommand.Path) {
     $scriptDir = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
 }
-<# else {
+else {
     # Use a temporary directory if the script directory cannot be determined
     $scriptDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
     if (-not (Test-Path -Path $scriptDir)) {
         New-Item -ItemType Directory -Path $scriptDir | Out-Null
     }
-} #>
+}
 
 # Define the paths to the XAML and Functions folders
 $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
