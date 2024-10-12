@@ -134,15 +134,27 @@ function Invoke-Tweak {
             }
             "EnableEndTaskWithRightClick" {
                 # Add Apply logic for EnableEndTaskWithRightClick
-                $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
-                $regName = "TaskbarEndTask"
-                $regValue = 1
-                #Ensure the registry path exists
-                if (-not (Test-Path $regPath)) {
-                    New-Item -Path $regPath -Force | Out-Null
+                try {
+                    $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
+                    $regName = "TaskbarEndTask"
+                    $regValue = 1
+
+                    Write-Host "Applying EnableEndTaskWithRightClick..."
+
+                    # Ensure the registry path exists
+                    if (-not (Test-Path $regPath)) {
+                        New-Item -Path $regPath -Force | Out-Null
+                        Write-Host "Created registry path: $regPath"
+                    }
+
+                    # Set the registry value, creating it if it doesn't exist
+                    New-ItemProperty -Path $regPath -Name $regName -Value $regValue -Force | Out-Null
+                    Write-Host "Set registry value: $regName to $regValue at $regPath" -ForegroundColor Green
+                    Write-Host "End Task with Rigth Click has been enabled." -ForegroundColor Green
                 }
-                #Set the registry value, creating it if it doesn't exist
-                New-ItemProperty -Path $regPath -Name $regName -Value $regValue -Force | Out-Null
+                catch {
+                    Write-Host "Failed to apply EnableEndTaskWithRightClick: $_" -ForegroundColor Red
+                }
             }
             "ChangeIRPStackSize" {
                 # Add Apply logic for ChangeIRPStackSize
@@ -337,6 +349,7 @@ function Invoke-Tweak {
                 }
                 #Remove the registry value, creating it if it doesn't exist
                 New-ItemProperty -Path $regPath -Name $regName -Value $regValue -Force | Out-Null
+                Write-Host "End Task with Rigth Click has been disabled." -ForegroundColor Green
             }
             "ChangeIRPStackSize" {
                 # Add Undo logic for ChangeIRPStackSize
