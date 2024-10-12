@@ -1,3 +1,7 @@
+param (
+    [switch]$OfflineMode
+)
+
 <#
 .SYNOPSIS
     This script is the ESSToolBox, a tool for system administration tasks.
@@ -5,8 +9,8 @@
 .DESCRIPTION
     The ESSToolBox is a PowerShell script designed to perform various system administration tasks. It includes features such as repairing Windows Update, checking for the installation of Windows Package Manager (winget), and more.
 
-.PARAMETER None
-    This script does not accept any parameters.
+.PARAMETER OfflineMode
+    If specified, the script will run in offline mode and will not download the modules. It will assume the dependencies are in the same folder as the script.
 
 .NOTES
     - This script must be run with administrator privileges.
@@ -124,191 +128,84 @@ else {
     }
 }
 
-# Check if winget module is installed and up to date, if not install or update it
-$moduleName = "Microsoft.WinGet.Client"
-$module = Get-Module -Name $moduleName -ListAvailable -ErrorAction SilentlyContinue
-
-if (-not $module) {
-    Write-Host "Installing the $moduleName module..." -ForegroundColor Yellow
-    try {
-        Install-Module -Name $moduleName -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
-        Write-Host "$moduleName module installed successfully." -ForegroundColor Green
-    }
-    catch {
-        Write-Warning "Failed to install the $moduleName module"
-    }
-}
-else {
-    Write-Host "$moduleName module is already installed. Checking for updates..." -ForegroundColor Yellow
-    try {
-        $updateAvailable = Find-Module -Name $moduleName | Where-Object { $_.Version -gt $module.Version }
-        if ($updateAvailable) {
-            Write-Host "Updating the $moduleName module to the latest version..." -ForegroundColor Yellow
-            Update-Module -Name $moduleName -Force -ErrorAction Stop
-            Write-Host "$moduleName module updated successfully." -ForegroundColor Green
-        }
-        else {
-            Write-Host "$moduleName module is up to date." -ForegroundColor Green
-        }
-    }
-    catch {
-        Write-Warning "Failed to check for updates or update the $moduleName module."
-    }
-}
-
-# Import the winget module
-try {
-    Import-Module -Name Microsoft.WinGet.Client -ErrorAction Stop
-    Write-Host "Microsoft.WinGet.Client module is imported." -ForegroundColor Green
-}
-catch {
-    Write-Warning "Failed to import the Microsoft.WinGet.Client module. The Install Tab will not work properly."
-}
-
 # Determine the script directory
 if ($PSScriptRoot) {
     $scriptDir = $PSScriptRoot
-} elseif ($MyInvocation.MyCommand.Path) {
+}
+elseif ($MyInvocation.MyCommand.Path) {
     $scriptDir = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
-} else {
+}
+else {
     $scriptDir = [System.IO.Path]::GetDirectoryName([System.Reflection.Assembly]::GetExecutingAssembly().Location)
 }
 
-# Define the URLs for the module files
-$installModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/main/Content/InstallGUI.psm1"
-$tweakModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/main/Content/TweakGUI.psm1"
-$fixModuleUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/main/Content/FixGUI.psm1"
+# Define the paths to the XAML and Functions folders
+$xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
+$functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 
-# Define the paths to the modules in the temporary directory
-$tempDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
-if (-not (Test-Path -Path $tempDir)) {
-    New-Item -ItemType Directory -Path $tempDir | Out-Null
+# Check if the XAML and Functions folders exist
+$xamlExists = Test-Path -Path $xamlDir
+$functionsExists = Test-Path -Path $functionsDir
+
+if (-not $xamlExists -or -not $functionsExists) {
+    Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
+    if (-not $OfflineMode) {
+        # Define the URLs for the XAML and Functions folders
+        $xamlUrl = "https://github.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/XAML"
+        $functionsUrl = "https://github.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Functions"
+
+        # Define the paths to the temporary directories
+        $tempDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
+        if (-not (Test-Path -Path $tempDir)) {
+            New-Item -ItemType Directory -Path $tempDir | Out-Null
+        }
+
+        $xamlDir = [System.IO.Path]::Combine($tempDir, "XAML")
+        $functionsDir = [System.IO.Path]::Combine($tempDir, "Functions")
+
+        # Download the XAML and Functions folders
+        Invoke-RestMethod -Uri "$xamlUrl/MainWindow.xml" -OutFile [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
+        # Get the list of .ps1 files in the functions directory
+        $ps1Files = Invoke-RestMethod -Uri "$functionsUrl" | Where-Object { $_ -match "\.ps1$" }
+
+        # Download each .ps1 file
+        foreach ($file in $ps1Files) {
+            $fileName = [System.IO.Path]::GetFileName($file)
+            Invoke-RestMethod -Uri "$functionsUrl/$fileName" -OutFile [System.IO.Path]::Combine($functionsDir, $fileName)
+        }
+    }
+    else {
+        Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
+        exit
+    }
 }
 
-$installModulePath = [System.IO.Path]::Combine($tempDir, "InstallGUI.psm1")
-$tweakModulePath = [System.IO.Path]::Combine($tempDir, "TweakGUI.psm1")
-$fixModulePath = [System.IO.Path]::Combine($tempDir, "FixGUI.psm1")
-
-# Download the module files
-Invoke-RestMethod -Uri $installModuleUrl -OutFile $installModulePath
-Invoke-RestMethod -Uri $tweakModuleUrl -OutFile $tweakModulePath
-Invoke-RestMethod -Uri $fixModuleUrl -OutFile $fixModulePath
-
-# Check if the Install module exists and import it
-if (Test-Path -Path $installModulePath) {
-    Import-Module -Name $installModulePath -Force
-} else {
-    Write-Host "The Install module at path '$installModulePath' cannot be found." -ForegroundColor Red
+# Check if the MainWindow.xml file exists
+$mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
+if (-not (Test-Path -Path $mainWindowPath)) {
+    Write-Host "The XAML folder or MainWindow.xml file cannot be found." -ForegroundColor Red
+    exit
 }
 
-# Check if the Tweak module exists and import it
-if (Test-Path -Path $tweakModulePath) {
-    Import-Module -Name $tweakModulePath -Force
-} else {
-    Write-Host "The Tweak module at path '$tweakModulePath' cannot be found." -ForegroundColor Red
+# Source all .ps1 files in the Functions directory
+Get-ChildItem -Path $functionsDir -Filter *.ps1 | ForEach-Object {
+    . $_.FullName
 }
 
-# Check if the Fix module exists and import it
-if (Test-Path -Path $fixModulePath) {
-    Import-Module -Name $fixModulePath -Force
-} else {
-    Write-Host "The Fix module at path '$fixModulePath' cannot be found." -ForegroundColor Red
-}
-
-################################
-# Main Menu Display  using WPF #
-################################
-
-# Load the XAML form
+# Load the PresentationFramework assembly for XAML support
 Add-Type -AssemblyName PresentationFramework
+# Load the winforms assembly for message box support
+Add-Type -AssemblyName System.Windows.Forms
 
-# Define the XAML for the main window with rounded corners using WindowChrome
-$xaml = @"
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="ESSToolBox" Height="450" Width="800" WindowStartupLocation="CenterScreen" AllowsTransparency="True" WindowStyle="None" Background="Transparent" ResizeMode="NoResize">
-    <WindowChrome.WindowChrome>
-        <WindowChrome CornerRadius="10" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
-    </WindowChrome.WindowChrome>
-    <Border Background="#383131" CornerRadius="10" BorderBrush="Gray" BorderThickness="1">
-        <Grid Name="WindowControlPanel">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <DockPanel LastChildFill="True">
-                <Button Name="CloseButton" DockPanel.Dock="Right" Width="40" Height="40" Margin="5" Background="Transparent" BorderBrush="Transparent" Foreground="White" Cursor="Hand">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
-                                <TextBlock x:Name="CloseIcon" Text="&#xE10A;" FontFamily="Segoe MDL2 Assets" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="CloseIcon" Property="Foreground" Value="#E30101"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="ESSToolBox" Margin="10,0,0,0" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Text="Beta v 0.2" Margin="5,0,0,0" FontSize="16" Foreground="White"/>
-                </StackPanel>
-            </DockPanel>
-            <TabControl Grid.Row="1" Name="MainTabControl" Background="Transparent" BorderBrush="Transparent" BorderThickness="0">
-                <TabControl.Resources>
-                    <Style TargetType="TabItem">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="TabItem">
-                                    <Border Name="Border" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" CornerRadius="10" Margin="2">
-                                        <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" Margin="10,2"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="Border" Property="Background" Value="#185FF8"/>
-                                            <Setter Property="Foreground" Value="White"/>
-                                        </Trigger>
-                                        <Trigger Property="IsSelected" Value="False">
-                                            <Setter Property="Foreground" Value="#185FF8"/>
-                                        </Trigger>
-                                        <Trigger Property="IsEnabled" Value="False">
-                                            <Setter Property="Foreground" Value="Gray"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </TabControl.Resources>
-                <TabItem Header="Install" Name="InstallTab" FontSize="14">
-                    <Grid Name="InstallTabGrid" Background="Transparent">
-                        <TextBlock Text="Install Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
-                    </Grid>
-                </TabItem>
-                <TabItem Header="Tweak" Name="TweakTab" FontSize="14">
-                    <Grid Background="Transparent">
-                        <TextBlock Text="Tweak Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
-                    </Grid>
-                </TabItem>
-                <TabItem Header="Fix" Name="FixTab" FontSize="14">
-                    <Grid Background="Transparent">
-                        <TextBlock Text="Fix Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
-                    </Grid>
-                </TabItem>
-            </TabControl>
-        </Grid>
-    </Border>
-</Window>
-"@
+# Read the XAML file content
+$xaml = Get-Content -Path $mainWindowPath -Raw
 
-# Load the XAML
+# Load the XAML directly using XamlReader
 try {
-    [xml]$xamlWindow = $xaml
-    $reader = (New-Object System.Xml.XmlNodeReader $xamlWindow)
+    $reader = (New-Object System.Xml.XmlTextReader (New-Object System.IO.StringReader $xaml))
     $window = [Windows.Markup.XamlReader]::Load($reader)
-} catch {
+}
+catch {
     Write-Host "Failed to load XAML: $_" -ForegroundColor Red
     exit
 }
@@ -320,9 +217,9 @@ if ($null -eq $windowControlPanel) {
     exit
 }
 $windowControlPanel.Add_MouseLeftButtonDown({
-    param ($source, $e)
-    $window.DragMove()
-})
+        param ($source, $e)
+        $window.DragMove()
+    })
 
 # Find the CloseButton and add a Click event handler
 $closeButton = $window.FindName("CloseButton")
@@ -331,12 +228,21 @@ if ($null -eq $closeButton) {
     exit
 }
 $closeButton.Add_Click({
-    # Clean up the temporary directory and its contents
-    if (Test-Path -Path $tempDir) {
-        Remove-Item -Path $tempDir -Recurse -Force
-    }
-    $window.Close()
-})
+        try {
+            # Clean up the temporary directory and its contents
+            if (Test-Path -Path $tempDir) {
+                Remove-Item -Path $tempDir -Recurse -Force
+            }
+        }
+        catch {
+            # Handle any errors that occur during the removal
+            Write-Host "An error occurred while cleaning up the temporary directory: $_" -ForegroundColor Red
+        }
+        finally {
+            # Close the window
+            $window.Close()
+        }
+    })
 
 # Find the MainTabControl
 $mainTabControl = $window.FindName("MainTabControl")
@@ -345,22 +251,290 @@ if ($null -eq $mainTabControl) {
     exit
 }
 
+
+###########################################
+# INSTALL TAB Event Handlers and Functions#
+###########################################
+
+# Hide the InstallTab if $disableInstall is $true
+if ($disableInstall) {
+    $installTab = $mainTabControl.Items | Where-Object { $_.Name -eq "InstallTab" }
+    if ($installTab) {
+        $installTab.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+
+    # Set the default selected tab to Tweak
+    $tweakTab = $mainTabControl.Items | Where-Object { $_.Name -eq "TweakTab" }
+    if ($tweakTab) {
+        $mainTabControl.SelectedItem = $tweakTab
+
+        # Refresh the content of the TweakTab
+        $tweakTabContent = $tweakTab.Content
+        $tweakTab.Content = $null
+        $tweakTab.Content = $tweakTabContent
+    }
+}
+
 # Event handler for tab selection change
 $mainTabControl.Add_SelectionChanged({
-    param ($source, $e)
-    $selectedTab = $source.SelectedItem
-    switch ($selectedTab.Name) {
-        "InstallTab" {
-            Invoke-Install -DisableInstall:$disableInstall -MainWindow $window
+        param ($source, $e)
+        $selectedTab = $source.SelectedItem
+        if ($selectedTab) {
+            $selectedTabName = $selectedTab.Name
+            switch ($selectedTabName) {
+                "InstallTab" {
+                    # Refresh the content of the InstallTab
+                    $installTabContent = $selectedTab.Content
+                    $selectedTab.Content = $null
+                    $selectedTab.Content = $installTabContent
+                }
+                "TweakTab" {
+                    # Refresh the content of the TweakTab
+                    $tweakTabContent = $selectedTab.Content
+                    $selectedTab.Content = $null
+                    $selectedTab.Content = $tweakTabContent
+                }
+                "FixTab" {
+                    # Refresh the content of the FixTab
+                    $fixTabContent = $selectedTab.Content
+                    $selectedTab.Content = $null
+                    $selectedTab.Content = $fixTabContent
+                }
+            }
         }
-        "TweakTab" {
-            # Add corresponding function call for TweakTab if needed
+    })
+
+# Find all checkboxes in the InstallTab
+$checkboxes = @(
+    $window.FindName("AdobeCreativeCloud"),
+    $window.FindName("AdobeReaderDC"),
+    $window.FindName("GoogleChrome"),
+    $window.FindName("Fiddler"),
+    $window.FindName("HWMonitor"),
+    $window.FindName("DotNetAllVersions"),
+    $window.FindName("MicrosoftEdge"),
+    $window.FindName("MicrosoftOffice365"),
+    $window.FindName("MicrosoftOneDrive"),
+    $window.FindName("MicrosoftOneNote"),
+    $window.FindName("MicrosoftTeams"),
+    $window.FindName("MozillaFirefox"),
+    $window.FindName("PowerAutomate"),
+    $window.FindName("PowerBIDesktop"),
+    $window.FindName("PowerToys"),
+    $window.FindName("QuickAssist"),
+    $window.FindName("RemoteDesktop"),
+    $window.FindName("SARATool"),
+    $window.FindName("SurfaceDiagnosticToolkit"),
+    $window.FindName("VisioViewer2016"),
+    $window.FindName("VisualStudioCode"),
+    $window.FindName("SevenZip")
+)
+
+# Find the CheckAllButton and add a Click event handler
+$checkAllButton = $window.FindName("CheckAllButton")
+if ($null -eq $checkAllButton) {
+    Write-Host "CheckAllButton not found in XAML." -ForegroundColor Red
+    exit
+}
+
+$checkAllButton.Add_Click({
+        $allChecked = $checkboxes | ForEach-Object { $_.IsChecked } | Where-Object { $_ -eq $false } | Measure-Object | Select-Object -ExpandProperty Count
+
+        if ($allChecked -eq 0) {
+            # Uncheck all checkboxes
+            foreach ($checkbox in $checkboxes) {
+                $checkbox.IsChecked = $false
+            }
+            $checkAllButton.Content = "Check All"
         }
-        "FixTab" {
-            # Add corresponding function call for FixTab if needed
+        else {
+            # Check all checkboxes
+            foreach ($checkbox in $checkboxes) {
+                $checkbox.IsChecked = $true
+            }
+            $checkAllButton.Content = "Uncheck All"
         }
-    }
-})
+    })
+
+# Find the InstallButton and add a Click event handler
+$installButton = $window.FindName("InstallButton")
+if ($null -eq $installButton) {
+    Write-Host "InstallButton not found in XAML." -ForegroundColor Red
+    exit
+}
+
+$installButton.Add_Click({
+        # Get the names of the checked checkboxes
+        $checkedItems = $checkboxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Tag }
+
+        # Invoke the Invoke-WinGet script with the checked items
+        foreach ($item in $checkedItems) {
+            Write-Host "Installing $item..."
+            Invoke-WinGet -PackageName $item -Action Install -window $window
+        }
+    })
+    
+# Find the UninstallButton and add a Click event handler
+$uninstallButton = $window.FindName("UninstallButton")
+if ($null -eq $uninstallButton) {
+    Write-Host "UninstallButton not found in XAML." -ForegroundColor Red
+    exit
+}
+$uninstallButton.Add_Click({
+        # Get the names of the checked checkboxes
+        $checkedItems = $checkboxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Tag }
+
+        # Invoke the Invoke-WinGet script with the checked items
+        foreach ($item in $checkedItems) {
+            Write-Host "Uninstalling $item..."
+            Invoke-WinGet -PackageName $item -Action Uninstall -window $window
+        }
+    })
+
+# Find the InstalledButton and add a Click event handler
+$installedButton = $window.FindName("InstalledButton")
+if ($null -eq $installedButton) {
+    Write-Host "InstalledButton not found in XAML." -ForegroundColor Red
+    exit
+}
+$installedButton.Add_Click({
+        # Check if the ShowAllInstalled checkbox is checked
+        $showAllInstalledCheckbox = $window.FindName("ShowAllInstalled")
+        if ($showAllInstalledCheckbox -and $showAllInstalledCheckbox.IsChecked) {
+            # Run WinGet List and display the results in the console
+            Start-Process "winget" -ArgumentList "list" -NoNewWindow -Wait
+            return
+        }
+
+        # Run the Get-WinGetPackage command and capture the output directly
+        $output = Get-WinGetPackage
+        # Extract the package names from the output
+        $packageNames = $output | Select-Object -ExpandProperty Name
+
+        # Iterate through each checkbox in the $checkboxes array
+        foreach ($checkbox in $checkboxes) {
+            $checkboxName = $checkbox.Tag
+            # Check if the checkbox name is present in the package names
+            if ($packageNames -contains $checkboxName) {
+                $checkbox.IsChecked = $true
+            }
+            else {
+                $checkbox.IsChecked = $false
+            }
+        }
+    })
+
+###################################################
+# END OF INSTALL TAB Event Handlers and Functions #
+###################################################
+
+
+##########################################
+# TWEAK TAB Event Handlers and Functions #
+##########################################
+
+# Find all checkboxes in the TweakTab
+$tweakCheckBoxes = @(
+    $window.FindName("CleanBoot"),
+    $window.FindName("EnableDetailedBSODInformation"),
+    $window.FindName("EnableGodMode"),
+    $window.FindName("EnableClassicRightClickMenu"),
+    $window.FindName("EnableEndTaskWithRightClick"),
+    $window.FindName("ChangeIRPStackSize"),
+    $window.FindName("ClipboardHistory"),
+    $window.FindName("EnableVerboseLogonMessages"),
+    $window.FindName("EnableVerboseStartupAndShutdownMessages")
+)
+
+# Find the ApplyButton and add a Click event handler
+$ApplyButton = $window.FindName("ApplyButton")
+if ($null -eq $ApplyButton) {
+    Write-Error "ApplyButton not found."
+}
+else {
+
+    $ApplyButton.Add_Click({
+            # Get the names of the checked checkboxes
+            $checkedItems = $tweakCheckBoxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Name }
+            foreach ($item in $checkedItems) {
+                Invoke-Tweak -Action "Apply" -window $window -Tweak $item
+            }
+        })
+}
+
+# Find the UndoButton and add a Click event handler
+$UndoButton = $window.FindName("UndoButton")
+if ($null -eq $UndoButton) {
+    Write-Error "UndoButton not found."
+}
+else {
+    $UndoButton.Add_Click({
+            $checkedItems = $tweakCheckBoxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Name }
+            foreach ($item in $checkedItems) {
+                Invoke-Tweak -Action "Undo" -window $window -Tweak $item
+            }
+        })
+}
+
+# Find the DeleteTempFilesButton and add a Click event handler
+$DeleteTempFilesButton = $window.FindName("DeleteTempFilesButton")
+if ($null -eq $DeleteTempFilesButton) {
+    Write-Error "DeleteTempFilesButton not found."
+}
+else {
+    $DeleteTempFilesButton.Add_Click({
+            Invoke-DeleteTempFiles
+        })
+}
+
+# Find the OptimizeDrivesButton and add a Click event handler
+$OptimizeDrivesButton = $window.FindName("OptimizeDrivesButton")
+if ($null -eq $OptimizeDrivesButton) {
+    Write-Error "OptimizeDrivesButton not found."
+}
+else {
+    $OptimizeDrivesButton.Add_Click({
+            
+            Invoke-OptimizeDrives
+        })
+}
+
+# Find the RunDiskCleanupButton and add a Click event handler
+$RunDiskCleanupButton = $window.FindName("RunDiskCleanupButton")
+if ($null -eq $RunDiskCleanupButton) {
+    Write-Error "RunDiskCleanupButton not found."
+}
+else {
+    $RunDiskCleanupButton.Add_Click({
+            Invoke-RunDiskCleanup
+        })
+}
+
+# Find the DNSComboBox and add a SelectionChanged event handler
+$DNSComboBox = $window.FindName("DNSComboBox")
+if ($null -eq $DNSComboBox) {
+    Write-Error "DNSComboBox not found."
+}
+else {
+    $DNSComboBox.Add_SelectionChanged({
+            # Add your logic for handling DNS selection change here
+            $selectedDNS = $DNSComboBox.SelectedItem.Content
+            Write-Host "DNS selection changed to: $selectedDNS"
+        })
+}
+
+
+#################################################
+# END OF TWEAK TAB Event Handlers and Functions #
+#################################################
+
+########################################
+# FIX TAB Event Handlers and Functions #
+########################################
+
+###############################################
+# END OF FIX TAB Event Handlers and Functions #
+###############################################
 
 # Show the window
 $window.ShowDialog() | Out-Null
