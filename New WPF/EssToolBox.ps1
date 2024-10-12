@@ -128,6 +128,97 @@ else {
     }
 }
 
+###########################################
+# Check Install Update and Import Modules #
+###########################################
+
+# Check if winget module is installed and up to date, if not install or update it
+$moduleName = "Microsoft.WinGet.Client"
+$module = Get-Module -Name $moduleName -ListAvailable -ErrorAction SilentlyContinue
+
+if (-not $module) {
+    Write-Host "Installing the $moduleName module..." -ForegroundColor Yellow
+    try {
+        Install-Module -Name $moduleName -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
+        Write-Host "$moduleName module installed successfully." -ForegroundColor Green
+    }
+    catch {
+        Write-Warning "Failed to install the $moduleName module"
+    }
+}
+else {
+    Write-Host "$moduleName module is already installed. Checking for updates..." -ForegroundColor Yellow
+    try {
+        $updateAvailable = Find-Module -Name $moduleName | Where-Object { $_.Version -gt $module.Version }
+        if ($updateAvailable) {
+            Write-Host "Updating the $moduleName module to the latest version..." -ForegroundColor Yellow
+            Update-Module -Name $moduleName -Force -ErrorAction Stop
+            Write-Host "$moduleName module updated successfully." -ForegroundColor Green
+        }
+        else {
+            Write-Host "$moduleName module is up to date." -ForegroundColor Green
+        }
+    }
+    catch {
+        Write-Warning "Failed to check for updates or update the $moduleName module."
+    }
+
+}
+
+# Import the winget module
+try {
+    Import-Module -Name Microsoft.WinGet.Client -ErrorAction Stop
+    Write-Host "Microsoft.WinGet.Client module is imported." -ForegroundColor Green
+}
+catch {
+    Write-Warning "Failed to import the Microsoft.WinGet.Client module. The Install Tab will not work properly."
+}
+
+# Check if PowerShellForGitHub module is installed and up to date, if not install or update it
+$githubModuleName = "PowerShellForGitHub"
+$githubModule = Get-Module -Name $githubModuleName -ListAvailable -ErrorAction SilentlyContinue
+
+if (-not $githubModule) {
+    Write-Host "Installing the $githubModuleName module..." -ForegroundColor Yellow
+    try {
+        Install-Module -Name $githubModuleName -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
+        Write-Host "$githubModuleName module installed successfully." -ForegroundColor Green
+    }
+    catch {
+        Write-Warning "Failed to install the $githubModuleName module"
+    }
+}
+else {
+    Write-Host "$githubModuleName module is already installed. Checking for updates..." -ForegroundColor Yellow
+    try {
+        $githubUpdateAvailable = Find-Module -Name $githubModuleName | Where-Object { $_.Version -gt $githubModule.Version }
+        if ($githubUpdateAvailable) {
+            Write-Host "Updating the $githubModuleName module to the latest version..." -ForegroundColor Yellow
+            Update-Module -Name $githubModuleName -Force -ErrorAction Stop
+            Write-Host "$githubModuleName module updated successfully." -ForegroundColor Green
+        }
+        else {
+            Write-Host "$githubModuleName module is up to date." -ForegroundColor Green
+        }
+    }
+    catch {
+        Write-Warning "Failed to check for updates or update the $githubModuleName module."
+    }
+}
+
+# Import the GitHub module
+try {
+    Import-Module -Name PowerShellForGitHub -ErrorAction Stop
+    Write-Host "PowerShellForGitHub module is imported." -ForegroundColor Green
+}
+catch {
+    Write-Warning "Failed to import the PowerShellForGitHub module. The Script will not function properly."
+}
+
+##################################################
+# END of Check Install Update and Import Modules #
+##################################################
+
 # Initialize the tempDir flag
 $tempDir = $false
 
@@ -159,10 +250,13 @@ $functionsExists = Test-Path -Path $functionsDir -ErrorAction SilentlyContinue
 if (-not $xamlExists -or -not $functionsExists) {
     Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
     if (-not $OfflineMode) {
-        # Define the raw URLs for the XAML and Functions folders
-        $xamlUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/Test/New%20WPF/XAML/MainWindow.xml"
-        $functionsUrl = "https://api.github.com/repos/finkuja/ToolBox/git/trees/Test/New%20WPF/Functions?recursive=1"
-        
+        # Define the repository and paths
+        $repoOwner = "finkuja"
+        $repoName = "ToolBox"
+        $branch = "Test"
+        $xamlPath = "Test/New WPF/XAML/MainWindow.xml"
+        $functionsPath = "Test/New WPF/Functions"
+
         # Ensure the directories exist
         if (-not (Test-Path -Path $xamlDir)) {
             New-Item -ItemType Directory -Path $xamlDir | Out-Null
@@ -175,7 +269,8 @@ if (-not $xamlExists -or -not $functionsExists) {
         $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
         if (-not (Test-Path -Path $mainWindowPath)) {
             try {
-                Invoke-RestMethod -Uri $xamlUrl -OutFile $mainWindowPath
+                $xamlContent = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path $xamlPath -Ref $branch
+                [System.IO.File]::WriteAllText($mainWindowPath, [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($xamlContent.content)))
                 Write-Host "Downloaded XAML file to $mainWindowPath" -ForegroundColor Green
             }
             catch {
@@ -186,11 +281,10 @@ if (-not $xamlExists -or -not $functionsExists) {
 
         # Get the list of .ps1 files in the functions directory
         try {
-            $ps1Files = Invoke-RestMethod -Uri $functionsUrl -Headers @{"User-Agent" = "PowerShell" } | Select-Object -ExpandProperty tree | Where-Object { $_.type -eq "blob" }
+            $ps1Files = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path $functionsPath -Ref $branch | Where-Object { $_.type -eq "file" -and $_.name -match "\.ps1$" }
         }
         catch {
             Write-Host "Failed to retrieve Functions folder: $_" -ForegroundColor Red
-            Read-Host -Prompt "Press Enter to exit"
             exit
         }
 
@@ -203,23 +297,16 @@ if (-not $xamlExists -or -not $functionsExists) {
 
         # Download each .ps1 file if it doesn't exist
         foreach ($file in $ps1Files) {
-            if ($file.path -match "\.ps1$") {
-                $fileName = [System.IO.Path]::GetFileName($file.path)
-                $filePath = [System.IO.Path]::Combine($functionsDir, $fileName)
-                if (-not (Test-Path -Path $filePath)) {
-                    try {
-                        $blobUrl = $file.url
-                        Write-Host "Retrieving blob for $fileName from $blobUrl" -ForegroundColor Yellow
-                        $blob = Invoke-RestMethod -Uri $blobUrl -Headers @{"User-Agent" = "PowerShell" }
-                        $fileContentUrl = $blob.download_url
-                        Write-Host "Downloading $fileName from $fileContentUrl" -ForegroundColor Yellow
-                        Invoke-RestMethod -Uri $fileContentUrl -OutFile $filePath
-                        Write-Host "Downloaded $fileName to $filePath" -ForegroundColor Green
-                    }
-                    catch {
-                        Write-Host "Failed to download `${fileName}`: $_" -ForegroundColor Red
-                        Read-Host -Prompt "Press Enter to exit"
-                    }
+            $fileName = $file.name
+            $filePath = [System.IO.Path]::Combine($functionsDir, $fileName)
+            if (-not (Test-Path -Path $filePath)) {
+                try {
+                    $fileContent = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path $file.path -Ref $branch
+                    [System.IO.File]::WriteAllText($filePath, [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($fileContent.content)))
+                    Write-Host "Downloaded $fileName to $filePath" -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "Failed to download `${fileName}`: $_" -ForegroundColor Red
                 }
             }
         }
@@ -230,37 +317,14 @@ if (-not $xamlExists -or -not $functionsExists) {
         # Recheck the existence of the XAML file
         if (-not (Test-Path -Path $mainWindowPath)) {
             Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
-            Read-Host -Prompt "Press Enter to exit"
             exit
         }
-
-        # Pause at the end of the script to allow reading any messages
-        Read-Host -Prompt "Press Enter to exit"
-    }
-    else {
-        Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
-        exit
+        else {
+            Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
+            exit
+        }
     }
 }
-
-# Add a small delay to ensure files are fully written to disk
-Start-Sleep -Seconds 2
-
-# Recheck the existence of the XAML file
-if (-not (Test-Path -Path $mainWindowPath)) {
-    Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
-    Read-Host -Prompt "Press Enter to exit"
-    exit
-}
-
-# Pause at the end of the script to allow reading any messages
-Read-Host -Prompt "Press Enter to exit"
-
-else {
-    Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
-    exit
-}
-
 
 # Check if the MainWindow.xml file exists
 $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
@@ -279,7 +343,15 @@ Add-Type -AssemblyName PresentationFramework
 # Load the winforms assembly for message box support
 Add-Type -AssemblyName System.Windows.Forms
 
-# Read the XAML file content
+################################
+# END of Script Initialization #
+################################
+
+#######################################
+#GUI Initialization and Event Handlers#
+#######################################
+
+# Load the XAML file content
 $xaml = Get-Content -Path $mainWindowPath -Raw
 
 # Load the XAML directly using XamlReader
