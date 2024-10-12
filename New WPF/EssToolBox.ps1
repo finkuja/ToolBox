@@ -243,14 +243,25 @@ else {
 $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
 $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 
-# Check if the XAML and Functions folders exist
-$xamlExists = Test-Path -Path $xamlDir -ErrorAction Stop
-$functionsExists = Test-Path -Path $functionsDir -ErrorAction Stop
-#enter a pause to check if the folders are present
+# Initialize variables
+$xamlExists = $false
+$functionsExists = $false
+
+# Check if the XAML and Functions directories exist
+$xamlExists = Test-Path -Path $xamlDir -ErrorAction SilentlyContinue
+$functionsExists = Test-Path -Path $functionsDir -ErrorAction SilentlyContinue
+
+# Debugging output
+Write-Host "xamlExists: $xamlExists" -ForegroundColor Yellow
+Write-Host "functionsExists: $functionsExists" -ForegroundColor Yellow
+
+# Pause to check if the folders are present
 Read-Host -Prompt "Press Enter to continue"
+
+# Check if either directory does not exist
 if (-not $xamlExists -or -not $functionsExists) {
-    Read-Host -Prompt "Press Enter to continue"
     Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
+    # Additional code to handle the missing folders
     if (-not $OfflineMode) {
         Read-Host -Prompt "Press Enter to continue"
         # Define the repository and paths
@@ -329,6 +340,9 @@ if (-not $xamlExists -or -not $functionsExists) {
             exit
         }
     }
+}
+else {
+    Write-Host "Both XAML and Functions folders are present." -ForegroundColor Green
 }
 
 # Check if the MainWindow.xml file exists
