@@ -161,7 +161,7 @@ if (-not $xamlExists -or -not $functionsExists) {
     if (-not $OfflineMode) {
         # Define the raw URLs for the XAML and Functions folders
         $xamlUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/Test/New%20WPF/XAML/MainWindow.xml"
-        $functionsUrl = "https://api.github.com/repos/finkuja/ToolBox/contents/Test/New%20WPF/Functions"
+        $functionsUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Functions"
 
         # Ensure the directories exist
         if (-not (Test-Path -Path $xamlDir)) {
