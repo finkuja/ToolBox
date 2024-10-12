@@ -128,6 +128,9 @@ else {
     }
 }
 
+# Initialize the tempDir flag
+$tempDir = $false
+
 # Determine the script directory
 if ($PSScriptRoot) {
     $scriptDir = $PSScriptRoot
@@ -141,6 +144,7 @@ else {
     if (-not (Test-Path -Path $scriptDir)) {
         New-Item -ItemType Directory -Path $scriptDir | Out-Null
     }
+    # Set the tempDir flag to true
     $tempDir = $true
 }
 
@@ -283,6 +287,10 @@ $closeButton.Add_Click({
                 # Close the window
                 $window.Close()
             }
+        }
+        else {
+            # Close the window
+            $window.Close()
         }
     })
 
