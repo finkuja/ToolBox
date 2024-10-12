@@ -428,9 +428,101 @@ $installedButton.Add_Click({
 # END OF INSTALL TAB Event Handlers and Functions #
 ###################################################
 
+
 ##########################################
 # TWEAK TAB Event Handlers and Functions #
 ##########################################
+
+# Find all checkboxes in the TweakTab
+$tweakCheckBoxes = @(
+    $window.FindName("CleanBoot"),
+    $window.FindName("EnableDetailedBSODInformation"),
+    $window.FindName("EnableGodMode"),
+    $window.FindName("EnableClassicRightClickMenu"),
+    $window.FindName("EnableEndTaskWithRightClick"),
+    $window.FindName("ChangeIRPStackSize"),
+    $window.FindName("ClipboardHistory"),
+    $window.FindName("EnableVerboseLogonMessages"),
+    $window.FindName("EnableVerboseStartupAndShutdownMessages")
+)
+
+# Find the ApplyButton and add a Click event handler
+$ApplyButton = $window.FindName("ApplyButton")
+if ($null -eq $ApplyButton) {
+    Write-Error "ApplyButton not found."
+}
+else {
+
+    $ApplyButton.Add_Click({
+            # Get the names of the checked checkboxes
+            $checkedItems = $tweakCheckBoxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Name }
+            foreach ($item in $checkedItems) {
+                Invoke-Tweak -Action "Apply" -window $window -Tweak $item
+            }
+        })
+}
+
+# Find the UndoButton and add a Click event handler
+$UndoButton = $window.FindName("UndoButton")
+if ($null -eq $UndoButton) {
+    Write-Error "UndoButton not found."
+}
+else {
+    $UndoButton.Add_Click({
+            $checkedItems = $tweakCheckBoxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Name }
+            foreach ($item in $checkedItems) {
+                Invoke-Tweak -Action "Undo" -window $window -Tweak $item
+            }
+        })
+}
+
+# Find the DeleteTempFilesButton and add a Click event handler
+$DeleteTempFilesButton = $window.FindName("DeleteTempFilesButton")
+if ($null -eq $DeleteTempFilesButton) {
+    Write-Error "DeleteTempFilesButton not found."
+}
+else {
+    $DeleteTempFilesButton.Add_Click({
+            Invoke-DeleteTempFiles
+        })
+}
+
+# Find the OptimizeDrivesButton and add a Click event handler
+$OptimizeDrivesButton = $window.FindName("OptimizeDrivesButton")
+if ($null -eq $OptimizeDrivesButton) {
+    Write-Error "OptimizeDrivesButton not found."
+}
+else {
+    $OptimizeDrivesButton.Add_Click({
+            
+            Invoke-OptimizeDrives
+        })
+}
+
+# Find the RunDiskCleanupButton and add a Click event handler
+$RunDiskCleanupButton = $window.FindName("RunDiskCleanupButton")
+if ($null -eq $RunDiskCleanupButton) {
+    Write-Error "RunDiskCleanupButton not found."
+}
+else {
+    $RunDiskCleanupButton.Add_Click({
+            Invoke-RunDiskCleanup
+        })
+}
+
+# Find the DNSComboBox and add a SelectionChanged event handler
+$DNSComboBox = $window.FindName("DNSComboBox")
+if ($null -eq $DNSComboBox) {
+    Write-Error "DNSComboBox not found."
+}
+else {
+    $DNSComboBox.Add_SelectionChanged({
+            # Add your logic for handling DNS selection change here
+            $selectedDNS = $DNSComboBox.SelectedItem.Content
+            Write-Host "DNS selection changed to: $selectedDNS"
+        })
+}
+
 
 #################################################
 # END OF TWEAK TAB Event Handlers and Functions #
