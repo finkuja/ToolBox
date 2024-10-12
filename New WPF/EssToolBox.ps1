@@ -212,7 +212,7 @@ if (-not $xamlExists -or -not $functionsExists) {
                         Write-Host "Downloaded $fileName to $filePath" -ForegroundColor Green
                     }
                     catch {
-                        Write-Host "Failed to download $fileName: $_" -ForegroundColor Red
+                        Write-Host "Failed to download ${fileName}: $_" -ForegroundColor Red
                     }
                 }
             }
