@@ -137,11 +137,11 @@ elseif ($MyInvocation.MyCommand.Path) {
 }
 else {
     # Use a temporary directory if the script directory cannot be determined
-    $tempDir = $true
     $scriptDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
     if (-not (Test-Path -Path $scriptDir)) {
         New-Item -ItemType Directory -Path $scriptDir | Out-Null
     }
+    $tempDir = $true
 }
 
 # Define the paths to the XAML and Functions folders
@@ -263,6 +263,7 @@ $closeButton.Add_Click({
             try {
                 # Clean up the temporary directory and its contents
                 if (Test-Path -Path $scirptDir) {
+                    Write-Host $scriptDir -ForegroundColor Violet
                     Remove-Item -Path  -Recurse -Force
                 }
             }
