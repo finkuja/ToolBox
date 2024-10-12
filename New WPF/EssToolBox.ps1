@@ -249,8 +249,10 @@ $functionsExists = Test-Path -Path $functionsDir -ErrorAction SilentlyContinue
 #enter a pause to check if the folders are present
 Read-Host -Prompt "Press Enter to continue"
 if (-not $xamlExists -or -not $functionsExists) {
+    Read-Host -Prompt "Press Enter to continue"
     Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
     if (-not $OfflineMode) {
+        Read-Host -Prompt "Press Enter to continue"
         # Define the repository and paths
         $repoOwner = "finkuja"
         $repoName = "ToolBox"
