@@ -159,7 +159,7 @@ $functionsExists = Test-Path -Path $functionsDir -ErrorAction SilentlyContinue
 if (-not $xamlExists -or -not $functionsExists) {
     Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
     if (-not $OfflineMode) {
-        # Define the raw URLs for the XAML and Functions folders
+        # Define the raw URLs for the XAML and Functions folders Change from Test To main when ready.
         $xamlUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/Test/New%20WPF/XAML/MainWindow.xml"
         $functionsUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Functions"
 
