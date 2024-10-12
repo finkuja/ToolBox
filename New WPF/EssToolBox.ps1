@@ -180,6 +180,7 @@ if (-not $xamlExists -or -not $functionsExists) {
             }
             catch {
                 Write-Host "Failed to download XAML file: $_" -ForegroundColor Red
+                Read-Host -Prompt "Press Enter to exit"
                 exit
             }
         }
@@ -196,7 +197,7 @@ if (-not $xamlExists -or -not $functionsExists) {
         }
 
         # Check if the response is empty or not as expected
-        if ($ps1Files -eq $null -or $ps1Files.Count -eq 0) {
+        if ( $null -eq $ps1Files -or $ps1Files.Count -eq 0) {
             Write-Host "No files found in the Functions folder or the response is empty." -ForegroundColor Red
             Read-Host -Prompt "Press Enter to exit"
             exit
@@ -220,26 +221,6 @@ if (-not $xamlExists -or -not $functionsExists) {
                     }
                 }
             }
-        }
-
-        # Add a small delay to ensure files are fully written to disk
-        Start-Sleep -Seconds 2
-
-        # Recheck the existence of the XAML file
-        if (-not (Test-Path -Path $mainWindowPath)) {
-            Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
-            Read-Host -Prompt "Press Enter to exit"
-            exit
-        }
-
-        # Add a small delay to ensure files are fully written to disk
-        Start-Sleep -Seconds 2
-
-        # Recheck the existence of the XAML file
-        if (-not (Test-Path -Path $mainWindowPath)) {
-            Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
-            Read-Host -Prompt "Press Enter to exit"
-            exit
         }
 
         # Add a small delay to ensure files are fully written to disk
