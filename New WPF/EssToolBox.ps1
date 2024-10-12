@@ -255,12 +255,12 @@ if (-not (Test-Path -Path $mainWindowPath)) {
 
 # Pause at the end of the script to allow reading any messages
 Read-Host -Prompt "Press Enter to exit"
-}
+
 else {
     Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
     exit
 }
-}
+
 
 # Check if the MainWindow.xml file exists
 $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
