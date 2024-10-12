@@ -161,8 +161,8 @@ if (-not $xamlExists -or -not $functionsExists) {
     if (-not $OfflineMode) {
         # Define the raw URLs for the XAML and Functions folders
         $xamlUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/Test/New%20WPF/XAML/MainWindow.xml"
-        $functionsUrl = "https://api.github.com/repos/finkuja/ToolBox/contents/Test/New%20WPF/Functions?ref=Test"
-
+        $functionsUrl = "https://api.github.com/repos/finkuja/ToolBox/git/trees/Test/New%20WPF/Functions?recursive=1"
+        
         # Ensure the directories exist
         if (-not (Test-Path -Path $xamlDir)) {
             New-Item -ItemType Directory -Path $xamlDir | Out-Null
@@ -180,15 +180,13 @@ if (-not $xamlExists -or -not $functionsExists) {
             }
             catch {
                 Write-Host "Failed to download XAML file: $_" -ForegroundColor Red
-                Read-Host -Prompt "Press Enter to exit"
                 exit
             }
         }
 
         # Get the list of .ps1 files in the functions directory
         try {
-            $ps1Files = Invoke-RestMethod -Uri $functionsUrl -Headers @{ "User-Agent" = "PowerShell" }
-            Write-Host "Retrieved list of functions files: $($ps1Files | ConvertTo-Json -Depth 3)" -ForegroundColor Green
+            $ps1Files = Invoke-RestMethod -Uri $functionsUrl -Headers @{"User-Agent" = "PowerShell" } | Select-Object -ExpandProperty tree | Where-Object { $_.type -eq "blob" }
         }
         catch {
             Write-Host "Failed to retrieve Functions folder: $_" -ForegroundColor Red
@@ -197,7 +195,7 @@ if (-not $xamlExists -or -not $functionsExists) {
         }
 
         # Check if the response is empty or not as expected
-        if ( $null -eq $ps1Files -or $ps1Files.Count -eq 0) {
+        if ($null -eq $ps1Files -or $ps1Files.Count -eq 0) {
             Write-Host "No files found in the Functions folder or the response is empty." -ForegroundColor Red
             Read-Host -Prompt "Press Enter to exit"
             exit
@@ -205,14 +203,17 @@ if (-not $xamlExists -or -not $functionsExists) {
 
         # Download each .ps1 file if it doesn't exist
         foreach ($file in $ps1Files) {
-            if ($file.name -match "\.ps1$") {
-                $fileName = $file.name
+            if ($file.path -match "\.ps1$") {
+                $fileName = [System.IO.Path]::GetFileName($file.path)
                 $filePath = [System.IO.Path]::Combine($functionsDir, $fileName)
                 if (-not (Test-Path -Path $filePath)) {
                     try {
-                        $fileUrl = $file.download_url
-                        Write-Host "Downloading $fileName from $fileUrl" -ForegroundColor Yellow
-                        Invoke-RestMethod -Uri $fileUrl -OutFile $filePath
+                        $blobUrl = $file.url
+                        Write-Host "Retrieving blob for $fileName from $blobUrl" -ForegroundColor Yellow
+                        $blob = Invoke-RestMethod -Uri $blobUrl -Headers @{"User-Agent" = "PowerShell" }
+                        $fileContentUrl = $blob.download_url
+                        Write-Host "Downloading $fileName from $fileContentUrl" -ForegroundColor Yellow
+                        Invoke-RestMethod -Uri $fileContentUrl -OutFile $filePath
                         Write-Host "Downloaded $fileName to $filePath" -ForegroundColor Green
                     }
                     catch {
@@ -240,6 +241,25 @@ if (-not $xamlExists -or -not $functionsExists) {
         Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
         exit
     }
+}
+
+# Add a small delay to ensure files are fully written to disk
+Start-Sleep -Seconds 2
+
+# Recheck the existence of the XAML file
+if (-not (Test-Path -Path $mainWindowPath)) {
+    Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
+    Read-Host -Prompt "Press Enter to exit"
+    exit
+}
+
+# Pause at the end of the script to allow reading any messages
+Read-Host -Prompt "Press Enter to exit"
+}
+else {
+    Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
+    exit
+}
 }
 
 # Check if the MainWindow.xml file exists
