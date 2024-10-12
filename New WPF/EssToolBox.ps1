@@ -159,7 +159,7 @@ $functionsExists = Test-Path -Path $functionsDir -ErrorAction SilentlyContinue
 if (-not $xamlExists -or -not $functionsExists) {
     Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
     if (-not $OfflineMode) {
-        # Define the raw URLs for the XAML and Functions folders Change from Test To main when ready.
+        # Define the raw URLs for the XAML and Functions folders
         $xamlUrl = "https://raw.githubusercontent.com/finkuja/ToolBox/Test/New%20WPF/XAML/MainWindow.xml"
         $functionsUrl = "https://api.github.com/repos/finkuja/ToolBox/contents/Test/New%20WPF/Functions?ref=Test"
 
@@ -174,15 +174,29 @@ if (-not $xamlExists -or -not $functionsExists) {
         # Download the XAML file if it doesn't exist
         $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
         if (-not (Test-Path -Path $mainWindowPath)) {
-            Invoke-RestMethod -Uri $xamlUrl -OutFile $mainWindowPath
+            try {
+                Invoke-RestMethod -Uri $xamlUrl -OutFile $mainWindowPath
+                Write-Host "Downloaded XAML file to $mainWindowPath" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Failed to download XAML file: $_" -ForegroundColor Red
+                exit
+            }
         }
 
         # Get the list of .ps1 files in the functions directory
         try {
             $ps1Files = Invoke-RestMethod -Uri $functionsUrl -Headers @{ "User-Agent" = "PowerShell" }
+            Write-Host "Retrieved list of functions files" -ForegroundColor Green
         }
         catch {
             Write-Host "Failed to retrieve Functions folder: $_" -ForegroundColor Red
+            exit
+        }
+
+        # Check if the response is empty or not as expected
+        if ($ps1Files -eq $null -or $ps1Files.Count -eq 0) {
+            Write-Host "No files found in the Functions folder or the response is empty." -ForegroundColor Red
             exit
         }
 
@@ -192,10 +206,25 @@ if (-not $xamlExists -or -not $functionsExists) {
                 $fileName = $file.name
                 $filePath = [System.IO.Path]::Combine($functionsDir, $fileName)
                 if (-not (Test-Path -Path $filePath)) {
-                    $fileUrl = $file.download_url
-                    Invoke-RestMethod -Uri $fileUrl -OutFile $filePath
+                    try {
+                        $fileUrl = $file.download_url
+                        Invoke-RestMethod -Uri $fileUrl -OutFile $filePath
+                        Write-Host "Downloaded $fileName to $filePath" -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host "Failed to download $fileName: $_" -ForegroundColor Red
+                    }
                 }
             }
+        }
+
+        # Add a small delay to ensure files are fully written to disk
+        Start-Sleep -Seconds 2
+
+        # Recheck the existence of the XAML file
+        if (-not (Test-Path -Path $mainWindowPath)) {
+            Write-Host "The XAML folder or MainWindow.xml file cannot be found after download." -ForegroundColor Red
+            exit
         }
 
         # Add a small delay to ensure files are fully written to disk
