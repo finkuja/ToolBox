@@ -262,8 +262,8 @@ $closeButton.Add_Click({
         if ($tempDir) {
             try {
                 # Clean up the temporary directory and its contents
-                if (Test-Path -Path $scirptDir) {
-                    Remove-Item -Path $scirptDir  -Recurse -Force
+                if (Test-Path -Path $scriptDir) {
+                    Remove-Item -Path $scriptDir  -Recurse -Force
                 }
             }
             catch {
