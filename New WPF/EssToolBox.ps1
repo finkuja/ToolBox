@@ -133,7 +133,7 @@ if ($PSScriptRoot) {
     $scriptDir = $PSScriptRoot
 }
 elseif ($MyInvocation.MyCommand.Path) {
-    $scriptDir = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
+    $tempDir = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
 }
 else {
     # Use a temporary directory if the script directory cannot be determined
@@ -261,7 +261,7 @@ $closeButton.Add_Click({
         try {
             # Clean up the temporary directory and its contents
             if (Test-Path -Path $tempDir) {
-                Remove-Item -Path $tempDir -Recurse -Force
+                Remove-Item -Path  -Recurse -Force
             }
         }
         catch {
