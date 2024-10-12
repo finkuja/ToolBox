@@ -246,7 +246,8 @@ $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 # Check if the XAML and Functions folders exist
 $xamlExists = Test-Path -Path $xamlDir -ErrorAction SilentlyContinue
 $functionsExists = Test-Path -Path $functionsDir -ErrorAction SilentlyContinue
-
+#enter a pause to check if the folders are present
+Read-Host -Prompt "Press Enter to continue"
 if (-not $xamlExists -or -not $functionsExists) {
     Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
     if (-not $OfflineMode) {
@@ -256,6 +257,7 @@ if (-not $xamlExists -or -not $functionsExists) {
         $branch = "Test"
         $xamlPath = "Test/New WPF/XAML/MainWindow.xml"
         $functionsPath = "Test/New WPF/Functions"
+        Read-Host -Prompt "Press Enter to continue"
 
         # Ensure the directories exist
         if (-not (Test-Path -Path $xamlDir)) {
@@ -264,7 +266,7 @@ if (-not $xamlExists -or -not $functionsExists) {
         if (-not (Test-Path -Path $functionsDir)) {
             New-Item -ItemType Directory -Path $functionsDir | Out-Null
         }
-
+        Read-Host -Prompt "Press Enter to continue"
         # Download the XAML file if it doesn't exist
         $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
         if (-not (Test-Path -Path $mainWindowPath)) {
@@ -278,6 +280,7 @@ if (-not $xamlExists -or -not $functionsExists) {
                 exit
             }
         }
+        Read-Host -Prompt "Press Enter to continue"
 
         # Get the list of .ps1 files in the functions directory
         try {
