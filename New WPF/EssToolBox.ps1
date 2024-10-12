@@ -133,10 +133,11 @@ if ($PSScriptRoot) {
     $scriptDir = $PSScriptRoot
 }
 elseif ($MyInvocation.MyCommand.Path) {
-    $tempDir = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
+    $scriptDir = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
 }
 else {
     # Use a temporary directory if the script directory cannot be determined
+    $tempDir = $true
     $scriptDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
     if (-not (Test-Path -Path $scriptDir)) {
         New-Item -ItemType Directory -Path $scriptDir | Out-Null
@@ -258,19 +259,21 @@ if ($null -eq $closeButton) {
     exit
 }
 $closeButton.Add_Click({
-        try {
-            # Clean up the temporary directory and its contents
-            if (Test-Path -Path $tempDir) {
-                Remove-Item -Path  -Recurse -Force
+        if ($tempDir) {
+            try {
+                # Clean up the temporary directory and its contents
+                if (Test-Path -Path $scirptDir) {
+                    Remove-Item -Path  -Recurse -Force
+                }
             }
-        }
-        catch {
-            # Handle any errors that occur during the removal
-            Write-Host "An error occurred while cleaning up the temporary directory: $_" -ForegroundColor Red
-        }
-        finally {
-            # Close the window
-            $window.Close()
+            catch {
+                # Handle any errors that occur during the removal
+                Write-Host "An error occurred while cleaning up the temporary directory: $_" -ForegroundColor Red
+            }
+            finally {
+                # Close the window
+                $window.Close()
+            }
         }
     })
 
