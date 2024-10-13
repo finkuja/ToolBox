@@ -174,47 +174,6 @@ catch {
     Write-Warning "Failed to import the Microsoft.WinGet.Client module. The Install Tab will not work properly."
 }
 
-# Check if PowerShellForGitHub module is installed and up to date, if not install or update it
-$githubModuleName = "PowerShellForGitHub"
-$githubModule = Get-Module -Name $githubModuleName -ListAvailable -ErrorAction SilentlyContinue
-
-if (-not $githubModule) {
-    Write-Host "Installing the $githubModuleName module..." -ForegroundColor Yellow
-    try {
-        Install-Module -Name $githubModuleName -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
-        Write-Host "$githubModuleName module installed successfully." -ForegroundColor Green
-    }
-    catch {
-        Write-Warning "Failed to install the $githubModuleName module"
-    }
-}
-else {
-    Write-Host "$githubModuleName module is already installed. Checking for updates..." -ForegroundColor Yellow
-    try {
-        $githubUpdateAvailable = Find-Module -Name $githubModuleName | Where-Object { $_.Version -gt $githubModule.Version }
-        if ($githubUpdateAvailable) {
-            Write-Host "Updating the $githubModuleName module to the latest version..." -ForegroundColor Yellow
-            Update-Module -Name $githubModuleName -Force -ErrorAction Stop
-            Write-Host "$githubModuleName module updated successfully." -ForegroundColor Green
-        }
-        else {
-            Write-Host "$githubModuleName module is up to date." -ForegroundColor Green
-        }
-    }
-    catch {
-        Write-Warning "Failed to check for updates or update the $githubModuleName module."
-    }
-}
-
-# Import the GitHub module
-try {
-    Import-Module -Name PowerShellForGitHub -ErrorAction Stop
-    Write-Host "PowerShellForGitHub module is imported." -ForegroundColor Green
-}
-catch {
-    Write-Warning "Failed to import the PowerShellForGitHub module. The Script will not function properly."
-}
-
 ##################################################
 # END of Check Install Update and Import Modules #
 ##################################################
@@ -240,62 +199,37 @@ else {
 }
 
 if ($tempDir) {
-    Write-Host "Running from a temporary directory. Attempting to download XAML and Functions from GitHub..." -ForegroundColor Yellow
-    # Define the GitHub repository and branch
-    $repoOwner = "finkuja"
-    $repoName = "ToolBox"
-    $branch = "Test"
+    # Define the GitHub repository details
+    $owner = "finkuja"
+    $repo = "Toolbox"
 
-    # Define the paths to the XAML and Functions folders in the GitHub repository
-    $xamlPath = "New WPF/XAML/MainWindow.xml"
-    $functionsPath = "New WPF/Functions"
-    
-    # Define the local paths to the XAML and Functions folders
-    $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
-   
-    $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
-    
-    # Create the local XAML and Functions directories if they do not exist
-    if (-not (Test-Path -Path $xamlDir)) {
-        New-Item -ItemType Directory -Path $xamlDir | Out-Null
-    }
-    
-    if (-not (Test-Path -Path $functionsDir)) {
-        New-Item -ItemType Directory -Path $functionsDir | Out-Null
-    }
-    Read-Host "Stop 0"
-    # Download the MainWindow.xml file from the GitHub repository
-    $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
-    try {
-        $xamlContent = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path $xamlPath -Branch $branch
-        [System.IO.File]::WriteAllText($mainWindowPath, [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($xamlContent.content)))
-        Write-Host "Downloaded MainWindow.xml successfully." -ForegroundColor Green
-        Read-Host "Stop 1"
-    }
-    catch {
-        Write-Host "Failed to download MainWindow.xml: $_" -ForegroundColor Red
-        Read-Host "Stop 2"
-        exit
-    }
-    
-    # Download all .ps1 files from the Functions folder in the GitHub repository
-    try {
-        $functionsContent = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path $functionsPath -Branch $branch
-        foreach ($file in $functionsContent) {
-            if ($file.name -like "*.ps1") {
-                $filePath = [System.IO.Path]::Combine($functionsDir, $file.name)
-                $fileContent = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path "$functionsPath/$($file.name)" -Branch $branch
-                [System.IO.File]::WriteAllText($filePath, [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($fileContent.content)))
-                Write-Host "Downloaded $($file.name) successfully." -ForegroundColor Green
-            }
+    # Define the URL to get the repository tree
+    $url = "https://api.github.com/repos/$owner/$repo/git/trees/main?recursive=1"
+    $response = Invoke-RestMethod -Uri $url -Headers @{"User-Agent" = "PowerShell" }
+    $files = $response.tree | Where-Object { $_.type -eq "blob" }
+
+    # Create a temporary folder to store the downloaded files
+    $tempFolder = New-Item -ItemType Directory -Path ([System.IO.Path]::GetTempPath()) -Name "ESSToolBox"
+
+    # Download each file from the repository
+    foreach ($file in $files) {
+        $fileUrl = "https://raw.githubusercontent.com/$owner/$repo/main/$($file.path)"
+        $outputPath = Join-Path -Path $tempFolder.FullName -ChildPath $file.path
+        $outputDir = Split-Path -Path $outputPath -Parent
+        if (-not (Test-Path -Path $outputDir)) {
+            New-Item -ItemType Directory -Path $outputDir -Force
         }
-        Read-Host "Stop 3"
+        Invoke-WebRequest -Uri $fileUrl -OutFile $outputPath
+        Write-Output "Downloaded $($file.path) to $outputPath"
     }
-    catch {
-        Write-Host "Failed to download Functions files: $_" -ForegroundColor Red
-        Read-Host "Stop 4"
-        exit
-    }
+
+    # Set the script directory to the temporary folder
+    $scriptDir = $tempFolder.FullName
+
+    # Define the paths to the XAML and Functions folders
+    $xamlDir = [System.IO.Path]::Combine($scriptDir, "New WPF", "XAML")
+    $functionsDir = [System.IO.Path]::Combine($scriptDir, "New WPF", "Functions")
+
 }
 else {
     Write-Host "Running from a local directory." -ForegroundColor Yellow
