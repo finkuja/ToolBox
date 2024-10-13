@@ -241,12 +241,11 @@ else {
 
 if ($tempDir) {
     Write-Host "Running from a temporary directory. Attempting to download XAML and Functions from GitHub..." -ForegroundColor Yellow
-    Read-Host "Stop 4"
     # Define the GitHub repository and branch
     $repoOwner = "finkuja"
     $repoName = "ToolBox"
     $branch = "Test"
-    Read-Host "Stop 5"
+
     # Define the paths to the XAML and Functions folders in the GitHub repository
     $xamlPath = "New WPF/XAML/MainWindow.xml"
     $functionsPath = "New WPF/Functions"
@@ -255,15 +254,16 @@ if ($tempDir) {
     $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
     Read-Host "Stop 1"
     $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
-    
+    Read-Host "Stop 2"
     # Create the local XAML and Functions directories if they do not exist
     if (-not (Test-Path -Path $xamlDir)) {
         New-Item -ItemType Directory -Path $xamlDir | Out-Null
     }
+    Read-Host "Stop 3"
     if (-not (Test-Path -Path $functionsDir)) {
         New-Item -ItemType Directory -Path $functionsDir | Out-Null
     }
-    
+    Read-Host "Stop 4"
     # Download the MainWindow.xml file from the GitHub repository
     $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
     try {
