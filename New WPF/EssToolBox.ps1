@@ -112,6 +112,7 @@ $winget = Get-Command winget -ErrorAction SilentlyContinue
 if ($null -eq $winget) {
     [System.Windows.Forms.MessageBox]::Show("Windows Package Manager (winget) is not installed. Please install it from https://github.com/microsoft/winget-cli/releases")
     Start-Process "https://github.com/microsoft/winget-cli/releases"
+    Read-Host "The script cannot continue. Press Enter to exit."
     exit
 }
 else {
@@ -128,6 +129,59 @@ else {
     }
 }
 
+###########################################
+# Check Install Update and Import Modules #
+###########################################
+
+# Check if winget module is installed and up to date, if not install or update it
+$moduleName = "Microsoft.WinGet.Client"
+$module = Get-Module -Name $moduleName -ListAvailable -ErrorAction SilentlyContinue
+
+if (-not $module) {
+    Write-Host "Installing the $moduleName module..." -ForegroundColor Yellow
+    try {
+        Install-Module -Name $moduleName -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
+        Write-Host "$moduleName module installed successfully." -ForegroundColor Green
+    }
+    catch {
+        Write-Warning "Failed to install the $moduleName module"
+    }
+}
+else {
+    Write-Host "$moduleName module is already installed. Checking for updates..." -ForegroundColor Yellow
+    try {
+        $updateAvailable = Find-Module -Name $moduleName | Where-Object { $_.Version -gt $module.Version }
+        if ($updateAvailable) {
+            Write-Host "Updating the $moduleName module to the latest version..." -ForegroundColor Yellow
+            Update-Module -Name $moduleName -Force -ErrorAction Stop
+            Write-Host "$moduleName module updated successfully." -ForegroundColor Green
+        }
+        else {
+            Write-Host "$moduleName module is up to date." -ForegroundColor Green
+        }
+    }
+    catch {
+        Write-Warning "Failed to check for updates or update the $moduleName module."
+    }
+
+}
+
+# Import the winget module
+try {
+    Import-Module -Name Microsoft.WinGet.Client -ErrorAction Stop
+    Write-Host "Microsoft.WinGet.Client module is imported." -ForegroundColor Green
+}
+catch {
+    Write-Warning "Failed to import the Microsoft.WinGet.Client module. The Install Tab will not work properly."
+}
+
+##################################################
+# END of Check Install Update and Import Modules #
+##################################################
+
+# Initialize the tempDir flag
+$tempDir = $false
+
 # Determine the script directory
 if ($PSScriptRoot) {
     $scriptDir = $PSScriptRoot
@@ -136,69 +190,101 @@ elseif ($MyInvocation.MyCommand.Path) {
     $scriptDir = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
 }
 else {
-    $scriptDir = [System.IO.Path]::GetDirectoryName([System.Reflection.Assembly]::GetExecutingAssembly().Location)
-}
-
-# Define the paths to the XAML and Functions folders
-$xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
-$functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
-
-# Check if the XAML and Functions folders exist
-$xamlExists = Test-Path -Path $xamlDir
-$functionsExists = Test-Path -Path $functionsDir
-
-if (-not $xamlExists -or -not $functionsExists) {
-    Write-Host "XAML or Functions folder is missing." -ForegroundColor Red
-    if (-not $OfflineMode) {
-        # Define the URLs for the XAML and Functions folders
-        $xamlUrl = "https://github.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/XAML"
-        $functionsUrl = "https://github.com/finkuja/ToolBox/refs/heads/Test/New%20WPF/Functions"
-
-        # Define the paths to the temporary directories
-        $tempDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
-        if (-not (Test-Path -Path $tempDir)) {
-            New-Item -ItemType Directory -Path $tempDir | Out-Null
-        }
-
-        $xamlDir = [System.IO.Path]::Combine($tempDir, "XAML")
-        $functionsDir = [System.IO.Path]::Combine($tempDir, "Functions")
-
-        # Download the XAML and Functions folders
-        Invoke-RestMethod -Uri "$xamlUrl/MainWindow.xml" -OutFile [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
-        # Get the list of .ps1 files in the functions directory
-        $ps1Files = Invoke-RestMethod -Uri "$functionsUrl" | Where-Object { $_ -match "\.ps1$" }
-
-        # Download each .ps1 file
-        foreach ($file in $ps1Files) {
-            $fileName = [System.IO.Path]::GetFileName($file)
-            Invoke-RestMethod -Uri "$functionsUrl/$fileName" -OutFile [System.IO.Path]::Combine($functionsDir, $fileName)
-        }
+    # Use a temporary directory if the script directory cannot be determined
+    $scriptDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
+    if (-not (Test-Path -Path $scriptDir)) {
+        New-Item -ItemType Directory -Path $scriptDir | Out-Null
     }
-    else {
-        Write-Host "The XAML and Functions folders are missing and OfflineMode is enabled. Please ensure the folders are present." -ForegroundColor Red
-        exit
-    }
+    # Set the tempDir flag to true
+    $tempDir = $true
 }
 
-# Check if the MainWindow.xml file exists
-$mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
-if (-not (Test-Path -Path $mainWindowPath)) {
-    Write-Host "The XAML folder or MainWindow.xml file cannot be found." -ForegroundColor Red
-    exit
+if ($tempDir) {
+    # Define the GitHub repository details
+    $owner = "finkuja"
+    $repo = "Toolbox"
+
+    # Define the URL to get the repository tree
+    $url = "https://api.github.com/repos/$owner/$repo/git/trees/main?recursive=1"
+    $response = Invoke-RestMethod -Uri $url -Headers @{"User-Agent" = "PowerShell" }
+    $files = $response.tree | Where-Object { $_.type -eq "blob" }
+    $tempFolder = Get-Item -Path $scriptDir
+    # Download each file from the repository
+    foreach ($file in $files) {
+        $fileUrl = "https://raw.githubusercontent.com/$owner/$repo/main/$($file.path)"
+        $outputPath = Join-Path -Path $tempFolder.FullName -ChildPath $file.path
+        $outputDir = Split-Path -Path $outputPath -Parent
+
+        if (-not (Test-Path -Path $outputDir)) {
+            New-Item -ItemType Directory -Path $outputDir -Force
+        }
+        Invoke-WebRequest -Uri $fileUrl -OutFile $outputPath
+    }
+    Write-Host "Downloaded scirpt Temp Files to $tempFolder" -ForegroundColor Green
+
+    # Set the script directory to the temporary folder
+    $scriptDir = $tempFolder.FullName
+
+    # Define the paths to the XAML and Functions folders
+    $xamlDir = [System.IO.Path]::Combine($scriptDir, "New WPF", "XAML")
+    $functionsDir = [System.IO.Path]::Combine($scriptDir, "New WPF", "Functions")
 }
+else {
+    Write-Host "Running from a local directory." -ForegroundColor Yellow
+    # Define the paths to the XAML and Functions folders
+    $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
+    $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
+}
+
+# Load the required assemblies for WPF and WinForms
+Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName System.Windows.Forms
 
 # Source all .ps1 files in the Functions directory
 Get-ChildItem -Path $functionsDir -Filter *.ps1 | ForEach-Object {
     . $_.FullName
 }
 
-# Load the PresentationFramework assembly for XAML support
-Add-Type -AssemblyName PresentationFramework
-# Load the winforms assembly for message box support
-Add-Type -AssemblyName System.Windows.Forms
+# Load all XAML files in the XAML directory
+$xamlFiles = Get-ChildItem -Path $xamlDir -Filter *.xml
 
-# Read the XAML file content
-$xaml = Get-Content -Path $mainWindowPath -Raw
+# Check if the XAML files exist and store their paths in a hashtable
+$xamlPaths = @{}
+$missingFiles = @()
+
+foreach ($file in $xamlFiles) {
+    $filePath = $file.FullName
+    $fileName = $file.Name
+    $xamlPaths[$fileName] = $filePath
+}
+
+# Required XAML files
+$requiredFiles = @("MainWindow.xml", "FixOutlookWindow.xml", "FixTeamsWindow.xml", "FixEdgeWindow.xml")
+
+foreach ($requiredFile in $requiredFiles) {
+    if (-not $xamlPaths.ContainsKey($requiredFile)) {
+        $missingFiles += $requiredFile
+    }
+}
+
+# If any files are missing, output an error message and exit
+if ($missingFiles.Count -gt 0) {
+    Write-Host "The following XAML files cannot be found:" -ForegroundColor Red
+    $missingFiles | ForEach-Object { Write-Host $_ -ForegroundColor Red }
+    Read-Host "The script cannot continue. Press Enter to exit."
+    exit
+}
+
+################################
+# END of Script Initialization #
+################################
+
+#######################################
+#GUI Initialization and Event Handlers#
+#######################################
+
+# Load the XAML file content
+$xaml = Get-Content -Path $xamlPaths["MainWindow.xml"] -Raw
 
 # Load the XAML directly using XamlReader
 try {
@@ -207,15 +293,19 @@ try {
 }
 catch {
     Write-Host "Failed to load XAML: $_" -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 
 # Add the MouseLeftButtonDown event handler to make the window draggable
+
 $windowControlPanel = $window.FindName("WindowControlPanel")
 if ($null -eq $windowControlPanel) {
     Write-Host "WindowControlPanel not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
+
 $windowControlPanel.Add_MouseLeftButtonDown({
         param ($source, $e)
         $window.DragMove()
@@ -225,20 +315,28 @@ $windowControlPanel.Add_MouseLeftButtonDown({
 $closeButton = $window.FindName("CloseButton")
 if ($null -eq $closeButton) {
     Write-Host "CloseButton not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 $closeButton.Add_Click({
-        try {
-            # Clean up the temporary directory and its contents
-            if (Test-Path -Path $tempDir) {
-                Remove-Item -Path $tempDir -Recurse -Force
+        if ($tempDir) {
+            try {
+                # Clean up the temporary directory and its contents
+                if (Test-Path -Path $scriptDir) {
+                    Remove-Item -Path $scriptDir  -Recurse -Force
+                    Write-Host "Temporary directory $tempFolder cleaned up successfully." -ForegroundColor Green
+                }
+            }
+            catch {
+                # Handle any errors that occur during the removal
+                Write-Host "An error occurred while cleaning up the temporary directory: $_" -ForegroundColor Red
+            }
+            finally {
+                # Close the window
+                $window.Close()
             }
         }
-        catch {
-            # Handle any errors that occur during the removal
-            Write-Host "An error occurred while cleaning up the temporary directory: $_" -ForegroundColor Red
-        }
-        finally {
+        else {
             # Close the window
             $window.Close()
         }
@@ -248,6 +346,7 @@ $closeButton.Add_Click({
 $mainTabControl = $window.FindName("MainTabControl")
 if ($null -eq $mainTabControl) {
     Write-Host "MainTabControl not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 
@@ -334,6 +433,7 @@ $checkboxes = @(
 $checkAllButton = $window.FindName("CheckAllButton")
 if ($null -eq $checkAllButton) {
     Write-Host "CheckAllButton not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 
@@ -360,6 +460,7 @@ $checkAllButton.Add_Click({
 $installButton = $window.FindName("InstallButton")
 if ($null -eq $installButton) {
     Write-Host "InstallButton not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 
@@ -378,6 +479,7 @@ $installButton.Add_Click({
 $uninstallButton = $window.FindName("UninstallButton")
 if ($null -eq $uninstallButton) {
     Write-Host "UninstallButton not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 $uninstallButton.Add_Click({
@@ -395,6 +497,7 @@ $uninstallButton.Add_Click({
 $installedButton = $window.FindName("InstalledButton")
 if ($null -eq $installedButton) {
     Write-Host "InstalledButton not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 $installedButton.Add_Click({
@@ -531,6 +634,24 @@ else {
 ########################################
 # FIX TAB Event Handlers and Functions #
 ########################################
+
+# Find controls
+$fixEdgeButton = $window.FindName("FixEdgeButton")
+$fixOutlookButton = $window.FindName("FixOutlookButton")
+$fixTeamsButton = $window.FindName("FixTeamsButton")
+
+# Define event handlers
+$fixEdgeButton.Add_Click({
+        Show-ChildWindow $xamlPaths["FixEdgeWindow.xml"]
+    })
+
+$fixOutlookButton.Add_Click({
+        Show-ChildWindow $xamlPaths["FixOutlookWindow.xml"]
+    })
+
+$fixTeamsButton.Add_Click({
+        Show-ChildWindow $xamlPaths["FixTeamsWindow.xml"]
+    })
 
 ###############################################
 # END OF FIX TAB Event Handlers and Functions #
