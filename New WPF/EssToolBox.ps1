@@ -218,7 +218,7 @@ if ($tempDir) {
             New-Item -ItemType Directory -Path $outputDir -Force
         }
         Invoke-WebRequest -Uri $fileUrl -OutFile $outputPath
-        Write-Output "Downloaded $($file.path) to $outputPath"
+        Write-Host "Downloaded $($file.path) to $outputPath" -ForegroundColor Green
     }
 
     # Set the script directory to the temporary folder
