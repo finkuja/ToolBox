@@ -243,6 +243,64 @@ else {
 $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
 $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 
+Read-Host "Stop 1"
+
+# Check if the XAML folder exists and the Functions folder exists
+if (-not (Test-Path -Path $xamlDir -PathType Container) -or -not (Test-Path -Path $functionsDir -PathType Container)) {
+    Write-Host "The XAML or Functions folder cannot be found." -ForegroundColor Red
+    Read-Host "Stop 2"
+    if ($tempDir) {
+        Write-Host "Running from a temporary directory. Attempting to download XAML and Functions from GitHub..." -ForegroundColor Yellow
+        
+        # Define the GitHub repository and branch
+        $repoOwner = "finkuja"
+        $repoName = "ToolBox"
+        $branch = "Test"
+        
+        # Define the paths to the XAML and Functions folders in the GitHub repository
+        $xamlPath = "New WPF/XAML/MainWindow.xml"
+        $functionsPath = "New WPF/Functions"
+        
+        # Define the local paths to the XAML and Functions folders
+        $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
+        $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
+        Read-Host "Stop 3"
+        # Create the local XAML and Functions directories if they do not exist
+        if (-not (Test-Path -Path $xamlDir)) {
+            New-Item -ItemType Directory -Path $xamlDir | Out-Null
+        }
+        if (-not (Test-Path -Path $functionsDir)) {
+            New-Item -ItemType Directory -Path $functionsDir | Out-Null
+        }
+        
+        # Download the MainWindow.xml file from the GitHub repository
+        $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
+        try {
+            Get-GitHubContent -RepositoryName $repoName -OwnerName $repoOwner -Ref $branch -Path $xamlPath -OutFile $mainWindowPath
+            Write-Host "Downloaded MainWindow.xml successfully." -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to download MainWindow.xml: $_" -ForegroundColor Red
+            exit
+        }
+        
+        # Download all .ps1 files from the Functions folder in the GitHub repository
+        try {
+            $functionsContent = Get-GitHubContent -RepositoryName $repoName -OwnerName $repoOwner -Ref $branch -Path $functionsPath
+            foreach ($file in $functionsContent) {
+                if ($file.name -like "*.ps1") {
+                    $filePath = [System.IO.Path]::Combine($functionsDir, $file.name)
+                    Get-GitHubContent -RepositoryName $repoName -OwnerName $repoOwner -Ref $branch -Path "$functionsPath/$($file.name)" -OutFile $filePath
+                    Write-Host "Downloaded $($file.name) successfully." -ForegroundColor Green
+                }
+            }
+        }
+        catch {
+            Write-Host "Failed to download Functions files: $_" -ForegroundColor Red
+            exit
+        }
+    }
+}
 
 
 # Check if the MainWindow.xml file exists
