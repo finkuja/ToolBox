@@ -207,7 +207,7 @@ if ($tempDir) {
     $url = "https://api.github.com/repos/$owner/$repo/git/trees/main?recursive=1"
     $response = Invoke-RestMethod -Uri $url -Headers @{"User-Agent" = "PowerShell" }
     $files = $response.tree | Where-Object { $_.type -eq "blob" }
-    $tempFolder = $scriptDir
+    $tempFolder = Get-Item -Path $scriptDir
     # Download each file from the repository
     foreach ($file in $files) {
         $fileUrl = "https://raw.githubusercontent.com/$owner/$repo/main/$($file.path)"

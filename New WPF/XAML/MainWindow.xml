@@ -300,10 +300,12 @@
                         </Grid>
                     </Border>
                 </TabItem>
-                <TabItem Header="Fix" Name="FixTab" FontSize="14">
-                    <Grid Background="Transparent">
-                        <TextBlock Text="Fix Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
-                    </Grid>
+                <TabItem Header="Fix" Name="FixTab" FontSize="14"  Padding="10">
+                    <Border CornerRadius="0,0,10,10" Background="#2E2E3D" BorderThickness="0">
+                        <Grid Margin="50,10,0,10" Background="Transparent">
+                            <TextBlock Text="Fix Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
+                        </Grid>
+                    </Border>
                 </TabItem>
             </TabControl>
         </Grid>
