@@ -303,6 +303,8 @@ if (-not (Test-Path -Path $xamlDir -PathType Container) -or -not (Test-Path -Pat
             exit
         }
     }
+
+    Read-Host "Stop Exit"
 }
 
 
