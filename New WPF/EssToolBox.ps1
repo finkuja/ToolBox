@@ -209,16 +209,37 @@ if ($tempDir) {
     $files = $response.tree | Where-Object { $_.type -eq "blob" }
 
     # Create a temporary folder to store the downloaded files
-    $tempFolder = New-Item -ItemType Directory -Path ([System.IO.Path]::GetTempPath()) -Name "ESSToolBox"
+    # Define the path for the temporary folder
+    $tempFolderPath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
+
+    Read-Host " Step 0"
+
+    # Check if the folder already exists
+    if (-not (Test-Path -Path $tempFolderPath)) {
+        # Create the temporary folder if it does not exist
+        $tempFolder = New-Item -ItemType Directory -Path $tempFolderPath
+        Write-Output "Created temporary folder: $tempFolderPath"
+        Read-Host " Step 1"
+    }
+    else {
+        # Skip creation if the folder already exists
+        $tempFolder = Get-Item -Path $tempFolderPath
+        Write-Output "Temporary folder already exists: $tempFolderPath"
+        Read-Host " Step 2"
+    }
 
     # Download each file from the repository
     foreach ($file in $files) {
         $fileUrl = "https://raw.githubusercontent.com/$owner/$repo/main/$($file.path)"
         $outputPath = Join-Path -Path $tempFolder.FullName -ChildPath $file.path
+        Read-Host " Step 4"
         $outputDir = Split-Path -Path $outputPath -Parent
+        Read-Host " Step 5"
         if (-not (Test-Path -Path $outputDir)) {
             New-Item -ItemType Directory -Path $outputDir -Force
+            Read-Host " Step 6"
         }
+        " Step 7"
         Invoke-WebRequest -Uri $fileUrl -OutFile $outputPath
         Write-Output "Downloaded $($file.path) to $outputPath"
     }
@@ -233,13 +254,9 @@ if ($tempDir) {
 }
 else {
     Write-Host "Running from a local directory." -ForegroundColor Yellow
-    Read-Host "Stop 0"
     # Define the paths to the XAML and Functions folders
     $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
-    Read-Host "Stop 1"
     $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
-
-    Read-Host "Stop 2"
 
     # Create the local XAML and Functions directories if they do not exist
     if (-not (Test-Path -Path $xamlDir)) {
