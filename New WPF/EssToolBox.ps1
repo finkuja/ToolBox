@@ -267,7 +267,8 @@ if ($tempDir) {
     # Download the MainWindow.xml file from the GitHub repository
     $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
     try {
-        Get-GitHubContent -RepositoryName $repoName -OwnerName $repoOwner -Ref $branch -Path $xamlPath -OutFile $mainWindowPath
+        $xamlContent = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path $xamlPath -Branch $branch
+        [System.IO.File]::WriteAllText($mainWindowPath, [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($xamlContent.content)))
         Write-Host "Downloaded MainWindow.xml successfully." -ForegroundColor Green
         Read-Host "Stop 1"
     }
@@ -279,11 +280,12 @@ if ($tempDir) {
     
     # Download all .ps1 files from the Functions folder in the GitHub repository
     try {
-        $functionsContent = Get-GitHubContent -RepositoryName $repoName -OwnerName $repoOwner -Ref $branch -Path $functionsPath
+        $functionsContent = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path $functionsPath -Branch $branch
         foreach ($file in $functionsContent) {
             if ($file.name -like "*.ps1") {
                 $filePath = [System.IO.Path]::Combine($functionsDir, $file.name)
-                Get-GitHubContent -RepositoryName $repoName -OwnerName $repoOwner -Ref $branch -Path "$functionsPath/$($file.name)" -OutFile $filePath
+                $fileContent = Get-GitHubRepositoryContent -Owner $repoOwner -Repository $repoName -Path "$functionsPath/$($file.name)" -Branch $branch
+                [System.IO.File]::WriteAllText($filePath, [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($fileContent.content)))
                 Write-Host "Downloaded $($file.name) successfully." -ForegroundColor Green
             }
         }
