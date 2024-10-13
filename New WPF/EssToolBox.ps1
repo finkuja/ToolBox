@@ -249,29 +249,31 @@ if ($tempDir) {
     # Define the paths to the XAML and Functions folders in the GitHub repository
     $xamlPath = "New WPF/XAML/MainWindow.xml"
     $functionsPath = "New WPF/Functions"
-    Read-Host "Stop 0"
+    
     # Define the local paths to the XAML and Functions folders
     $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
-    Read-Host "Stop 1"
+   
     $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
-    Read-Host "Stop 2"
+    
     # Create the local XAML and Functions directories if they do not exist
     if (-not (Test-Path -Path $xamlDir)) {
         New-Item -ItemType Directory -Path $xamlDir | Out-Null
     }
-    Read-Host "Stop 3"
+    
     if (-not (Test-Path -Path $functionsDir)) {
         New-Item -ItemType Directory -Path $functionsDir | Out-Null
     }
-    Read-Host "Stop 4"
+    Read-Host "Stop 0"
     # Download the MainWindow.xml file from the GitHub repository
     $mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
     try {
         Get-GitHubContent -RepositoryName $repoName -OwnerName $repoOwner -Ref $branch -Path $xamlPath -OutFile $mainWindowPath
         Write-Host "Downloaded MainWindow.xml successfully." -ForegroundColor Green
+        Read-Host "Stop 1"
     }
     catch {
         Write-Host "Failed to download MainWindow.xml: $_" -ForegroundColor Red
+        Read-Host "Stop 2"
         exit
     }
     
@@ -285,9 +287,11 @@ if ($tempDir) {
                 Write-Host "Downloaded $($file.name) successfully." -ForegroundColor Green
             }
         }
+        Read-Host "Stop 3"
     }
     catch {
         Write-Host "Failed to download Functions files: $_" -ForegroundColor Red
+        Read-Host "Stop 4"
         exit
     }
 }
