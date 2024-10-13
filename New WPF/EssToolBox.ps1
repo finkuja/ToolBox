@@ -297,7 +297,7 @@ if ($tempDir) {
 }
 else {
     Write-Host "Running from a local directory." -ForegroundColor Yellow
-
+    Read-Host "Stop 0"
     # Define the paths to the XAML and Functions folders
     $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
     Read-Host "Stop 1"
