@@ -112,6 +112,7 @@ $winget = Get-Command winget -ErrorAction SilentlyContinue
 if ($null -eq $winget) {
     [System.Windows.Forms.MessageBox]::Show("Windows Package Manager (winget) is not installed. Please install it from https://github.com/microsoft/winget-cli/releases")
     Start-Process "https://github.com/microsoft/winget-cli/releases"
+    Read-Host "The script cannot continue. Press Enter to exit."
     exit
 }
 else {
@@ -218,8 +219,8 @@ if ($tempDir) {
             New-Item -ItemType Directory -Path $outputDir -Force
         }
         Invoke-WebRequest -Uri $fileUrl -OutFile $outputPath
-        Write-Host "Downloaded $($file.path) to $outputPath" -ForegroundColor Green
     }
+    Write-Host "Downloaded scirpt Temp Files to $tempFolder" -ForegroundColor Green
 
     # Set the script directory to the temporary folder
     $scriptDir = $tempFolder.FullName
@@ -227,7 +228,6 @@ if ($tempDir) {
     # Define the paths to the XAML and Functions folders
     $xamlDir = [System.IO.Path]::Combine($scriptDir, "New WPF", "XAML")
     $functionsDir = [System.IO.Path]::Combine($scriptDir, "New WPF", "Functions")
-
 }
 else {
     Write-Host "Running from a local directory." -ForegroundColor Yellow
@@ -236,22 +236,44 @@ else {
     $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 }
 
-# Check if the MainWindow.xml file exists
-$mainWindowPath = [System.IO.Path]::Combine($xamlDir, "MainWindow.xml")
-if (-not (Test-Path -Path $mainWindowPath)) {
-    Write-Host "The XAML folder or MainWindow.xml file cannot be found." -ForegroundColor Red
-    exit
-}
+# Load the required assemblies for WPF and WinForms
+Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName System.Windows.Forms
 
 # Source all .ps1 files in the Functions directory
 Get-ChildItem -Path $functionsDir -Filter *.ps1 | ForEach-Object {
     . $_.FullName
 }
 
-# Load the PresentationFramework assembly for XAML support
-Add-Type -AssemblyName PresentationFramework
-# Load the winforms assembly for message box support
-Add-Type -AssemblyName System.Windows.Forms
+# Load all XAML files in the XAML directory
+$xamlFiles = Get-ChildItem -Path $xamlDir -Filter *.xml
+
+# Check if the XAML files exist and store their paths in a hashtable
+$xamlPaths = @{}
+$missingFiles = @()
+
+foreach ($file in $xamlFiles) {
+    $filePath = $file.FullName
+    $fileName = $file.Name
+    $xamlPaths[$fileName] = $filePath
+}
+
+# Required XAML files
+$requiredFiles = @("MainWindow.xml", "FixOutlookWindow.xml", "FixTeamsWindow.xml", "FixEdgeWindow.xml")
+
+foreach ($requiredFile in $requiredFiles) {
+    if (-not $xamlPaths.ContainsKey($requiredFile)) {
+        $missingFiles += $requiredFile
+    }
+}
+
+# If any files are missing, output an error message and exit
+if ($missingFiles.Count -gt 0) {
+    Write-Host "The following XAML files cannot be found:" -ForegroundColor Red
+    $missingFiles | ForEach-Object { Write-Host $_ -ForegroundColor Red }
+    Read-Host "The script cannot continue. Press Enter to exit."
+    exit
+}
 
 ################################
 # END of Script Initialization #
@@ -262,7 +284,7 @@ Add-Type -AssemblyName System.Windows.Forms
 #######################################
 
 # Load the XAML file content
-$xaml = Get-Content -Path $mainWindowPath -Raw
+$xaml = Get-Content -Path $xamlPaths["MainWindow.xml"] -Raw
 
 # Load the XAML directly using XamlReader
 try {
@@ -271,32 +293,19 @@ try {
 }
 catch {
     Write-Host "Failed to load XAML: $_" -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 
 # Add the MouseLeftButtonDown event handler to make the window draggable
+
 $windowControlPanel = $window.FindName("WindowControlPanel")
 if ($null -eq $windowControlPanel) {
     Write-Host "WindowControlPanel not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 
-# Load the XAML directly using XamlReader
-try {
-    $reader = (New-Object System.Xml.XmlTextReader (New-Object System.IO.StringReader $xaml))
-    $window = [Windows.Markup.XamlReader]::Load($reader)
-}
-catch {
-    Write-Host "Failed to load XAML: $_" -ForegroundColor Red
-    exit
-}
-
-# Add the MouseLeftButtonDown event handler to make the window draggable
-$windowControlPanel = $window.FindName("WindowControlPanel")
-if ($null -eq $windowControlPanel) {
-    Write-Host "WindowControlPanel not found in XAML." -ForegroundColor Red
-    exit
-}
 $windowControlPanel.Add_MouseLeftButtonDown({
         param ($source, $e)
         $window.DragMove()
@@ -306,6 +315,7 @@ $windowControlPanel.Add_MouseLeftButtonDown({
 $closeButton = $window.FindName("CloseButton")
 if ($null -eq $closeButton) {
     Write-Host "CloseButton not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 $closeButton.Add_Click({
@@ -314,6 +324,7 @@ $closeButton.Add_Click({
                 # Clean up the temporary directory and its contents
                 if (Test-Path -Path $scriptDir) {
                     Remove-Item -Path $scriptDir  -Recurse -Force
+                    Write-Host "Temporary directory $tempFolder cleaned up successfully." -ForegroundColor Green
                 }
             }
             catch {
@@ -335,6 +346,7 @@ $closeButton.Add_Click({
 $mainTabControl = $window.FindName("MainTabControl")
 if ($null -eq $mainTabControl) {
     Write-Host "MainTabControl not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 
@@ -421,6 +433,7 @@ $checkboxes = @(
 $checkAllButton = $window.FindName("CheckAllButton")
 if ($null -eq $checkAllButton) {
     Write-Host "CheckAllButton not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 
@@ -447,6 +460,7 @@ $checkAllButton.Add_Click({
 $installButton = $window.FindName("InstallButton")
 if ($null -eq $installButton) {
     Write-Host "InstallButton not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 
@@ -465,6 +479,7 @@ $installButton.Add_Click({
 $uninstallButton = $window.FindName("UninstallButton")
 if ($null -eq $uninstallButton) {
     Write-Host "UninstallButton not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 $uninstallButton.Add_Click({
@@ -482,6 +497,7 @@ $uninstallButton.Add_Click({
 $installedButton = $window.FindName("InstalledButton")
 if ($null -eq $installedButton) {
     Write-Host "InstalledButton not found in XAML." -ForegroundColor Red
+    Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
 $installedButton.Add_Click({
@@ -618,6 +634,24 @@ else {
 ########################################
 # FIX TAB Event Handlers and Functions #
 ########################################
+
+# Find controls
+$fixEdgeButton = $window.FindName("FixEdgeButton")
+$fixOutlookButton = $window.FindName("FixOutlookButton")
+$fixTeamsButton = $window.FindName("FixTeamsButton")
+
+# Define event handlers
+$fixEdgeButton.Add_Click({
+        Show-ChildWindow $xamlPaths["FixEdgeWindow.xml"]
+    })
+
+$fixOutlookButton.Add_Click({
+        Show-ChildWindow $xamlPaths["FixOutlookWindow.xml"]
+    })
+
+$fixTeamsButton.Add_Click({
+        Show-ChildWindow $xamlPaths["FixTeamsWindow.xml"]
+    })
 
 ###############################################
 # END OF FIX TAB Event Handlers and Functions #

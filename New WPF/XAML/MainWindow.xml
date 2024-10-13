@@ -162,6 +162,27 @@
             </Setter>
         </Style>
 
+        <!-- GroupBox Style -->
+
+        <Style x:Key="GroupBoxStyle" TargetType="GroupBox">
+            <Setter Property="Margin" Value="50,10,0,10"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="Background" Value="#2E2E3D"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderBrush" Value="#3E3E4D"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Width" Value="300"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+
+        <!-- ScrollViwer Style -->
+
+        <Style x:Key="ScrollViewerStyle" TargetType="ScrollViewer">
+            <Setter Property="Background" Value="#2E2E3D"/>
+            <Setter Property="Padding" Value="10"/>
+        </Style>
+
     </Window.Resources>
     <Border Background="#1B1B21" CornerRadius="10" BorderBrush="Gray" BorderThickness="1">
         <Grid Name="WindowControlPanel">
@@ -300,11 +321,51 @@
                         </Grid>
                     </Border>
                 </TabItem>
-                <TabItem Header="Fix" Name="FixTab" FontSize="14"  Padding="10">
+                <TabItem Header="Fix" Name="FixTab" FontSize="14" Padding="10">
                     <Border CornerRadius="0,0,10,10" Background="#2E2E3D" BorderThickness="0">
-                        <Grid Margin="50,10,0,10" Background="Transparent">
-                            <TextBlock Text="Fix Content" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10"/>
-                        </Grid>
+                        <ScrollViewer Style="{StaticResource ScrollViewerStyle}">
+                            <Grid Margin="10">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Apps Section -->
+                                <GroupBox Header="Apps" Style="{StaticResource GroupBoxStyle}" Grid.Row="0" Grid.Column="0">
+                                    <StackPanel>
+                                        <Button Content="Fix Microsoft Edge" Name="FixEdgeButton" Style="{StaticResource CustomButtonStyle}"/>
+                                        <Button Content="Remove Adobe Creative Cloud" Name="RemoveAdobeCloudButton" Style="{StaticResource CustomButtonStyle}"/>
+                                        <Button Content="Remove Adobe Reader" Name="RemoveAdobeReaderButton" Style="{StaticResource CustomButtonStyle}"/>
+                                        <Button Content="Remove OneDrive" Name="RemoveOneDriveButton" Style="{StaticResource CustomButtonStyle}"/>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <!-- Office Apps Section -->
+                                <GroupBox Header="Office Apps" Style="{StaticResource GroupBoxStyle}" Grid.Row="0" Grid.Column="1">
+                                    <StackPanel>
+                                        <Button Content="Fix Outlook" Name="FixOutlookButton" Style="{StaticResource CustomButtonStyle}"/>
+                                        <Button Content="Fix Teams" Name="FixTeamsButton" Style="{StaticResource CustomButtonStyle}"/>
+                                        <Button Content="Remove Office" Name="RemoveOfficeButton" Style="{StaticResource CustomButtonStyle}"/>
+                                        <Button Content="Repair Office" Name="RepairOfficeButton" Style="{StaticResource CustomButtonStyle}"/>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <!-- System Section -->
+                                <GroupBox Header="System" Style="{StaticResource GroupBoxStyle}" Grid.Row="1" Grid.Column="0">
+                                    <StackPanel>
+                                        <Button Content="Memory Diagnostics" Name="MemoryDiagnosticsButton" Style="{StaticResource CustomButtonStyle}"/>
+                                        <Button Content="Reset Network" Name="ResetNetworkButton" Style="{StaticResource CustomButtonStyle}"/>
+                                        <Button Content="Reset Windows Update" Name="ResetWinUpdateButton" Style="{StaticResource CustomButtonStyle}"/>
+                                        <Button Content="Repair System Files" Name="SystemRepairButton" Style="{StaticResource CustomButtonStyle}"/>
+                                        <Button Content="System Troubleshooters" Name="SystemTroubleshootButton" Style="{StaticResource CustomButtonStyle}"/>
+                                    </StackPanel>
+                                </GroupBox>
+                            </Grid>
+                        </ScrollViewer>
                     </Border>
                 </TabItem>
             </TabControl>
