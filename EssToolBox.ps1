@@ -88,6 +88,8 @@ if (-not $isAdmin) {
 }
 else {
     Write-Host "Running with administrator privileges." -ForegroundColor Green
+    # Set the execution policy to Bypass
+    Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 }
 
 # Check the system architecture
@@ -140,6 +142,21 @@ else {
 ###########################################
 # Check Install Update and Import Modules #
 ###########################################
+
+# Ensure NuGet provider is installed
+if (-not (Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue)) {
+    Write-Host "Installing NuGet provider..." -ForegroundColor Yellow
+    Install-PackageProvider -Name NuGet -Force -Scope CurrentUser -ErrorAction Stop
+    Write-Host "NuGet provider installed successfully." -ForegroundColor Green
+}
+
+# Trust the PSGallery repository
+$galleryTrusted = Get-PSRepository -Name "PSGallery" | Select-Object -ExpandProperty InstallationPolicy
+if ($galleryTrusted -ne "Trusted") {
+    Write-Host "Trusting the PSGallery repository..." -ForegroundColor Yellow
+    Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted
+    Write-Host "PSGallery repository trusted." -ForegroundColor Green
+}
 
 # Check if winget module is installed and up to date, if not install or update it
 $moduleName = "Microsoft.WinGet.Client"

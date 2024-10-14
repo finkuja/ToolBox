@@ -17,6 +17,20 @@ function Show-ChildWindow {
                     })
             }
 
+            # Find all buttons and assign click event handlers based on their tags
+            $buttons = $childWindow.FindName("ChildWindowControlPanel").Children | Where-Object { $_ -is [System.Windows.Controls.Button] }
+            foreach ($button in $buttons) {
+                $functionName = $button.Tag
+                if (Get-Command -Name $functionName -ErrorAction SilentlyContinue) {
+                    $button.Add_Click({
+                            & $functionName
+                        })
+                }
+                else {
+                    Write-Host "No function found for tag: $($button.Tag)"
+                }
+            }
+
             $childWindow.ShowDialog()
         }
         catch {
