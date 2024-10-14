@@ -953,7 +953,7 @@ else {
 }
 
 # Add Microsoft Corporation to the trusted list
-#Add-PublisherToTrustedList -publisher "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
+# Add your own publisher details here if needed
 
 # Import the winget module
 try {

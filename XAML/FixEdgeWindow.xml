@@ -97,9 +97,9 @@
                 </Grid.ColumnDefinitions>
                 <GroupBox Header="Select Option" Style="{StaticResource GroupBoxStyle}" Grid.Row="1" Grid.ColumnSpan="2" Margin="10,0,10,10">
                     <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Button Content="Edge Option 1" Style="{StaticResource CustomButtonStyle}" Margin="5"/>
-                        <Button Content="Edge Option 2" Style="{StaticResource CustomButtonStyle}" Margin="5"/>
-                        <Button Content="Edge Option 3" Style="{StaticResource CustomButtonStyle}" Margin="5"/>
+                        <Button Content="Edge Option 1" Style="{StaticResource CustomButtonStyle}" Margin="5" Tag="Option1"/>
+                        <Button Content="Edge Option 2" Style="{StaticResource CustomButtonStyle}" Margin="5" Tag="Option2"/>
+                        <Button Content="Edge Option 3" Style="{StaticResource CustomButtonStyle}" Margin="5" Tag="Option3"/>
                     </StackPanel>
                 </GroupBox>
             </Grid>
