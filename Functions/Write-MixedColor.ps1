@@ -5,7 +5,7 @@ function Write-MixedColorTitle {
     )
     $colors = @("Red", "Yellow", "Green", "Blue", "Cyan", "Magenta")
     $colorIndex = 0
-    $fixedColor = "DarkBlue"
+    $fixedColor = "Gray"
     $rainbowChars = @('|', '\', '/', '_', '-', '(', ')')
 
     foreach ($char in $Text.ToCharArray()) {

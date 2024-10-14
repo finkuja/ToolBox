@@ -314,14 +314,13 @@ if ($missingFiles.Count -gt 0) {
 ################################
 
 #######################################
-#GUI Initialization and Event Handlers#
+# GUI Initialization and Event Handlers #
 #######################################
 
 # Write the title and subtitle in the console
-Write-Host""
+Write-Host ""
 Write-MixedColorTitle -Text $ESS_ToolBox
 Write-MixedColorSubtitle -Text $ESS_ToolBox_Subtitle
-
 
 # Load the XAML file content
 $xaml = Get-Content -Path $xamlPaths["MainWindow.xml"] -Raw
@@ -338,32 +337,74 @@ catch {
 }
 
 # Add the MouseLeftButtonDown event handler to make the window draggable
-
 $windowControlPanel = $window.FindName("WindowControlPanel")
 if ($null -eq $windowControlPanel) {
     Write-Host "WindowControlPanel not found in XAML." -ForegroundColor Red
     Read-Host "Script cannot continue. Press Enter to exit."
     exit
 }
-
 $windowControlPanel.Add_MouseLeftButtonDown({
         param ($source, $e)
         $window.DragMove()
     })
 
-# Find the CloseButton and add a Click event handler
-$closeButton = $window.FindName("CloseButton")
-if ($null -eq $closeButton) {
-    Write-Host "CloseButton not found in XAML." -ForegroundColor Red
-    Read-Host "Script cannot continue. Press Enter to exit."
-    exit
+# Hashtable to store all controls
+$controls = @{
+    InstallCheckboxes = @{}
+    TweakCheckboxes   = @{}
 }
-$closeButton.Add_Click({
+
+# List of control names to find
+$controlNames = @(
+    "CloseButton", "CheckAllButton", "InstallButton", "UninstallButton", "InstalledButton",
+    "ApplyButton", "UndoButton", "DeleteTempFilesButton", "OptimizeDrivesButton", "RunDiskCleanupButton",
+    "DNSComboBox", "FixEdgeButton", "FixOutlookButton", "FixTeamsButton"
+)
+
+# List of InstallTab checkbox names
+$installCheckboxNames = @(
+    "AdobeCreativeCloud", "AdobeReaderDC", "GoogleChrome", "Fiddler", "HWMonitor", "DotNetAllVersions",
+    "MicrosoftEdge", "MicrosoftOffice365", "MicrosoftOneDrive", "MicrosoftOneNote", "MicrosoftTeams",
+    "MozillaFirefox", "PowerAutomate", "PowerBIDesktop", "PowerToys", "QuickAssist", "RemoteDesktop",
+    "SARATool", "SurfaceDiagnosticToolkit", "VisioViewer2016", "VisualStudioCode", "SevenZip"
+)
+
+# List of TweakTab checkbox names
+$tweakCheckboxNames = @(
+    "CleanBoot", "EnableDetailedBSODInformation", "EnableGodMode", "EnableClassicRightClickMenu",
+    "EnableEndTaskWithRightClick", "ChangeIRPStackSize", "ClipboardHistory", "EnableVerboseLogonMessages",
+    "EnableVerboseStartupAndShutdownMessages"
+)
+
+# Combine all control names into a single list
+$allControlNames = $controlNames + $installCheckboxNames + $tweakCheckboxNames
+
+# Find and assign controls to the hashtable
+foreach ($name in $allControlNames) {
+    $control = $window.FindName($name)
+    if ($null -eq $control) {
+        Write-Host "$name not found in XAML." -ForegroundColor Red
+        Read-Host "Script cannot continue. Press Enter to exit."
+        exit
+    }
+    $controls[$name] = $control
+
+    # Store checkboxes in their respective hashtables
+    if ($installCheckboxNames -contains $name) {
+        $controls.InstallCheckboxes[$name] = $control
+    }
+    elseif ($tweakCheckboxNames -contains $name) {
+        $controls.TweakCheckboxes[$name] = $control
+    }
+}
+
+# Add event handlers for the controls
+$controls["CloseButton"].Add_Click({
         if ($tempDir) {
             try {
                 # Clean up the temporary directory and its contents
                 if (Test-Path -Path $scriptDir) {
-                    Remove-Item -Path $scriptDir  -Recurse -Force
+                    Remove-Item -Path $scriptDir -Recurse -Force
                     Write-Host "Temporary directory $tempFolder cleaned up successfully." -ForegroundColor Green
                 }
             }
@@ -390,9 +431,8 @@ if ($null -eq $mainTabControl) {
     exit
 }
 
-
 ###########################################
-# INSTALL TAB Event Handlers and Functions#
+# INSTALL TAB Event Handlers and Functions #
 ###########################################
 
 # Hide the InstallTab if $disableInstall is $true
@@ -443,70 +483,29 @@ $mainTabControl.Add_SelectionChanged({
         }
     })
 
-# Find all checkboxes in the InstallTab
-$checkboxes = @(
-    $window.FindName("AdobeCreativeCloud"),
-    $window.FindName("AdobeReaderDC"),
-    $window.FindName("GoogleChrome"),
-    $window.FindName("Fiddler"),
-    $window.FindName("HWMonitor"),
-    $window.FindName("DotNetAllVersions"),
-    $window.FindName("MicrosoftEdge"),
-    $window.FindName("MicrosoftOffice365"),
-    $window.FindName("MicrosoftOneDrive"),
-    $window.FindName("MicrosoftOneNote"),
-    $window.FindName("MicrosoftTeams"),
-    $window.FindName("MozillaFirefox"),
-    $window.FindName("PowerAutomate"),
-    $window.FindName("PowerBIDesktop"),
-    $window.FindName("PowerToys"),
-    $window.FindName("QuickAssist"),
-    $window.FindName("RemoteDesktop"),
-    $window.FindName("SARATool"),
-    $window.FindName("SurfaceDiagnosticToolkit"),
-    $window.FindName("VisioViewer2016"),
-    $window.FindName("VisualStudioCode"),
-    $window.FindName("SevenZip")
-)
-
-# Find the CheckAllButton and add a Click event handler
-$checkAllButton = $window.FindName("CheckAllButton")
-if ($null -eq $checkAllButton) {
-    Write-Host "CheckAllButton not found in XAML." -ForegroundColor Red
-    Read-Host "Script cannot continue. Press Enter to exit."
-    exit
-}
-
-$checkAllButton.Add_Click({
-        $allChecked = $checkboxes | ForEach-Object { $_.IsChecked } | Where-Object { $_ -eq $false } | Measure-Object | Select-Object -ExpandProperty Count
+# Add event handlers for the InstallTab buttons
+$controls["CheckAllButton"].Add_Click({
+        $allChecked = $controls.InstallCheckboxes.Values | ForEach-Object { $_.IsChecked } | Where-Object { $_ -eq $false } | Measure-Object | Select-Object -ExpandProperty Count
 
         if ($allChecked -eq 0) {
             # Uncheck all checkboxes
-            foreach ($checkbox in $checkboxes) {
+            foreach ($checkbox in $controls.InstallCheckboxes.Values) {
                 $checkbox.IsChecked = $false
             }
-            $checkAllButton.Content = "Check All"
+            $controls["CheckAllButton"].Content = "Check All"
         }
         else {
             # Check all checkboxes
-            foreach ($checkbox in $checkboxes) {
+            foreach ($checkbox in $controls.InstallCheckboxes.Values) {
                 $checkbox.IsChecked = $true
             }
-            $checkAllButton.Content = "Uncheck All"
+            $controls["CheckAllButton"].Content = "Uncheck All"
         }
     })
 
-# Find the InstallButton and add a Click event handler
-$installButton = $window.FindName("InstallButton")
-if ($null -eq $installButton) {
-    Write-Host "InstallButton not found in XAML." -ForegroundColor Red
-    Read-Host "Script cannot continue. Press Enter to exit."
-    exit
-}
-
-$installButton.Add_Click({
+$controls["InstallButton"].Add_Click({
         # Get the names of the checked checkboxes
-        $checkedItems = $checkboxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Tag }
+        $checkedItems = $controls.InstallCheckboxes.Values | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Tag }
 
         # Invoke the Invoke-WinGet script with the checked items
         foreach ($item in $checkedItems) {
@@ -514,17 +513,10 @@ $installButton.Add_Click({
             Invoke-WinGet -PackageName $item -Action Install -window $window
         }
     })
-    
-# Find the UninstallButton and add a Click event handler
-$uninstallButton = $window.FindName("UninstallButton")
-if ($null -eq $uninstallButton) {
-    Write-Host "UninstallButton not found in XAML." -ForegroundColor Red
-    Read-Host "Script cannot continue. Press Enter to exit."
-    exit
-}
-$uninstallButton.Add_Click({
+
+$controls["UninstallButton"].Add_Click({
         # Get the names of the checked checkboxes
-        $checkedItems = $checkboxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Tag }
+        $checkedItems = $controls.InstallCheckboxes.Values | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Tag }
 
         # Invoke the Invoke-WinGet script with the checked items
         foreach ($item in $checkedItems) {
@@ -533,14 +525,7 @@ $uninstallButton.Add_Click({
         }
     })
 
-# Find the InstalledButton and add a Click event handler
-$installedButton = $window.FindName("InstalledButton")
-if ($null -eq $installedButton) {
-    Write-Host "InstalledButton not found in XAML." -ForegroundColor Red
-    Read-Host "Script cannot continue. Press Enter to exit."
-    exit
-}
-$installedButton.Add_Click({
+$controls["InstalledButton"].Add_Click({
         # Check if the ShowAllInstalled checkbox is checked
         $showAllInstalledCheckbox = $window.FindName("ShowAllInstalled")
         if ($showAllInstalledCheckbox -and $showAllInstalledCheckbox.IsChecked) {
@@ -554,8 +539,8 @@ $installedButton.Add_Click({
         # Extract the package names from the output
         $packageNames = $output | Select-Object -ExpandProperty Name
 
-        # Iterate through each checkbox in the $checkboxes array
-        foreach ($checkbox in $checkboxes) {
+        # Iterate through each checkbox in the $controls.InstallCheckboxes hashtable
+        foreach ($checkbox in $controls.InstallCheckboxes.Values) {
             $checkboxName = $checkbox.Tag
             # Check if the checkbox name is present in the package names
             if ($packageNames -contains $checkboxName) {
@@ -571,101 +556,43 @@ $installedButton.Add_Click({
 # END OF INSTALL TAB Event Handlers and Functions #
 ###################################################
 
-
 ##########################################
 # TWEAK TAB Event Handlers and Functions #
 ##########################################
 
-# Find all checkboxes in the TweakTab
-$tweakCheckBoxes = @(
-    $window.FindName("CleanBoot"),
-    $window.FindName("EnableDetailedBSODInformation"),
-    $window.FindName("EnableGodMode"),
-    $window.FindName("EnableClassicRightClickMenu"),
-    $window.FindName("EnableEndTaskWithRightClick"),
-    $window.FindName("ChangeIRPStackSize"),
-    $window.FindName("ClipboardHistory"),
-    $window.FindName("EnableVerboseLogonMessages"),
-    $window.FindName("EnableVerboseStartupAndShutdownMessages")
-)
+# Add event handlers for the TweakTab buttons
+$controls["ApplyButton"].Add_Click({
+        # Get the names of the checked checkboxes
+        $checkedItems = $controls.TweakCheckboxes.Values | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Name }
+        foreach ($item in $checkedItems) {
+            Invoke-Tweak -Action "Apply" -window $window -Tweak $item
+        }
+    })
 
-# Find the ApplyButton and add a Click event handler
-$ApplyButton = $window.FindName("ApplyButton")
-if ($null -eq $ApplyButton) {
-    Write-Error "ApplyButton not found."
-}
-else {
+$controls["UndoButton"].Add_Click({
+        $checkedItems = $controls.TweakCheckboxes.Values | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Name }
+        foreach ($item in $checkedItems) {
+            Invoke-Tweak -Action "Undo" -window $window -Tweak $item
+        }
+    })
 
-    $ApplyButton.Add_Click({
-            # Get the names of the checked checkboxes
-            $checkedItems = $tweakCheckBoxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Name }
-            foreach ($item in $checkedItems) {
-                Invoke-Tweak -Action "Apply" -window $window -Tweak $item
-            }
-        })
-}
+$controls["DeleteTempFilesButton"].Add_Click({
+        Invoke-DeleteTempFiles
+    })
 
-# Find the UndoButton and add a Click event handler
-$UndoButton = $window.FindName("UndoButton")
-if ($null -eq $UndoButton) {
-    Write-Error "UndoButton not found."
-}
-else {
-    $UndoButton.Add_Click({
-            $checkedItems = $tweakCheckBoxes | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Name }
-            foreach ($item in $checkedItems) {
-                Invoke-Tweak -Action "Undo" -window $window -Tweak $item
-            }
-        })
-}
+$controls["OptimizeDrivesButton"].Add_Click({
+        Invoke-OptimizeDrives
+    })
 
-# Find the DeleteTempFilesButton and add a Click event handler
-$DeleteTempFilesButton = $window.FindName("DeleteTempFilesButton")
-if ($null -eq $DeleteTempFilesButton) {
-    Write-Error "DeleteTempFilesButton not found."
-}
-else {
-    $DeleteTempFilesButton.Add_Click({
-            Invoke-DeleteTempFiles
-        })
-}
+$controls["RunDiskCleanupButton"].Add_Click({
+        Invoke-RunDiskCleanup
+    })
 
-# Find the OptimizeDrivesButton and add a Click event handler
-$OptimizeDrivesButton = $window.FindName("OptimizeDrivesButton")
-if ($null -eq $OptimizeDrivesButton) {
-    Write-Error "OptimizeDrivesButton not found."
-}
-else {
-    $OptimizeDrivesButton.Add_Click({
-            
-            Invoke-OptimizeDrives
-        })
-}
-
-# Find the RunDiskCleanupButton and add a Click event handler
-$RunDiskCleanupButton = $window.FindName("RunDiskCleanupButton")
-if ($null -eq $RunDiskCleanupButton) {
-    Write-Error "RunDiskCleanupButton not found."
-}
-else {
-    $RunDiskCleanupButton.Add_Click({
-            Invoke-RunDiskCleanup
-        })
-}
-
-# Find the DNSComboBox and add a SelectionChanged event handler
-$DNSComboBox = $window.FindName("DNSComboBox")
-if ($null -eq $DNSComboBox) {
-    Write-Error "DNSComboBox not found."
-}
-else {
-    $DNSComboBox.Add_SelectionChanged({
-            # Add your logic for handling DNS selection change here
-            $selectedDNS = $DNSComboBox.SelectedItem.Content
-            Write-Host "DNS selection changed to: $selectedDNS"
-        })
-}
-
+$controls["DNSComboBox"].Add_SelectionChanged({
+        # Add your logic for handling DNS selection change here
+        $selectedDNS = $controls["DNSComboBox"].SelectedItem.Content
+        Write-Host "DNS selection changed to: $selectedDNS"
+    })
 
 #################################################
 # END OF TWEAK TAB Event Handlers and Functions #
@@ -675,21 +602,17 @@ else {
 # FIX TAB Event Handlers and Functions #
 ########################################
 
-# Find controls
-$fixEdgeButton = $window.FindName("FixEdgeButton")
-$fixOutlookButton = $window.FindName("FixOutlookButton")
-$fixTeamsButton = $window.FindName("FixTeamsButton")
+# Add event handlers for the FixTab buttons
 
-# Define event handlers
-$fixEdgeButton.Add_Click({
+$controls["FixEdgeButton"].Add_Click({
         Show-ChildWindow $xamlPaths["FixEdgeWindow.xml"]
     })
 
-$fixOutlookButton.Add_Click({
+$controls["FixOutlookButton"].Add_Click({
         Show-ChildWindow $xamlPaths["FixOutlookWindow.xml"]
     })
 
-$fixTeamsButton.Add_Click({
+$controls["FixTeamsButton"].Add_Click({
         Show-ChildWindow $xamlPaths["FixTeamsWindow.xml"]
     })
 
