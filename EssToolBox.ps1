@@ -232,8 +232,8 @@ if ($tempDir) {
     $scriptDir = $tempFolder.FullName
 
     # Define the paths to the XAML and Functions folders
-    $xamlDir = [System.IO.Path]::Combine($scriptDir, "New WPF", "XAML")
-    $functionsDir = [System.IO.Path]::Combine($scriptDir, "New WPF", "Functions")
+    $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
+    $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 }
 else {
     Write-Host "Running from a local directory." -ForegroundColor Yellow
