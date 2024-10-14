@@ -10,7 +10,7 @@ param (
     The ESSToolBox is a PowerShell script designed to perform various system administration tasks. It includes features such as repairing Windows Update, checking for the installation of Windows Package Manager (winget), and more.
 
 .PARAMETER OfflineMode
-    If specified, the script will run in offline mode and will not download the modules. It will assume the dependencies are in the same folder as the script.
+    If specified, the script will run in offline mode and will not attempt to download the Functions XAML and Configuratin. It will assume the all dependencies are in the same folder as the script.
 
 .NOTES
     - This script must be run with administrator privileges.
@@ -24,7 +24,6 @@ param (
 .LINK
     GitHub Repository: https://github.com/finkuja/ToolBox
 #>
-# Ensure you run this script with administrator privileges
 
 ########################################################
 # ESSToolBox - A PowerShell System Administration Tool #
@@ -258,17 +257,15 @@ if ($tempDir) {
 
     # Set the script directory to the temporary folder
     $scriptDir = $tempFolder.FullName
-
-    # Define the paths to the XAML and Functions folders
-    $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
-    $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 }
 else {
     Write-Host "Running from a local directory." -ForegroundColor Yellow
-    # Define the paths to the XAML and Functions folders
-    $xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
-    $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 }
+
+# Define paths to XAML, Functions, and Configuration folders based on script directory.
+$xamlDir = [System.IO.Path]::Combine($scriptDir, "XAML")
+$functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
+$configDir = [System.IO.Path]::Combine($scriptDir, "Configuration")
 
 # Load the required assemblies for WPF and WinForms
 Add-Type -AssemblyName PresentationFramework
@@ -279,7 +276,10 @@ Get-ChildItem -Path $functionsDir -Filter *.ps1 | ForEach-Object {
     . $_.FullName
 }
 
-# Load all XAML files in the XAML directory
+# Source all .json files in the Configuration directory
+$jsonFiles = Get-ChildItem -Path $configDir -Filter *.json
+
+# Source all XAML files in the XAML directory
 $xamlFiles = Get-ChildItem -Path $xamlDir -Filter *.xml
 
 # Check if the XAML files exist and store their paths in a hashtable
@@ -293,12 +293,38 @@ foreach ($file in $xamlFiles) {
 }
 
 # Required XAML files
-$requiredFiles = @("MainWindow.xml", "FixOutlookWindow.xml", "FixTeamsWindow.xml", "FixEdgeWindow.xml")
+$requiredXamlFiles = @("MainWindow.xml", "FixOutlookWindow.xml", "FixTeamsWindow.xml", "FixEdgeWindow.xml")
 
-foreach ($requiredFile in $requiredFiles) {
+foreach ($requiredFile in $requiredXamlFiles) {
     if (-not $xamlPaths.ContainsKey($requiredFile)) {
         $missingFiles += $requiredFile
     }
+}
+
+# Check if the JSON files exist and store their paths in a hashtable
+$jsonPaths = @{}
+$requiredJsonFiles = @("AppList.json")
+
+foreach ($file in $jsonFiles) {
+    $filePath = $file.FullName
+    $fileName = $file.Name
+    $jsonPaths[$fileName] = $filePath
+}
+
+foreach ($requiredFile in $requiredJsonFiles) {
+    if (-not $jsonPaths.ContainsKey($requiredFile)) {
+        $missingFiles += $requiredFile
+    }
+}
+
+# Check for missing files and exit if any are missing
+if ($missingFiles.Count -gt 0) {
+    Write-Host "The following required files are missing:" -ForegroundColor Red
+    foreach ($missingFile in $missingFiles) {
+        Write-Host $missingFile -ForegroundColor Red
+    }
+    Read-Host "Script cannot continue. Press Enter to exit."
+    exit
 }
 
 # If any files are missing, output an error message and exit

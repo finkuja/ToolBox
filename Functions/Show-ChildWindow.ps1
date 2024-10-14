@@ -1,3 +1,23 @@
+<#
+.SYNOPSIS
+Displays a child window defined by a XAML file.
+
+.PARAMETER xamlPath
+The file path to the XAML file that defines the child window.
+
+.DESCRIPTION
+The Show-ChildWindow function loads a XAML file, creates a child window, and assigns event handlers to buttons within the window. 
+It looks for a button named "CloseButton" and assigns a click event handler to close the window. 
+It also assigns click event handlers to other buttons based on their tags, which should correspond to existing functions.
+
+.EXAMPLE
+Show-ChildWindow -xamlPath "C:\Path\To\Your\ChildWindow.xaml"
+This example loads and displays the child window defined in the specified XAML file.
+
+.NOTES
+Ensure that the XAML file exists at the specified path and that the buttons have appropriate tags corresponding to existing functions.
+
+#>
 function Show-ChildWindow {
     param (
         [string]$xamlPath
