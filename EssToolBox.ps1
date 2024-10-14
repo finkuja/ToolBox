@@ -358,7 +358,10 @@ $controls = @{
 $controlNames = @(
     "CloseButton", "CheckAllButton", "InstallButton", "UninstallButton", "InstalledButton",
     "ApplyButton", "UndoButton", "DeleteTempFilesButton", "OptimizeDrivesButton", "RunDiskCleanupButton",
-    "DNSComboBox", "FixEdgeButton", "FixOutlookButton", "FixTeamsButton"
+    "DNSComboBox", "FixEdgeButton", "FixOutlookButton", "FixTeamsButton",
+    "RemoveAdobeCloudButton", "RemoveAdobeReaderButton", "RemoveOneDriveButton",
+    "RemoveOfficeButton", "RepairOfficeButton", "MemoryDiagnosticsButton",
+    "ResetNetworkButton", "ResetWinUpdateButton", "SystemRepairButton", "SystemTroubleshootButton"
 )
 
 # List of InstallTab checkbox names
@@ -614,6 +617,47 @@ $controls["FixOutlookButton"].Add_Click({
 
 $controls["FixTeamsButton"].Add_Click({
         Show-ChildWindow $xamlPaths["FixTeamsWindow.xml"]
+    })
+
+$controls["RemoveAdobeCloudButton"].Add_Click({
+        # Add your logic for handling RemoveAdobeCloudButton click here
+        Remove-AdobeCloud
+    })
+
+$controls["RemoveAdobeReaderButton"].Add_Click({
+        # Add your logic for handling RemoveAdobeReaderButton click here
+    })
+
+$controls["RemoveOneDriveButton"].Add_Click({
+        # Add your logic for handling RemoveOneDriveButton click here
+    })
+
+$controls["RemoveOfficeButton"].Add_Click({
+        # Add your logic for handling RemoveOfficeButton click here
+    })
+
+$controls["RepairOfficeButton"].Add_Click({
+        # Add your logic for handling RepairOfficeButton click here
+    })
+
+$controls["MemoryDiagnosticsButton"].Add_Click({
+        # Add your logic for handling MemoryDiagnosticsButton click here
+    })
+
+$controls["ResetNetworkButton"].Add_Click({
+        # Add your logic for handling ResetNetworkButton click here
+    })
+
+$controls["ResetWinUpdateButton"].Add_Click({
+        # Add your logic for handling ResetWinUpdateButton click here
+    })
+
+$controls["SystemRepairButton"].Add_Click({
+        # Add your logic for handling SystemRepairButton click here
+    })
+
+$controls["SystemTroubleshootButton"].Add_Click({
+        # Add your logic for handling SystemTroubleshootButton click here
     })
 
 ###############################################

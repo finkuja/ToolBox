@@ -1,4 +1,17 @@
 function Remove-AdobeCloud {
+    # Create a confirmation dialog
+    $confirmation = [System.Windows.Forms.MessageBox]::Show(
+        "Are you sure you want to remove Adobe Cloud?",
+        "Confirmation",
+        [System.Windows.Forms.MessageBoxButtons]::YesNo,
+        [System.Windows.Forms.MessageBoxIcon]::Warning
+    )
+
+    if ($confirmation -ne [System.Windows.Forms.DialogResult]::Yes) {
+        Write-Host "Operation cancelled by the user."
+        return
+    }
+
     # Remove Adobe Cloud
     Write-Host "Removing Adobe Cloud..."
     # Code snippet from https://github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/RunAdobeCCCleanerTool.md
