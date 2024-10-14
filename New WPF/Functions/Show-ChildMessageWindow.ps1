@@ -1,4 +1,4 @@
-function Show-ChildWindow {
+function Show-ChildMessageWindow {
     param (
         [string]$xamlPath
     )
@@ -8,15 +8,6 @@ function Show-ChildWindow {
             $childXaml = Get-Content -Path $xamlPath -Raw
             $childReader = (New-Object System.Xml.XmlTextReader (New-Object System.IO.StringReader $childXaml))
             $childWindow = [Windows.Markup.XamlReader]::Load($childReader)
-            
-            # Find the close button and add a click event handler
-            $closeButton = $childWindow.FindName("CloseButton")
-            if ($null -ne $closeButton) {
-                $closeButton.Add_Click({
-                        $childWindow.Close()
-                    })
-            }
-
             $childWindow.ShowDialog()
         }
         catch {

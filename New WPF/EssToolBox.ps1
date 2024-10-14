@@ -29,18 +29,24 @@ param (
 ########################################################
 # ESSToolBox - A PowerShell System Administration Tool #
 ########################################################
+# ASCII Art generated using https://patorjk.com/software/taag/#p=display&f=Big&t=ESSToolBox
+$ESS_ToolBox = @"
+███████╗███████╗███████╗    ████████╗ ██████╗  ██████╗ ██╗       ____ 
+██╔════╝██╔════╝██╔════╝    ╚══██╔══╝██╔═══██╗██╔═══██╗██║      |  _ \   
+█████╗  ███████╗███████╗       ██║   ██║   ██║██║   ██║██║      | |_) | ___  __  __
+██╔══╝  ╚════██║╚════██║       ██║   ██║   ██║██║   ██║██║      |  _ < / _ \ \ \/ /
+███████╗███████║███████║       ██║   ╚██████╔╝╚██████╔╝███████╗ | |_) | (_) | |  |
+╚══════╝╚══════╝╚══════╝       ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝ |____/ \___/ /_/\_\
+"@
 
-Write-Output " ______  _____  _____    _______          _   ____ 
-|  ____|/ ____|/ ____|  |__   __|        | | |  _ \             
-| |__  | (___ | (___       | | ___   ___ | | | |_) | ___  __  __
-|  __|  \___ \ \___ \      | |/ _ \ / _ \| | |  _ < / _ \ \ \/ /
-| |____ ____) |____) |     | | (_) | (_) | | | |_) | (_) | |  |
-|______|_____/|_____/      |_|\___/ \___/|_| |____/ \___/ /_/\_\
- 
- === Version Beta 0.2 ===
-
- === Author: Carlos Alvarez Magariños ===
- "
+# Version of the ESSToolBox
+$ESS_ToolBox_Version = "Beta 0.2"
+# Subtitle for the ESSToolBox
+$ESS_ToolBox_Subtitle = @"
+======================================================================================
+>>> Author: Carlos Alvarez Magariños
+>>> Version: $ESS_ToolBox_Version
+"@
 
 #########################
 # Script Initialization #
@@ -282,6 +288,12 @@ if ($missingFiles.Count -gt 0) {
 #######################################
 #GUI Initialization and Event Handlers#
 #######################################
+
+# Write the title and subtitle in the console
+Write-Host""
+Write-MixedColorTitle -Text $ESS_ToolBox
+Write-MixedColorSubtitle -Text $ESS_ToolBox_Subtitle
+
 
 # Load the XAML file content
 $xaml = Get-Content -Path $xamlPaths["MainWindow.xml"] -Raw
