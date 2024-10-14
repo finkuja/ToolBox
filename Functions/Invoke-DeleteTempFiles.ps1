@@ -7,12 +7,18 @@ function Invoke-DeleteTempFiles {
 
     function Remove-Files {
         param (
-            [string[]]$paths
+            [string[]]$paths,
+            [string]$protectedFolder
         )
 
         foreach ($path in $paths) {
             if (Test-Path $path) {
                 Get-ChildItem -Path $path -Recurse -Force | ForEach-Object {
+                    # Skip the protected folder
+                    if ($_.FullName -like "$protectedFolder*") {
+                        return
+                    }
+
                     try {
                         Remove-Item -Path $_.FullName -Force -Recurse -ErrorAction Stop
                     }
@@ -35,8 +41,11 @@ function Invoke-DeleteTempFiles {
     # Paths to remove files from
     $pathsToClean = @("C:\Windows\Temp", $env:TEMP)
 
-    # Remove files from specified paths
-    Remove-Files -paths $pathsToClean
+    # Path to protect (ESSToolBox folder in the temp directory)
+    $protectedFolder = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox")
+
+    # Remove files from specified paths, excluding the protected folder
+    Remove-Files -paths $pathsToClean -protectedFolder $protectedFolder
 
     if ($lockedFiles.Count -gt 0) {
         Write-Host "The following files were not deleted because they are in use:" -ForegroundColor Yellow

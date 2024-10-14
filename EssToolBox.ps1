@@ -46,6 +46,8 @@ $ESS_ToolBox_Subtitle = @"
 ======================================================================================
 >>> Author: Carlos Alvarez Magariños
 >>> Version: $ESS_ToolBox_Version
+>>> GitHub Repository:https://github.com/finkuja/ToolBox
+======================================================================================
 "@
 
 #########################
@@ -214,7 +216,16 @@ if ($tempDir) {
     $url = "https://api.github.com/repos/$owner/$repo/git/trees/main?recursive=1"
     $response = Invoke-RestMethod -Uri $url -Headers @{"User-Agent" = "PowerShell" }
     $files = $response.tree | Where-Object { $_.type -eq "blob" }
+    
+    # Retrieves the directory information for the script's directory and assigns it to the variable $tempFolder.
     $tempFolder = Get-Item -Path $scriptDir
+
+    # Check if the temp folder already exists and clean it up if it does
+    if (Test-Path -Path $tempFolder.FullName) {
+        Remove-Item -Path $tempFolder.FullName -Recurse -Force
+        Write-Host "Cleaned up existing temp folder: $tempFolder" -ForegroundColor Yellow
+    }
+
     # Download each file from the repository
     foreach ($file in $files) {
         $fileUrl = "https://raw.githubusercontent.com/$owner/$repo/main/$($file.path)"
