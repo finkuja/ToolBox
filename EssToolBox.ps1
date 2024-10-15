@@ -589,7 +589,7 @@ $controls["OptimizeDrivesButton"].Add_Click({
     })
 
 $controls["RunDiskCleanupButton"].Add_Click({
-        Invoke-RunDiskCleanup
+        Invoke-DiskCleanup
     })
 
 $controls["DNSComboBox"].Add_SelectionChanged({
@@ -613,11 +613,11 @@ $controls["FixEdgeButton"].Add_Click({
     })
 
 $controls["FixOutlookButton"].Add_Click({
-        Show-ChildWindow $xamlPaths["FixOutlookWindow.xml"]
+        Show-ChildWindow $xamlPaths["FixOutlookWindow.xml"] $jsonPaths["FixButtonMappings.json"]
     })
 
 $controls["FixTeamsButton"].Add_Click({
-        Show-ChildWindow $xamlPaths["FixTeamsWindow.xml"]
+        Show-ChildWindow $xamlPaths["FixTeamsWindow.xml"] $jsonPaths["FixButtonMappings.json"]
     })
 
 $controls["RemoveAdobeCloudButton"].Add_Click({
@@ -629,35 +629,35 @@ $controls["RemoveAdobeReaderButton"].Add_Click({
     })
 
 $controls["RemoveOneDriveButton"].Add_Click({
-        # Add your logic for handling RemoveOneDriveButton click here
+        Remove-OneDrive
     })
 
 $controls["RemoveOfficeButton"].Add_Click({
-        # Add your logic for handling RemoveOfficeButton click here
+        Remove-Office
     })
 
 $controls["RepairOfficeButton"].Add_Click({
-        # Add your logic for handling RepairOfficeButton click here
+        Invoke-OfficeRepair
     })
 
 $controls["MemoryDiagnosticsButton"].Add_Click({
-        # Add your logic for handling MemoryDiagnosticsButton click here
+        Invoke-MemoryDiagnostics
     })
 
 $controls["ResetNetworkButton"].Add_Click({
-        # Add your logic for handling ResetNetworkButton click here
+        Reset-Network
     })
 
 $controls["ResetWinUpdateButton"].Add_Click({
-        Invoke-FixesWUpdate
+        Show-ChildWindow $xamlPaths["FixWUpdateWindow.xml"] $jsonPaths["FixButtonMappings.json"]
     })
 
 $controls["SystemRepairButton"].Add_Click({
-        # Add your logic for handling SystemRepairButton click here
+        Invoke-SystemRepair
     })
 
 $controls["SystemTroubleshootButton"].Add_Click({
-        # Add your logic for handling SystemTroubleshootButton click here
+        Invoke-SystemTroubleshoot
     })
 
 ###############################################

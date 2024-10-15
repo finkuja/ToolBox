@@ -342,7 +342,7 @@
                                             <Button Content="Fix Microsoft Edge" Name="FixEdgeButton" Grid.Row="0" Grid.Column="0" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                             <Button Content="Remove Adobe Creative Cloud" Name="RemoveAdobeCloudButton" Grid.Row="0" Grid.Column="1" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                             <Button Content="Remove Adobe Reader" Name="RemoveAdobeReaderButton" Grid.Row="1" Grid.Column="0" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
-                                            <Button Content="Remove OneDrive" Name="RemoveOneDriveButton" Grid.Row="1" Grid.Column="1" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
+                                            <Button Content="Remove OneDrive" x:Name="RemoveOneDriveButton" Grid.Row="1" Grid.Column="1" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                         </Grid>
                                     </StackPanel>
                                 </GroupBox>
@@ -357,10 +357,10 @@
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <Button Content="Fix Outlook" Name="FixOutlookButton" Grid.Row="0" Grid.Column="0" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
-                                            <Button Content="Fix Teams" Name="FixTeamsButton" Grid.Row="0" Grid.Column="1" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
-                                            <Button Content="Remove Office" Name="RemoveOfficeButton" Grid.Row="1" Grid.Column="0" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
-                                            <Button Content="Repair Office" Name="RepairOfficeButton" Grid.Row="1" Grid.Column="1" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
+                                            <Button x:Name="FixOutlookButton" Content="Fix Outlook" Grid.Row="0" Grid.Column="0" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
+                                            <Button x:Name="FixTeamsButton" Content="Fix Teams" Grid.Row="0" Grid.Column="1" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
+                                            <Button x:Name="RemoveOfficeButton" Content="Remove Office" Grid.Row="1" Grid.Column="0" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
+                                            <Button x:Name="RepairOfficeButton" Content="Repair Office" Grid.Row="1" Grid.Column="1" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                         </Grid>
                                     </StackPanel>
                                 </GroupBox>

@@ -51,6 +51,18 @@ function Invoke-FixesWUpdate {
     Start-Sleep -Milliseconds 200
     
     if ($Aggressive) {
+
+        $confirmation = [System.Windows.Forms.MessageBox]::Show(
+            "Are you sure you want to perform an aggressive repair of Windows Update? This may take a significant amount of time.",
+            "Confirmation",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        
+        if ($confirmation -ne [System.Windows.Forms.DialogResult]::Yes) {
+            Write-Host "Operation cancelled by the user."
+            return
+        }
         # Scan system for corruption
         Write-Progress -Id 0 -Activity "Repairing Windows Update" -Status "Scanning for corruption..." -PercentComplete 0
         Write-Progress -Id 1 -ParentId 0 -Activity "Scanning for corruption" -Status "Running chkdsk..." -PercentComplete 0
@@ -161,6 +173,19 @@ function Invoke-FixesWUpdate {
         Write-Progress -Id 1 -ParentId 0 -Activity "Scanning for corruption" -Status "Completed" -PercentComplete 100
     }
     
+    if (-not $Aggressive) {
+        $confirmation = [System.Windows.Forms.MessageBox]::Show(
+            "Are you sure you want to proceed with the standard repair of Windows Update? This will delete all temporary files.",
+            "Confirmation",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+
+        if ($confirmation -ne [System.Windows.Forms.DialogResult]::Yes) {
+            Write-Host "Operation cancelled by the user."
+            return
+        }
+    }
     
     Write-Progress -Id 0 -Activity "Repairing Windows Update" -Status "Stopping Windows Update Services..." -PercentComplete 10
     # Stop the Windows Update Services

@@ -1,4 +1,15 @@
 function Invoke-DeleteTempFiles {
+    $confirmation = [System.Windows.Forms.MessageBox]::Show(
+        "Are you sure you want to delete all temporary files?",
+        "Confirmation",
+        [System.Windows.Forms.MessageBoxButtons]::YesNo,
+        [System.Windows.Forms.MessageBoxIcon]::Warning
+    )
+
+    if ($confirmation -ne [System.Windows.Forms.DialogResult]::Yes) {
+        Write-Host "Operation cancelled by the user."
+        return
+    }
     # Delete temporary files
     Write-Host "Deleting temporary files..." -ForegroundColor Green
 

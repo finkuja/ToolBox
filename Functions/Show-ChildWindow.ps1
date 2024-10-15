@@ -68,35 +68,26 @@ function Show-ChildWindow {
 
             $control = $childWindow.FindName($buttonName)
             if ($null -eq $control) {
-                Write-Host "$buttonName not found in XAML." -ForegroundColor Red
+                #Write-Host "$buttonName not found in XAML." -ForegroundColor Red
                 continue
             }
 
-            # Check if the function exists
-            if (Get-Command -Name $functionName -ErrorAction SilentlyContinue) {
-                # Store control and function in hashtables using the index as the key
-                $controlHashtable[$index] = $control
-                $functionHashtable[$index] = $functionName
+            # Store control and function in hashtables using the index as the key
+            $controlHashtable[$index] = $control
+            $functionHashtable[$index] = $functionName
 
-                # Add click event handler
-                $control.Add_Click({
-                        param ($localSender, $e)
-                        $currentIndex = $localSender.Tag
-                        $currentFunctionName = $functionHashtable[$currentIndex]
-                        Write-Host "Executing function: $currentFunctionName"
-                        & $currentFunctionName
-                    })
+            # Add click event handler
+            $control.Add_Click({
+                    param ($localSender, $e)
+                    $currentIndex = $localSender.Tag
+                    $currentFunctionName = $functionHashtable[$currentIndex]
+                    #Write-Host "Executing function: $currentFunctionName"
+                    & $currentFunctionName
+                })
 
-                # Set the Tag property to the current index
-                $control.Tag = $index
-            }
-            else {
-                Write-Host "No valid function found for button: $buttonName" -ForegroundColor Yellow
-                # Add a click handler that shows an error message
-                $control.Add_Click({
-                        Write-Host "Error: Function $functionName not found." -ForegroundColor Red
-                    })
-            }
+            # Set the Tag property to the current index
+            $control.Tag = $index
+            
         }
 
         # Show the child window

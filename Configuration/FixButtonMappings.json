@@ -10,5 +10,13 @@
     {
         "ButtonName": "RemoveEdgeButton",
         "FunctionName": "Remove-Edge"
+    },
+    {
+        "ButtonName": "AgressiveModeButton",
+        "FunctionName": "Invoke-FixesWUpdate -Aggressive $true"
+    },
+    {
+        "ButtonName": "NormalModeButton",
+        "FunctionName": "Invoke-FixesWUpdate"
     }
 ]
