@@ -621,12 +621,11 @@ $controls["FixTeamsButton"].Add_Click({
     })
 
 $controls["RemoveAdobeCloudButton"].Add_Click({
-        # Add your logic for handling RemoveAdobeCloudButton click here
         Remove-AdobeCloud
     })
 
 $controls["RemoveAdobeReaderButton"].Add_Click({
-        # Add your logic for handling RemoveAdobeReaderButton click here
+        Remove-AdobeReader
     })
 
 $controls["RemoveOneDriveButton"].Add_Click({
@@ -650,7 +649,7 @@ $controls["ResetNetworkButton"].Add_Click({
     })
 
 $controls["ResetWinUpdateButton"].Add_Click({
-        # Add your logic for handling ResetWinUpdateButton click here
+        Invoke-FixesWUpdate
     })
 
 $controls["SystemRepairButton"].Add_Click({

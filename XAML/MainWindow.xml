@@ -263,7 +263,7 @@
                                 <CheckBox Name="VisioViewer2016" Content="Visio Viewer 2016" Tag="Microsoft VisioViewer" Margin="10,5" Grid.Row="9" Grid.Column="1" Foreground="White"/><!-- Column 2 -->
                                 <CheckBox Name="VisualStudioCode" Content="Visual Studio Code" Tag="Microsoft Visual Studio Code" Margin="10,5" Grid.Row="0" Grid.Column="2" Foreground="White"/>
                                 <CheckBox Name="SevenZip" Content="7-Zip" Tag="7-Zip" Margin="10,5" Grid.Row="1" Grid.Column="2" Foreground="White"/>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,5" Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="2">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0" Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="2">
                                     <Button Name="InstallButton" Content="Install" Width="100" Height="30" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                     <Button x:Name="UninstallButton" Content="Uninstall" Width="100" Height="30" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                     <Button x:Name="InstalledButton" Content="Installed" Width="100" Height="30" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
@@ -282,10 +282,11 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="135"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions><!-- Column 0 -->
-                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="10,5">
+                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="10,0">
                                 <CheckBox Name="CleanBoot" Content="Clean Boot" Tag="Clean Boot" Margin="0,5" Foreground="White"/>
                                 <CheckBox Name="EnableDetailedBSODInformation" Content="Enable Detailed BSOD Information" Tag="Enable Detailed BSOD Information" Margin="0,5" Foreground="White"/>
                                 <CheckBox Name="EnableGodMode" Content="Enable God Mode" Tag="Enable God Mode" Margin="0,5" Foreground="White"/>
@@ -296,7 +297,7 @@
                                 <CheckBox Name="EnableVerboseLogonMessages" Content="Enable Verbose Logon Messages" Tag="Enable Verbose Logon Messages" Margin="0,5" Foreground="White"/>
                                 <CheckBox Name="EnableVerboseStartupAndShutdownMessages" Content="Enable Verbose Startup and Shutdown Messages" Tag="Enable Verbose Startup and Shutdown Messages" Margin="0,5" Foreground="White"/>
                             </StackPanel><!-- Column 1 -->
-                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,5">
+                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,0">
                                 <Button Name="DeleteTempFilesButton" Content="Delete Temporary Files" Width="180" Height="30" Margin="0,5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                 <Button Name="OptimizeDrivesButton" Content="Optimize Drives" Width="180" Height="30" Margin="0,5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                 <Button Name="RunDiskCleanupButton" Content="Run Disk Cleanup" Width="180" Height="30" Margin="0,5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
@@ -308,7 +309,7 @@
                                     <ComboBoxItem Content="DNS.Watch" Style="{StaticResource CustomComboBoxItemStyle}"/>
                                 </ComboBox>
                             </StackPanel><!-- Add the Apply and Undo buttons -->
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,5" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
                                 <Button Name="ApplyButton" Content="Apply" Width="100" Height="30" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                 <Button Name="UndoButton" Content="Undo" Width="100" Height="30" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                             </StackPanel>

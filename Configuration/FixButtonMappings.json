@@ -4,11 +4,11 @@
         "FunctionName": "Reset-EdgeCache"
     },
     {
-        "ButtonName": "EdgeOption2Button",
-        "FunctionName": "Option2"
+        "ButtonName": "ResetEdgeProfileButton",
+        "FunctionName": "Reset-EdgeProfile"
     },
     {
-        "ButtonName": "EdgeOption3Button",
-        "FunctionName": "Option3"
+        "ButtonName": "RemoveEdgeButton",
+        "FunctionName": "Remove-Edge"
     }
 ]

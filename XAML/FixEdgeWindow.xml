@@ -97,9 +97,9 @@
                 </Grid.ColumnDefinitions>
                 <GroupBox Header="Select Option" Style="{StaticResource GroupBoxStyle}" Grid.Row="1" Grid.ColumnSpan="2" Margin="10,0,10,10">
                     <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Button Name="ResetEdgeCacheButton" Content="Reset Edge Cache" Style="{StaticResource CustomButtonStyle}" Margin="5" Tag="Reset-EdgeCache"/>
-                        <Button Name="EdgeOption2Button" Content="Edge Option 2" Style="{StaticResource CustomButtonStyle}" Margin="5" Tag="Option2"/>
-                        <Button Name="EdgeOption3Button" Content="Edge Option 3" Style="{StaticResource CustomButtonStyle}" Margin="5" Tag="Option3"/>
+                        <Button Name="ResetEdgeCacheButton" Content="Reset Cache" Style="{StaticResource CustomButtonStyle}" Margin="5" Tag="Reset-EdgeCache"/>
+                        <Button Name="ResetEdgeProfileButton" Content="Reset Profile" Style="{StaticResource CustomButtonStyle}" Margin="5" Tag="Reset-EdgeProfile"/>
+                        <Button Name="RemoveEdgeButton" Content="Remove Microsoft Edge" Style="{StaticResource CustomButtonStyle}" Margin="5" Tag="Remove-Edge"/>
                     </StackPanel>
                 </GroupBox>
             </Grid>
