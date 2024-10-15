@@ -312,7 +312,7 @@ foreach ($file in $jsonFiles) {
 }
 
 # Required JSON files
-$requiredJsonFiles = @("AppList.json", "ButtonMappings.json")
+$requiredJsonFiles = @("AppList.json", "FixButtonMappings.json", "MainWindowControlNames.json")
 
 # Check for missing JSON files
 foreach ($requiredFile in $requiredJsonFiles) {
@@ -370,39 +370,18 @@ $windowControlPanel.Add_MouseLeftButtonDown({
         $window.DragMove()
     })
 
+# Load control names from the MainWindowControlNames.json file
+$controlNamesJsonPath = $jsonPaths["MainWindowControlNames.json"]
+$controlNamesContent = Get-Content -Path $controlNamesJsonPath -Raw | ConvertFrom-Json
+
 # Hashtable to store all controls
 $controls = @{
     InstallCheckboxes = @{}
     TweakCheckboxes   = @{}
 }
 
-# List of control names to find
-$controlNames = @(
-    "CloseButton", "CheckAllButton", "InstallButton", "UninstallButton", "InstalledButton",
-    "ApplyButton", "UndoButton", "DeleteTempFilesButton", "OptimizeDrivesButton", "RunDiskCleanupButton",
-    "DNSComboBox", "FixEdgeButton", "FixOutlookButton", "FixTeamsButton",
-    "RemoveAdobeCloudButton", "RemoveAdobeReaderButton", "RemoveOneDriveButton",
-    "RemoveOfficeButton", "RepairOfficeButton", "MemoryDiagnosticsButton",
-    "ResetNetworkButton", "ResetWinUpdateButton", "SystemRepairButton", "SystemTroubleshootButton"
-)
-
-# List of InstallTab checkbox names
-$installCheckboxNames = @(
-    "AdobeCreativeCloud", "AdobeReaderDC", "GoogleChrome", "Fiddler", "HWMonitor", "DotNetAllVersions",
-    "MicrosoftEdge", "MicrosoftOffice365", "MicrosoftOneDrive", "MicrosoftOneNote", "MicrosoftTeams",
-    "MozillaFirefox", "PowerAutomate", "PowerBIDesktop", "PowerToys", "QuickAssist", "RemoteDesktop",
-    "SARATool", "SurfaceDiagnosticToolkit", "VisioViewer2016", "VisualStudioCode", "SevenZip"
-)
-
-# List of TweakTab checkbox names
-$tweakCheckboxNames = @(
-    "CleanBoot", "EnableDetailedBSODInformation", "EnableGodMode", "EnableClassicRightClickMenu",
-    "EnableEndTaskWithRightClick", "ChangeIRPStackSize", "ClipboardHistory", "EnableVerboseLogonMessages",
-    "EnableVerboseStartupAndShutdownMessages"
-)
-
 # Combine all control names into a single list
-$allControlNames = $controlNames + $installCheckboxNames + $tweakCheckboxNames
+$allControlNames = $controlNamesContent.ControlNames + $controlNamesContent.InstallCheckboxNames + $controlNamesContent.TweakCheckboxNames
 
 # Find and assign controls to the hashtable
 foreach ($name in $allControlNames) {
@@ -415,10 +394,10 @@ foreach ($name in $allControlNames) {
     $controls[$name] = $control
 
     # Store checkboxes in their respective hashtables
-    if ($installCheckboxNames -contains $name) {
+    if ($controlNamesContent.InstallCheckboxNames -contains $name) {
         $controls.InstallCheckboxes[$name] = $control
     }
-    elseif ($tweakCheckboxNames -contains $name) {
+    elseif ($controlNamesContent.TweakCheckboxNames -contains $name) {
         $controls.TweakCheckboxes[$name] = $control
     }
 }
@@ -630,7 +609,7 @@ $controls["DNSComboBox"].Add_SelectionChanged({
 # Add event handlers for the FixTab buttons
 
 $controls["FixEdgeButton"].Add_Click({
-        Show-ChildWindow $xamlPaths["FixEdgeWindow.xml"] $jsonPaths["ButtonMappings.json"]
+        Show-ChildWindow $xamlPaths["FixEdgeWindow.xml"] $jsonPaths["FixButtonMappings.json"]
     })
 
 $controls["FixOutlookButton"].Add_Click({
