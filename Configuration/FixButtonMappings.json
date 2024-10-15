@@ -18,5 +18,25 @@
     {
         "ButtonName": "NormalModeButton",
         "FunctionName": "Invoke-FixesWUpdate"
+    },
+    {
+        "ButtonName": "TeamsAddinFixButton",
+        "FunctionName": "Invoke-TeamsAddinFix"
+    },
+    {
+        "ButtonName": "RebuildOSTButton",
+        "FunctionName": "Invoke-RebuildOST"
+    },
+    {
+        "ButtonName": "TeamsCacheCleanButton",
+        "FunctionName": "Invoke-TeamsCacheClean"
+    },
+    {
+        "ButtonName": "TeamsRemovalButton",
+        "FunctionName": "Invoke-TeamsRemoval"
+    },
+    {
+        "ButtonName": "TeamsResetButton",
+        "FunctionName": "Invoke-TeamsReset"
     }
 ]
