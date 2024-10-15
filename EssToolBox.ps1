@@ -622,9 +622,11 @@ $dnsComboBox.Add_SelectionChanged({
         }
         else {
             # Ask for confirmation
-            $confirmation = [System.Windows.MessageBox]::Show("Do you want to reset the DNS settings to default?", "Confirm DNS Reset", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+            $confirmation = [System.Windows.MessageBox]::Show("Do you want to reset the DNS settings to default and switch to auto DHCP?", "Confirm DNS Reset", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
             if ($confirmation -eq [System.Windows.MessageBoxResult]::Yes) {
                 Set-DNS -reset $true
+                # Switch DNS settings to auto DHCP
+                Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ResetServerAddresses
             }
             else {
                 Write-Host "DNS settings reset canceled."
