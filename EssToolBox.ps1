@@ -243,6 +243,13 @@ if ($tempDir) {
     }
 
     # Download each file from the repository
+    # Initialize WebClient
+    $webClient = New-Object System.Net.WebClient
+
+    # Initialize progress bar
+    $totalFiles = $files.Count
+    $currentFileIndex = 0
+
     foreach ($file in $files) {
         $fileUrl = "https://raw.githubusercontent.com/$owner/$repo/main/$($file.path)"
         $outputPath = Join-Path -Path $tempFolder.FullName -ChildPath $file.path
@@ -251,8 +258,18 @@ if ($tempDir) {
         if (-not (Test-Path -Path $outputDir)) {
             New-Item -ItemType Directory -Path $outputDir -Force
         }
-        Invoke-WebRequest -Uri $fileUrl -OutFile $outputPath
+
+        # Update progress bar
+        $currentFileIndex++
+        $progressPercent = [math]::Round(($currentFileIndex / $totalFiles) * 100)
+        Write-Progress -Activity "Downloading files" -Status "Downloading $file.path" -PercentComplete $progressPercent
+
+        # Download file
+        $webClient.DownloadFile($fileUrl, $outputPath)
     }
+
+    # Clean up
+    $webClient.Dispose()
     Write-Host "Downloaded scirpt Temp Files to $tempFolder" -ForegroundColor Green
 
     # Set the script directory to the temporary folder
