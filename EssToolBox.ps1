@@ -589,13 +589,47 @@ $controls["OptimizeDrivesButton"].Add_Click({
     })
 
 $controls["RunDiskCleanupButton"].Add_Click({
-        Invoke-RunDiskCleanup
+        Invoke-DiskCleanup
     })
+# DNS COMBOBOX
+# Load the JSON file
+$jsonPath = $jsonPaths["DNSList.json"]
+if (-not (Test-Path $jsonPath)) {
+    Write-Host "Error: JSON file not found - $jsonPath" -ForegroundColor Red
+    return
+}
 
-$controls["DNSComboBox"].Add_SelectionChanged({
-        # Add your logic for handling DNS selection change here
-        $selectedDNS = $controls["DNSComboBox"].SelectedItem.Content
-        Write-Host "DNS selection changed to: $selectedDNS"
+$dnsProviders = Get-Content -Path $jsonPath | ConvertFrom-Json
+
+# Find the ComboBox
+$dnsComboBox = $controls["DNSComboBox"]
+
+# Event handler for ComboBox selection change
+$dnsComboBox.Add_SelectionChanged({
+        $selectedIndex = $dnsComboBox.SelectedIndex
+        if ($selectedIndex -gt 0) {
+            $selectedProviders = $dnsProviders | Where-Object { $_.Index -eq $selectedIndex }
+            $dnsAddresses = $selectedProviders | ForEach-Object { $_.DNSAddress }
+
+            # Ask for confirmation
+            $confirmation = [System.Windows.MessageBox]::Show("Do you want to apply the DNS settings for the selected provider?", "Confirm DNS Change", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+            if ($confirmation -eq [System.Windows.MessageBoxResult]::Yes) {
+                Set-DNS -dnsAddresses $dnsAddresses
+            }
+            else {
+                Write-Host "DNS settings change canceled."
+            }
+        }
+        else {
+            # Ask for confirmation
+            $confirmation = [System.Windows.MessageBox]::Show("Do you want to reset the DNS settings to default?", "Confirm DNS Reset", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+            if ($confirmation -eq [System.Windows.MessageBoxResult]::Yes) {
+                Set-DNS -reset $true
+            }
+            else {
+                Write-Host "DNS settings reset canceled."
+            }
+        }
     })
 
 #################################################
@@ -613,52 +647,51 @@ $controls["FixEdgeButton"].Add_Click({
     })
 
 $controls["FixOutlookButton"].Add_Click({
-        Show-ChildWindow $xamlPaths["FixOutlookWindow.xml"]
+        Show-ChildWindow $xamlPaths["FixOutlookWindow.xml"] $jsonPaths["FixButtonMappings.json"]
     })
 
 $controls["FixTeamsButton"].Add_Click({
-        Show-ChildWindow $xamlPaths["FixTeamsWindow.xml"]
+        Show-ChildWindow $xamlPaths["FixTeamsWindow.xml"] $jsonPaths["FixButtonMappings.json"]
     })
 
 $controls["RemoveAdobeCloudButton"].Add_Click({
-        # Add your logic for handling RemoveAdobeCloudButton click here
         Remove-AdobeCloud
     })
 
 $controls["RemoveAdobeReaderButton"].Add_Click({
-        # Add your logic for handling RemoveAdobeReaderButton click here
+        Remove-AdobeReader
     })
 
 $controls["RemoveOneDriveButton"].Add_Click({
-        # Add your logic for handling RemoveOneDriveButton click here
+        Remove-OneDrive
     })
 
 $controls["RemoveOfficeButton"].Add_Click({
-        # Add your logic for handling RemoveOfficeButton click here
+        Remove-Office
     })
 
 $controls["RepairOfficeButton"].Add_Click({
-        # Add your logic for handling RepairOfficeButton click here
+        Invoke-OfficeRepair
     })
 
 $controls["MemoryDiagnosticsButton"].Add_Click({
-        # Add your logic for handling MemoryDiagnosticsButton click here
+        Invoke-MemoryDiagnostics
     })
 
 $controls["ResetNetworkButton"].Add_Click({
-        # Add your logic for handling ResetNetworkButton click here
+        Reset-Network
     })
 
 $controls["ResetWinUpdateButton"].Add_Click({
-        # Add your logic for handling ResetWinUpdateButton click here
+        Show-ChildWindow $xamlPaths["FixWUpdateWindow.xml"] $jsonPaths["FixButtonMappings.json"]
     })
 
 $controls["SystemRepairButton"].Add_Click({
-        # Add your logic for handling SystemRepairButton click here
+        Invoke-SystemRepair
     })
 
 $controls["SystemTroubleshootButton"].Add_Click({
-        # Add your logic for handling SystemTroubleshootButton click here
+        Invoke-SystemTroubleshoot
     })
 
 ###############################################

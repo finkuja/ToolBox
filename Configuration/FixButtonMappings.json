@@ -4,11 +4,39 @@
         "FunctionName": "Reset-EdgeCache"
     },
     {
-        "ButtonName": "EdgeOption2Button",
-        "FunctionName": "Option2"
+        "ButtonName": "ResetEdgeProfileButton",
+        "FunctionName": "Reset-EdgeProfile"
     },
     {
-        "ButtonName": "EdgeOption3Button",
-        "FunctionName": "Option3"
+        "ButtonName": "RemoveEdgeButton",
+        "FunctionName": "Remove-Edge"
+    },
+    {
+        "ButtonName": "AgressiveModeButton",
+        "FunctionName": "Invoke-FixesWUpdate -Aggressive $true"
+    },
+    {
+        "ButtonName": "NormalModeButton",
+        "FunctionName": "Invoke-FixesWUpdate"
+    },
+    {
+        "ButtonName": "TeamsAddinFixButton",
+        "FunctionName": "Invoke-TeamsAddinFix"
+    },
+    {
+        "ButtonName": "RebuildOSTButton",
+        "FunctionName": "Invoke-RebuildOST"
+    },
+    {
+        "ButtonName": "TeamsCacheCleanButton",
+        "FunctionName": "Invoke-TeamsCacheClean"
+    },
+    {
+        "ButtonName": "TeamsRemovalButton",
+        "FunctionName": "Invoke-TeamsRemoval"
+    },
+    {
+        "ButtonName": "TeamsResetButton",
+        "FunctionName": "Invoke-TeamsReset"
     }
 ]

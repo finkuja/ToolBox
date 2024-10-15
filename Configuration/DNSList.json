@@ -1,0 +1,42 @@
+[
+    {
+        "Index": 1,
+        "ProviderName": "Cloudflare",
+        "DNSAddress": "1.1.1.1"
+    },
+    {
+        "Index": 1,
+        "ProviderName": "Cloudflare",
+        "DNSAddress": "1.0.0.1"
+    },
+    {
+        "Index": 2,
+        "ProviderName": "OpenDNS",
+        "DNSAddress": "208.67.222.222"
+    },
+    {
+        "Index": 2,
+        "ProviderName": "OpenDNS",
+        "DNSAddress": "208.67.220.220"
+    },
+    {
+        "Index": 3,
+        "ProviderName": "Quad9",
+        "DNSAddress": "9.9.9.9"
+    },
+    {
+        "Index": 3,
+        "ProviderName": "Quad9",
+        "DNSAddress": "149.112.112.112"
+    },
+    {
+        "Index": 4,
+        "ProviderName": "DNS.Watch",
+        "DNSAddress": "84.200.69.80"
+    },
+    {
+        "Index": 4,
+        "ProviderName": "DNS.Watch",
+        "DNSAddress": "84.200.70.40"
+    }
+]

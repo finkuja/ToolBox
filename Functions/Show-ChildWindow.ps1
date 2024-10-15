@@ -46,13 +46,6 @@ function Show-ChildWindow {
             throw "Failed to load child window from XAML."
         }
 
-        # Load button-function mappings from JSON file
-        $jsonContent = Get-Content -Path $jsonPath -Raw | ConvertFrom-Json
-        $childButtons = @{}
-        foreach ($mapping in $jsonContent) {
-            $childButtons[$mapping.ButtonName] = $mapping.FunctionName
-        }
-
         # Find the close button and add a click event handler
         $closeButton = $childWindow.FindName("CloseButton")
         if ($null -ne $closeButton) {
@@ -61,25 +54,43 @@ function Show-ChildWindow {
                 })
         }
 
-        # Find all buttons in the child window based on the hashtable keys
-        foreach ($name in $childButtons.Keys) {
-            $button = $childWindow.FindName($name)
-            if ($button -is [System.Windows.Controls.Button]) {
-                $functionName = $childButtons[$name]
-                if (Get-Command -Name $functionName -ErrorAction SilentlyContinue) {
-                    $button.Add_Click({
-                            & $functionName
-                        })
-                }
-                else {
-                    Write-Host "No function found for button: $name"
-                }
+        # Load button-function mappings from JSON file
+        $jsonContent = Get-Content -Path $jsonPath -Raw | ConvertFrom-Json
+
+        # Initialize hashtables for controls and functions
+        $controlHashtable = @{}
+        $functionHashtable = @{}
+
+        foreach ($index in 0..($jsonContent.Count - 1)) {
+            $mapping = $jsonContent[$index]
+            $buttonName = $mapping.ButtonName
+            $functionName = $mapping.FunctionName
+
+            $control = $childWindow.FindName($buttonName)
+            if ($null -eq $control) {
+                #Write-Host "$buttonName not found in XAML." -ForegroundColor Red
+                continue
             }
-            else {
-                Write-Host "No button found with name: $name"
-            }
+
+            # Store control and function in hashtables using the index as the key
+            $controlHashtable[$index] = $control
+            $functionHashtable[$index] = $functionName
+
+            # Add click event handler
+            $control.Add_Click({
+                    param ($localSender, $e)
+                    $currentIndex = $localSender.Tag
+                    $currentFunctionName = $functionHashtable[$currentIndex]
+                    #Write-Host "Executing function: $currentFunctionName"
+                    & $currentFunctionName
+                })
+
+            # Set the Tag property to the current index
+            $control.Tag = $index
+            
         }
 
+        # Show the child window
         $childWindow.ShowDialog()
     }
     catch {
