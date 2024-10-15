@@ -198,11 +198,11 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <DockPanel LastChildFill="True">
-                <Button Name="CloseButton" DockPanel.Dock="Right" Width="40" Height="40" Margin="5" Background="Transparent" BorderBrush="Transparent" Foreground="White" Cursor="Hand">
+                <Button Name="CloseButton" DockPanel.Dock="Right" Width="40" Height="40" Margin="10" Background="Transparent" BorderBrush="Transparent" Foreground="White" Cursor="Hand">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
-                                <TextBlock x:Name="CloseIcon" Text="" FontFamily="Segoe MDL2 Assets" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="CloseIcon" Text="" FontFamily="Segoe UI Symbol" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">

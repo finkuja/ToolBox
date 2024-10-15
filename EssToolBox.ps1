@@ -282,10 +282,12 @@ $jsonFiles = Get-ChildItem -Path $configDir -Filter *.json
 # Source all XAML files in the XAML directory
 $xamlFiles = Get-ChildItem -Path $xamlDir -Filter *.xml
 
-# Check if the XAML files exist and store their paths in a hashtable
+# Initialize hashtables to store file paths and an array to track missing files
 $xamlPaths = @{}
+$jsonPaths = @{}
 $missingFiles = @()
 
+# Check if the XAML files exist and store their paths in a hashtable
 foreach ($file in $xamlFiles) {
     $filePath = $file.FullName
     $fileName = $file.Name
@@ -295,6 +297,7 @@ foreach ($file in $xamlFiles) {
 # Required XAML files
 $requiredXamlFiles = @("MainWindow.xml", "FixOutlookWindow.xml", "FixTeamsWindow.xml", "FixEdgeWindow.xml")
 
+# Check for missing XAML files
 foreach ($requiredFile in $requiredXamlFiles) {
     if (-not $xamlPaths.ContainsKey($requiredFile)) {
         $missingFiles += $requiredFile
@@ -302,15 +305,16 @@ foreach ($requiredFile in $requiredXamlFiles) {
 }
 
 # Check if the JSON files exist and store their paths in a hashtable
-$jsonPaths = @{}
-$requiredJsonFiles = @("AppList.json")
-
 foreach ($file in $jsonFiles) {
     $filePath = $file.FullName
     $fileName = $file.Name
     $jsonPaths[$fileName] = $filePath
 }
 
+# Required JSON files
+$requiredJsonFiles = @("AppList.json", "ButtonMappings.json")
+
+# Check for missing JSON files
 foreach ($requiredFile in $requiredJsonFiles) {
     if (-not $jsonPaths.ContainsKey($requiredFile)) {
         $missingFiles += $requiredFile
@@ -324,14 +328,6 @@ if ($missingFiles.Count -gt 0) {
         Write-Host $missingFile -ForegroundColor Red
     }
     Read-Host "Script cannot continue. Press Enter to exit."
-    exit
-}
-
-# If any files are missing, output an error message and exit
-if ($missingFiles.Count -gt 0) {
-    Write-Host "The following XAML files cannot be found:" -ForegroundColor Red
-    $missingFiles | ForEach-Object { Write-Host $_ -ForegroundColor Red }
-    Read-Host "The script cannot continue. Press Enter to exit."
     exit
 }
 
@@ -634,7 +630,7 @@ $controls["DNSComboBox"].Add_SelectionChanged({
 # Add event handlers for the FixTab buttons
 
 $controls["FixEdgeButton"].Add_Click({
-        Show-ChildWindow $xamlPaths["FixEdgeWindow.xml"]
+        Show-ChildWindow $xamlPaths["FixEdgeWindow.xml"] $jsonPaths["ButtonMappings.json"]
     })
 
 $controls["FixOutlookButton"].Add_Click({
