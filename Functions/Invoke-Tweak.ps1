@@ -1,3 +1,44 @@
+<#
+.SYNOPSIS
+    Applies or undoes various system tweaks.
+
+.DESCRIPTION
+    This function allows the user to apply or undo a set of predefined system tweaks. 
+    It supports actions such as enabling detailed BSOD information, enabling God Mode, 
+    and performing a clean boot, among others.
+
+.PARAMETER Action
+    Specifies the action to be taken. Valid values are "Apply" and "Undo".
+
+.PARAMETER Tweak
+    Specifies the tweak to be applied or undone. Valid values are:
+    - CleanBoot
+    - EnableDetailedBSODInformation
+    - EnableGodMode
+    - EnableClassicRightClickMenu
+    - EnableEndTaskWithRightClick
+    - ChangeIRPStackSize
+    - ClipboardHistory
+    - EnableVerboseLogonMessages
+    - EnableVerboseStartupAndShutdownMessages
+
+.PARAMETER window
+    A System.Windows.Window object representing the parent window for message boxes.
+
+.EXAMPLE
+    Invoke-Tweak -Action Apply -Tweak EnableGodMode
+
+    This command enables God Mode on the desktop.
+
+.EXAMPLE
+    Invoke-Tweak -Action Undo -Tweak CleanBoot
+
+    This command undoes the clean boot by re-enabling previously disabled services.
+
+.NOTES
+    Author: Your Name
+    Date: Today's Date
+#>
 function Invoke-Tweak {
     param (
         [Parameter(Mandatory = $true)]
