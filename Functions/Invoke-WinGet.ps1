@@ -1,41 +1,55 @@
-function Invoke-WinGet { 
+<#
+.SYNOPSIS
+    Installs or uninstalls packages using WinGet based on a JSON configuration file.
+
+.DESCRIPTION
+    The Invoke-WinGet function allows you to install or uninstall packages using WinGet. 
+    The packages and their corresponding WinGet IDs are specified in a JSON file.
+
+.PARAMETER Action
+    Specifies the action to perform. Valid values are "Install" or "Uninstall".
+
+.PARAMETER window
+    A reference to the current window (used for UI interactions).
+
+.PARAMETER PackageName
+    The name of the package to install or uninstall. This should match a key in the JSON file.
+
+.PARAMETER JsonFilePath
+    The path to the JSON file containing package information. The JSON file should map package names to WinGet IDs.
+
+.EXAMPLE
+    # Path to the JSON file
+    $jsonFilePath = "path\to\packages.json"
+
+    # Example usage of Invoke-WinGet to install Google Chrome
+    Invoke-WinGet -Action "Install" -window $window -PackageName "Google Chrome" -JsonFilePath $jsonFilePath
+
+    # Example usage of Invoke-WinGet to uninstall Google Chrome
+    Invoke-WinGet -Action "Uninstall" -window $window -PackageName "Google Chrome" -JsonFilePath $jsonFilePath
+
+.NOTES
+    The function checks if the JSON file exists at the specified path. If the file exists, it reads the content 
+    and converts it from JSON format to a PowerShell object. The resulting hashtable is used to map package names 
+    to their corresponding WinGet IDs. The function then uses the WinGet command-line tool to install or uninstall 
+    the specified package(s).
+#>
+function Invoke-WinGet {
     param (
         [ValidateSet("Install", "Uninstall")]
         [string]$Action,
         [System.Windows.Window]$window,
-        [string]$PackageName
+        [string]$PackageName,
+        [string]$JsonFilePath
     )
 
-    # Define the list of packages and their corresponding IDs
-    $packages = @{
-        "Adobe Creative Cloud"                     = "Adobe.CreativeCloud"
-        "Adobe Acrobat"                            = "Adobe.Acrobat.Reader.64-bit"
-        "Google Chrome"                            = "Google.Chrome"
-        "Fiddler Classic"                          = "Telerik.Fiddler.Classic"
-        "HWMonitor"                                = "CPUID.HWMonitor"
-        "Microsoft .Net Runtime"                   = @(
-            "Microsoft.DotNet.DesktopRuntime.3_1",
-            "Microsoft.DotNet.DesktopRuntime.5",
-            "Microsoft.DotNet.DesktopRuntime.6",
-            "Microsoft.DotNet.DesktopRuntime.7",
-            "Microsoft.DotNet.DesktopRuntime.8"
-        )
-        "Microsoft Edge"                           = "Microsoft.Edge"
-        "Microsoft 365 Apps for Enterprise"        = "Microsoft.Office"
-        "Microsoft OneDrive"                       = "Microsoft.OneDrive"
-        "Microsoft OneNote"                        = "XPFFZHVGQWWLHB"
-        "Microsoft Teams"                          = "Microsoft.Teams"
-        "Mozilla Firefox"                          = "Mozilla.Firefox"
-        "Power Automate"                           = "9NFTCH6J7FHV"
-        "Power BI Desktop"                         = "Microsoft.PowerBI"
-        "PowerToys"                                = "Microsoft.PowerToys"
-        "Quick Assist"                             = "9P7BP5VNWKX5"
-        "Microsoft Remote Desktop"                 = "9WZDNCRFJ3PS"
-        "Microsoft Support and Recovery Assistant" = "Microsoft.SupportAndRecoveryAssistant"
-        "Surface Diagnostic Toolkit"               = "9NF1MR6C60ZF"
-        "Microsoft VisioViewer"                    = "Microsoft.VisioViewer"
-        "Microsoft Visual Studio Code"             = "Microsoft.VisualStudioCode"
-        "7-Zip"                                    = "7zip.7zip"
+    # Load the packages from the JSON file
+    if (Test-Path -Path $JsonFilePath) {
+        $packages = Get-Content -Path $JsonFilePath | ConvertFrom-Json
+    }
+    else {
+        [System.Windows.MessageBox]::Show("JSON file not found at path: $JsonFilePath")
+        return
     }
 
     switch ($Action) {
@@ -75,6 +89,5 @@ function Invoke-WinGet {
                 [System.Windows.MessageBox]::Show("Package '$PackageName' not found.")
             }
         }
-        
     }
 }

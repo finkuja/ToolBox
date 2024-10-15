@@ -1,0 +1,14 @@
+[
+    {
+        "ButtonName": "ResetEdgeCacheButton",
+        "FunctionName": "Reset-EdgeCache"
+    },
+    {
+        "ButtonName": "EdgeOption2Button",
+        "FunctionName": "Option2"
+    },
+    {
+        "ButtonName": "EdgeOption3Button",
+        "FunctionName": "Option3"
+    }
+]
