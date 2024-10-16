@@ -20,6 +20,7 @@
         "RemoveOfficeButton",
         "RepairOfficeButton",
         "MemoryDiagnosticsButton",
+        "ResetWHfBButton",
         "ResetNetworkButton",
         "ResetWinUpdateButton",
         "SystemRepairButton",

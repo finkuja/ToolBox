@@ -1,3 +1,25 @@
+<#
+.SYNOPSIS
+Removes all instances of Microsoft Office from the system.
+
+.DESCRIPTION
+The Remove-Office function uninstalls all instances of Microsoft Office from the system. 
+It prompts the user for confirmation before proceeding, closes all running Office apps, 
+uses the Office Removal Tool to uninstall Office, and removes related folders and registry entries.
+
+.PARAMETER None
+This function does not take any parameters.
+
+.NOTES
+File Name      : Remove-Office.ps1
+The function uses the Start-Process cmdlet to run the Office Removal Tool and the Remove-Item cmdlet to delete related files and folders.
+The function is part of the ToolBox project and is stored in the GitHub repository https://github.com/finkuja/ToolBox
+
+.EXAMPLE
+Remove-Office
+Prompts the user for confirmation and uninstalls all instances of Microsoft Office, deleting all related files and registry entries.
+
+#>
 function Remove-Office {
     # Inform the user that the removal process is starting
     $result = [System.Windows.Forms.MessageBox]::Show(

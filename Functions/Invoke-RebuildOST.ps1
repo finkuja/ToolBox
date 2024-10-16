@@ -1,3 +1,24 @@
+<#
+.SYNOPSIS
+Rebuilds the Outlook OST file.
+
+.DESCRIPTION
+The Invoke-RebuildOST function rebuilds the Outlook Offline Storage Table (OST) file. 
+It provides feedback to the user by displaying a message before starting the rebuild process.
+
+.PARAMETER None
+This function does not take any parameters.
+
+.NOTES
+File Name      : Invoke-RebuildOST.ps1
+The function uses the Start-Process cmdlet to launch Outlook with the resetfolders and cleanreminders switches.
+The function is part of the ToolBox project and is stored in the GitHub repository https://github.com/finkuja/ToolBox
+
+.EXAMPLE
+Invoke-RebuildOST
+Prompts the user and runs the Outlook OST rebuild process.
+
+#>
 function Invoke-RebuildOST {
     $confirmation = [System.Windows.Forms.MessageBox]::Show(
         "Are you sure you want to proceed with rebuilding the OST files? This will delete or rename selected files.",

@@ -1,3 +1,25 @@
+<#
+.SYNOPSIS
+Resets Microsoft Teams.
+
+.DESCRIPTION
+The Invoke-TeamsReset function resets the Microsoft Teams application. 
+It prompts the user for confirmation before proceeding, checks if Teams is running, terminates it if it is, 
+resets the Teams app, and restarts it if it was running before.
+
+.PARAMETER None
+This function does not take any parameters.
+
+.NOTES
+File Name      : Invoke-TeamsReset.ps1
+The function uses the Start-Process cmdlet to run the reset tasks in an elevated PowerShell session.
+The function is part of the ToolBox project and is stored in the GitHub repository https://github.com/finkuja/ToolBox
+
+.EXAMPLE
+Invoke-TeamsReset
+Prompts the user for confirmation and runs the Teams reset process.
+
+#>
 function Invoke-TeamsReset {
     $confirmation = [System.Windows.Forms.MessageBox]::Show(
         "Are you sure you want to reset Microsoft Teams?",

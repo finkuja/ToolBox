@@ -1,3 +1,25 @@
+<#
+.SYNOPSIS
+Fixes issues with the Microsoft Teams add-in for Outlook.
+
+.DESCRIPTION
+The Invoke-TeamsAddinFix function addresses common issues with the Microsoft Teams add-in for Outlook. 
+It prompts the user for confirmation before proceeding, checks if Teams and Outlook are running, terminates them if they are, 
+removes specific folders, and renames a configuration file to reset the add-in settings.
+
+.PARAMETER None
+This function does not take any parameters.
+
+.NOTES
+File Name      : Invoke-TeamsAddinFix.ps1
+The function uses the Start-Process cmdlet to run the repair tasks in an elevated PowerShell session.
+The function is part of the ToolBox project and is stored in the GitHub repository https://github.com/finkuja/ToolBox
+
+.EXAMPLE
+Invoke-TeamsAddinFix
+Prompts the user for confirmation and runs the Teams add-in fix process.
+
+#>
 function Invoke-TeamsAddinFix {
     $confirmation = [System.Windows.Forms.MessageBox]::Show(
         "Are you sure you want to proceed with the Teams add-in fix?",

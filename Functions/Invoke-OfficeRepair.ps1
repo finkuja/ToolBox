@@ -1,3 +1,25 @@
+<#
+.SYNOPSIS
+Repairs Microsoft Office installation.
+
+.DESCRIPTION
+The Invoke-OfficeRepair function launches the Microsoft Office repair process. 
+It provides feedback to the user by displaying a message before starting the repair.
+
+.PARAMETER None
+This function does not take any parameters.
+
+.NOTES
+File Name      : Invoke-OfficeRepair.ps1
+The function uses the Start-Process cmdlet to launch the Office repair tool.
+The function is part of the ToolBox project and is stored in the GitHub repository https://github.com/finkuja/ToolBox
+
+.EXAMPLE
+Invoke-OfficeRepair
+Prompts the user and runs the Microsoft Office repair tool.
+
+#>
+
 function Invoke-OfficeRepair {
 
     # Inform the user that the repair process is starting

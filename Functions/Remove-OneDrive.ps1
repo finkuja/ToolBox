@@ -9,8 +9,9 @@
     It also removes OneDrive from the explorer sidebar and start menu, and unregisters any scheduled tasks related to OneDrive.
 
     .NOTES
-    Author: Chris Titus Tech
-    Date: YYYY-MM-DD
+    Original Author: Chris Titus Tech https://github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/Remove-OneDrive.md
+    File Name      : Remove-OneDrive.ps1
+    The function uses the Start-Process cmdlet to run the uninstallation commands.
 
     .EXAMPLE
     Remove-OneDrive

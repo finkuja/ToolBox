@@ -1,47 +1,31 @@
-###############################
-# PRIVATE FUNCTION DEFINITIONS#
-###############################
-
-# Function from Chris Titus Tech winutils.ps1 script github.com/christitus/winutils to Fix Windows Update
-#---------------------------------------------------------------------------------------------------------
 <#
+.SYNOPSIS
+    The script executes a series of diagnostic and troubleshooting commands to identify and resolve common system issues. 
+    It can be used to automate the process of checking system health and fixing problems. 
+    The script offers both standard and aggressive repair options.
 
-    .SYNOPSIS
-        Performs various tasks in an attempt to repair Windows Update
+.PARAMETER Aggressive
+    Switch parameter to perform an aggressive repair of Windows Update. 
+    This option will attempt more extensive fixes, including resetting Windows Update components, re-registering system files, and clearing the Windows Update cache. 
+    This may take a significant amount of time and should be used when standard repairs do not resolve the issues.
 
-    .DESCRIPTION
-        1. (Aggressive Only) Scans the system for corruption using chkdsk, SFC, and DISM
-            Steps:
-                1. Runs chkdsk /scan /perf
-                    /scan - Runs an online scan on the volume
-                    /perf - Uses more system resources to complete a scan as fast as possible
-                2. Runs SFC /scannow
-                    /scannow - Scans integrity of all protected system files and repairs files with problems when possible
-                3. Runs DISM /Online /Cleanup-Image /RestoreHealth
-                    /Online - Targets the running operating system
-                    /Cleanup-Image - Performs cleanup and recovery operations on the image
-                    /RestoreHealth - Scans the image for component store corruption and attempts to repair the corruption using Windows Update
-                4. Runs SFC /scannow
-                    Ran twice in case DISM repaired SFC
-        2. Stops Windows Update Services
-        3. Remove the QMGR Data file, which stores BITS jobs
-        4. (Aggressive Only) Renames the DataStore and CatRoot2 folders
-            DataStore - Contains the Windows Update History and Log Files
-            CatRoot2 - Contains the Signatures for Windows Update Packages
-        5. Renames the Windows Update Download Folder
-        6. Deletes the Windows Update Log
-        7. (Aggressive Only) Resets the Security Descriptors on the Windows Update Services
-        8. Reregisters the BITS and Windows Update DLLs
-        9. Removes the WSUS client settings
-        10. Resets WinSock
-        11. Gets and deletes all BITS jobs
-        12. Sets the startup type of the Windows Update Services then starts them
-        13. Forces Windows Update to check for updates
+.NOTES
+    Original Code by Christitus from the winutil project on GitHub.
+    File Name      : Invoke-FixesWUpdate.ps1
+    Author         : Christitus
+    GitHub         : https://github.com/ChrisTitusTech/winutil
+    Modified by    : finkuja
+    GitHub         : https://github.com/finkuja/ToolBox
 
-    .PARAMETER Aggressive
-        If specified, the script will take additional steps to repair Windows Update that are more dangerous, take a significant amount of time, or are generally unnecessary
+.EXAMPLE
+    Invoke-FixesWUpdate
+    This command runs the standard troubleshooting tasks, providing diagnostic information and attempting to resolve any detected issues.
 
-    #>
+.EXAMPLE
+    Invoke-FixesWUpdate -Aggressive
+    This command runs the aggressive troubleshooting tasks, providing diagnostic information and attempting to resolve any detected issues.
+#>
+    
 function Invoke-FixesWUpdate {
 
     param($Aggressive = $false)

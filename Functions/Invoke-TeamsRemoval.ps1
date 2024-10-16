@@ -1,3 +1,25 @@
+<#
+.SYNOPSIS
+Uninstalls Microsoft Teams and deletes all related files and registry keys.
+
+.DESCRIPTION
+The Invoke-TeamsRemoval function uninstalls Microsoft Teams from the system, stops any running Teams processes, 
+and deletes all related cache, temporary files, and registry keys. 
+It prompts the user for confirmation before proceeding with the uninstallation process.
+
+.PARAMETER None
+This function does not take any parameters.
+
+.NOTES
+File Name      : Invoke-TeamsRemoval.ps1
+The function uses the Start-Process cmdlet to run the uninstallation commands and the Remove-Item cmdlet to delete related files.
+The function is part of the ToolBox project and is stored in the GitHub repository https://github.com/finkuja/ToolBox
+
+.EXAMPLE
+Invoke-TeamsRemoval
+Prompts the user for confirmation and uninstalls Microsoft Teams, deleting all related files and registry keys.
+
+#>
 function Invoke-TeamsRemoval {
     $confirmation = [System.Windows.Forms.MessageBox]::Show(
         "Are you sure you want to uninstall Microsoft Teams and delete all related files and registry keys?",

@@ -1,3 +1,25 @@
+<#
+.SYNOPSIS
+Cleans the Microsoft Teams cache.
+
+.DESCRIPTION
+The Invoke-TeamsCacheClean function clears the cache for Microsoft Teams. 
+It prompts the user for confirmation before proceeding, checks if Teams is running, terminates it if it is, 
+and then removes the cache files and folders.
+
+.PARAMETER None
+This function does not take any parameters.
+
+.NOTES
+File Name      : Invoke-TeamsCacheClean.ps1
+The function uses the Start-Process cmdlet to run the cache cleaning tasks in an elevated PowerShell session.
+The function is part of the ToolBox project and is stored in the GitHub repository https://github.com/finkuja/ToolBox
+
+.EXAMPLE
+Invoke-TeamsCacheClean
+Prompts the user for confirmation and runs the Teams cache cleaning process.
+
+#>
 function Invoke-TeamsCacheClean {
     $confirmation = [System.Windows.Forms.MessageBox]::Show(
         "Are you sure you want to clean the Teams cache?",

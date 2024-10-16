@@ -59,7 +59,7 @@ if (-not $isAdmin) {
     Write-Host "The ESSToolBox needs to run as Administrator, trying to elevate the permissions..." -ForegroundColor Yellow
     
     # Get the current script content
-    $scriptContent = (Invoke-RestMethod https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/main/EssTool.ps1)
+    $scriptContent = (Invoke-RestMethod https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/Test/EssToolBox.ps1)
     
     # Define a temporary file path
     $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox.ps1")
@@ -242,18 +242,42 @@ if ($tempDir) {
         Write-Host "Cleaned up existing temp folder: $tempFolder" -ForegroundColor Yellow
     }
 
+    # Function to display a custom progress bar
+    function Show-ProgressBar {
+        param (
+            [int]$percentComplete,
+            [int]$barLength = 50
+        )
+
+        $completeLength = [math]::Round($percentComplete / 100 * $barLength)
+        $incompleteLength = $barLength - $completeLength
+        $progressBar = ('█' * $completeLength) + ('░' * $incompleteLength)
+        Write-Host -NoNewline "`r[$progressBar] $percentComplete% Complete"
+    }
+
+    # Total number of files to simulate downloading
+    $totalFiles = $files.Count
+    $currentFileIndex = 0
+
     # Download each file from the repository
     foreach ($file in $files) {
+        $currentFileIndex++
         $fileUrl = "https://raw.githubusercontent.com/$owner/$repo/main/$($file.path)"
         $outputPath = Join-Path -Path $tempFolder.FullName -ChildPath $file.path
         $outputDir = Split-Path -Path $outputPath -Parent
 
         if (-not (Test-Path -Path $outputDir)) {
-            New-Item -ItemType Directory -Path $outputDir -Force
+            New-Item -ItemType Directory -Path $outputDir -Force -ErrorAction SilentlyContinue | Out-Null
         }
-        Invoke-WebRequest -Uri $fileUrl -OutFile $outputPath
+
+        # Display custom progress bar
+        $progressPercent = [math]::Round(($currentFileIndex / $totalFiles) * 100)
+        Show-ProgressBar -percentComplete $progressPercent
+
+        # Use Invoke-WebRequest with -UseBasicParsing to avoid the default download interface
+        Invoke-WebRequest -Uri $fileUrl -OutFile $outputPath -UseBasicParsing -ErrorAction SilentlyContinue
     }
-    Write-Host "Downloaded scirpt Temp Files to $tempFolder" -ForegroundColor Green
+    Write-Host "`nDownloaded script Temp Files to $tempFolder" -ForegroundColor Green
 
     # Set the script directory to the temporary folder
     $scriptDir = $tempFolder.FullName
@@ -678,6 +702,10 @@ $controls["RepairOfficeButton"].Add_Click({
 
 $controls["MemoryDiagnosticsButton"].Add_Click({
         Invoke-MemoryDiagnostics
+    })
+
+$controls["RemoveWHfBButton"].Add_Click({
+        Remove-WHfBContainer
     })
 
 $controls["ResetNetworkButton"].Add_Click({
