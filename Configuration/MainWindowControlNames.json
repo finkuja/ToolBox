@@ -28,7 +28,8 @@
         "ToolComboBox",
         "RunButton",
         "InfoHyperlink",
-        "ParameterTextBox"
+        "ParameterTextBox",
+        "ConsoleTextBox"
     ],
     "InstallCheckboxNames": [
         "AdobeCreativeCloud",
