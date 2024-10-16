@@ -238,8 +238,11 @@ if ($tempDir) {
 
     # Check if the temp folder already exists and clean it up if it does
     if (Test-Path -Path $tempFolder.FullName) {
-        Remove-Item -Path $tempFolder.FullName -Recurse -Force
-        Write-Host "Cleaned up existing temp folder: $tempFolder" -ForegroundColor Yellow
+        $folderContent = Get-ChildItem -Path $tempFolder.FullName
+        if ($folderContent.Count -gt 0) {
+            Remove-Item -Path $tempFolder.FullName -Recurse -Force
+            Write-Host "Cleaned up existing temp folder: $tempFolder" -ForegroundColor Yellow
+        }
     }
 
     # Function to display a custom progress bar
@@ -260,6 +263,7 @@ if ($tempDir) {
     $currentFileIndex = 0
 
     # Download each file from the repository
+    Write-Host "Downloading necesary files from GitHub repository..." -ForegroundColor Yellow
     foreach ($file in $files) {
         $currentFileIndex++
         $fileUrl = "https://raw.githubusercontent.com/$owner/$repo/main/$($file.path)"
@@ -274,8 +278,8 @@ if ($tempDir) {
         $progressPercent = [math]::Round(($currentFileIndex / $totalFiles) * 100)
         Show-ProgressBar -percentComplete $progressPercent
 
-        # Use Invoke-WebRequest with -UseBasicParsing to avoid the default download interface
-        Invoke-WebRequest -Uri $fileUrl -OutFile $outputPath -UseBasicParsing -ErrorAction SilentlyContinue
+        # Use Start-BitsTransfer for a seamless download experience
+        Start-BitsTransfer -Source $fileUrl -Destination $outputPath -ErrorAction SilentlyContinue
     }
     Write-Host "`nDownloaded script Temp Files to $tempFolder" -ForegroundColor Green
 
