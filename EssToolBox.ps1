@@ -704,7 +704,7 @@ $controls["MemoryDiagnosticsButton"].Add_Click({
         Invoke-MemoryDiagnostics
     })
 
-$controls["RemoveWHfBButton"].Add_Click({
+$controls["ResetWHfBButton"].Add_Click({
         Remove-WHfBContainer
     })
 
