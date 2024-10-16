@@ -244,7 +244,7 @@
                 </Button>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="ESSToolBox" Margin="20,0,0,0" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Text="(Beta) v0.2" Margin="5,0,0,0" FontSize="16" Foreground="White"/>
+                    <TextBlock Text="(Beta) v0.3" Margin="5,0,0,0" FontSize="16" Foreground="White"/>
                 </StackPanel>
             </DockPanel>
             <TabControl Grid.Row="1" Name="MainTabControl" Background="Transparent" BorderBrush="Transparent" BorderThickness="10">
