@@ -258,14 +258,12 @@ if ($tempDir) {
         $progressBar = ('█' * $completeLength) + ('░' * $incompleteLength)
         Write-Host -NoNewline "`r[$progressBar] $percentComplete% Complete"
     }
-
+    Write-Host "Downloading necesary script files from the repository..." -ForegroundColor Yellow
     # Download each file from the repository
     $totalFiles = $files.Count
     $currentFileIndex = 0
-
-    # Create an instance of HttpClient
     Add-Type -AssemblyName "System.Net.Http"
-    $httpClient = New-Object System.Net.Http.HttpClient
+    $httpClient = New-Object System.Net.Http.HttpClient # Create an instance of HttpClient
 
     foreach ($file in $files) {
         $currentFileIndex++
@@ -549,11 +547,11 @@ $controls["CheckAllButton"].Add_Click({
 $controls["InstallButton"].Add_Click({
         # Get the names of the checked checkboxes
         $checkedItems = $controls.InstallCheckboxes.Values | Where-Object { $_.IsChecked -eq $true } | ForEach-Object { $_.Tag }
-
+        Write-Host "Checked Items: $checkedItems"
         # Invoke the Invoke-WinGet script with the checked items
         foreach ($item in $checkedItems) {
             Write-Host "Installing $item..."
-            Invoke-WinGet -PackageName $item -Action Install -window $window
+            Invoke-WinGet -PackageName $item -Action Install -window $window -JsonFilePath $jsonPaths["AppList.json"]
         }
     })
 
@@ -564,7 +562,7 @@ $controls["UninstallButton"].Add_Click({
         # Invoke the Invoke-WinGet script with the checked items
         foreach ($item in $checkedItems) {
             Write-Host "Uninstalling $item..."
-            Invoke-WinGet -PackageName $item -Action Uninstall -window $window
+            Invoke-WinGet -PackageName $item -Action Uninstall -window $window -JsonFilePath $jsonPaths["AppList.json"]
         }
     })
 

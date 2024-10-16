@@ -260,9 +260,10 @@
                                 <CheckBox Name="RemoteDesktop" Content="Remote Desktop" Tag="Microsoft Remote Desktop" Margin="10,5" Grid.Row="6" Grid.Column="1" Foreground="White"/>
                                 <CheckBox Name="SARATool" Content="SARA Tool" Tag="Microsoft Support and Recovery Assistant" Margin="10,5" Grid.Row="7" Grid.Column="1" Foreground="White"/>
                                 <CheckBox Name="SurfaceDiagnosticToolkit" Content="Surface Diagnostic Toolkit" Tag="Surface Diagnostic Toolkit" Margin="10,5" Grid.Row="8" Grid.Column="1" Foreground="White"/>
-                                <CheckBox Name="VisioViewer2016" Content="Visio Viewer 2016" Tag="Microsoft VisioViewer" Margin="10,5" Grid.Row="9" Grid.Column="1" Foreground="White"/><!-- Column 2 -->
-                                <CheckBox Name="VisualStudioCode" Content="Visual Studio Code" Tag="Microsoft Visual Studio Code" Margin="10,5" Grid.Row="0" Grid.Column="2" Foreground="White"/>
-                                <CheckBox Name="SevenZip" Content="7-Zip" Tag="7-Zip" Margin="10,5" Grid.Row="1" Grid.Column="2" Foreground="White"/>
+                                <CheckBox Name="SysInternals" Content="SysInternals" Tag="SysInternals" Margin="10,5" Grid.Row="9" Grid.Column="1" Foreground="White"/>
+                                <CheckBox Name="VisioViewer2016" Content="Visio Viewer 2016" Tag="Microsoft VisioViewer" Margin="10,5" Grid.Row="0" Grid.Column="2" Foreground="White"/><!-- Column 2 -->
+                                <CheckBox Name="VisualStudioCode" Content="Visual Studio Code" Tag="Microsoft Visual Studio Code" Margin="10,5" Grid.Row="1" Grid.Column="2" Foreground="White"/>
+                                <CheckBox Name="SevenZip" Content="7-Zip" Tag="7-Zip" Margin="10,5" Grid.Row="2" Grid.Column="2" Foreground="White"/>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0" Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="2">
                                     <Button Name="InstallButton" Content="Install" Width="100" Height="30" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                     <Button x:Name="UninstallButton" Content="Uninstall" Width="100" Height="30" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
