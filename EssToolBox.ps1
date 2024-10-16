@@ -266,15 +266,15 @@ if ($tempDir) {
         $outputDir = Split-Path -Path $outputPath -Parent
 
         if (-not (Test-Path -Path $outputDir)) {
-            New-Item -ItemType Directory -Path $outputDir -Force -ErrorAction SilentlyContinue
+            New-Item -ItemType Directory -Path $outputDir -Force -ErrorAction SilentlyContinue | Out-Null
         }
 
         # Display custom progress bar
         $progressPercent = [math]::Round(($currentFileIndex / $totalFiles) * 100)
         Show-ProgressBar -percentComplete $progressPercent
 
-        # Use Start-BitsTransfer for a seamless download experience
-        Start-BitsTransfer -Source $fileUrl -Destination $outputPath -ErrorAction SilentlyContinue
+        # Use Invoke-WebRequest with -UseBasicParsing to avoid the default download interface
+        Invoke-WebRequest -Uri $fileUrl -OutFile $outputPath -UseBasicParsing -ErrorAction SilentlyContinue
     }
 
     Write-Host "`nDownloaded script Temp Files to $tempFolder" -ForegroundColor Green
