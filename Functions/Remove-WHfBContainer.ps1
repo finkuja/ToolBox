@@ -19,7 +19,7 @@ Remove-HelloContainer
 Prompts the user and removes all Windows Hello for Business (WHfB) containers from the system.
 
 #>
-function Remove-HelloContainer {
+function Remove-WHfBContainer {
     Add-Type -AssemblyName System.Windows.Forms
 
     $confirmation = [System.Windows.Forms.MessageBox]::Show(

@@ -242,25 +242,8 @@ if ($tempDir) {
         Write-Host "Cleaned up existing temp folder: $tempFolder" -ForegroundColor Yellow
     }
 
-    # Function to display a custom progress bar
-    function Show-ProgressBar {
-        param (
-            [int]$percentComplete,
-            [int]$barLength = 50
-        )
-
-        $completeLength = [math]::Round($percentComplete / 100 * $barLength)
-        $incompleteLength = $barLength - $completeLength
-        $progressBar = ('█' * $completeLength) + ('░' * $incompleteLength)
-        Write-Host -NoNewline "`r[$progressBar] $percentComplete% Complete"
-    }
-
     # Download each file from the repository
-    $totalFiles = $files.Count
-    $currentFileIndex = 0
-
     foreach ($file in $files) {
-        $currentFileIndex++
         $fileUrl = "https://raw.githubusercontent.com/$owner/$repo/main/$($file.path)"
         $outputPath = Join-Path -Path $tempFolder.FullName -ChildPath $file.path
         $outputDir = Split-Path -Path $outputPath -Parent
@@ -268,15 +251,9 @@ if ($tempDir) {
         if (-not (Test-Path -Path $outputDir)) {
             New-Item -ItemType Directory -Path $outputDir -Force
         }
-
-        # Display custom progress bar
-        $progressPercent = [math]::Round(($currentFileIndex / $totalFiles) * 100)
-        Show-ProgressBar -percentComplete $progressPercent
-
         Invoke-WebRequest -Uri $fileUrl -OutFile $outputPath
     }
-
-    Write-Host "`nDownloaded script Temp Files to $tempFolder" -ForegroundColor Green
+    Write-Host "Downloaded scirpt Temp Files to $tempFolder" -ForegroundColor Green
 
     # Set the script directory to the temporary folder
     $scriptDir = $tempFolder.FullName
