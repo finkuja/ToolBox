@@ -791,12 +791,14 @@ foreach ($tool in $sysinternalsTools) {
     $null = $controls["ToolComboBox"].Items.Add($tool)
 }
 
-# Apply the style to each ComboBoxItem after they are added
-$controls["ToolComboBox"].Add_Loaded({
-        foreach ($item in $controls["ToolComboBox"].Items) {
-            $comboBoxItem = $controls["ToolComboBox"].ItemContainerGenerator.ContainerFromItem($item)
-            if ($comboBoxItem -ne $null) {
-                $comboBoxItem.Style = $window.FindResource("CustomComboBoxItemStyle")
+# Apply the style to each ComboBoxItem after they are generated
+$controls["ToolComboBox"].ItemContainerGenerator.Add_StatusChanged({
+        if ($controls["ToolComboBox"].ItemContainerGenerator.Status -eq 'ContainersGenerated') {
+            foreach ($item in $controls["ToolComboBox"].Items) {
+                $comboBoxItem = $controls["ToolComboBox"].ItemContainerGenerator.ContainerFromItem($item)
+                if ($comboBoxItem -ne $null) {
+                    $comboBoxItem.Style = $window.FindResource("CustomComboBoxItemStyle")
+                }
             }
         }
     })
