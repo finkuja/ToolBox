@@ -52,42 +52,46 @@ function Invoke-WinGet {
         return
     }
 
+    # Check if the package exists in the JSON file
+    $packageExists = $false
+    foreach ($key in $packages.PSObject.Properties.Name) {
+        if ($key -eq $PackageName) {
+            $packageExists = $true
+            break
+        }
+    }
+
+    if (-not $packageExists) {
+        [System.Windows.MessageBox]::Show("Package '$PackageName' not found.")
+        return
+    }
+
+    $packageId = $packages.$PackageName
+
     switch ($Action) {
         "Install" {
             # Install the specified package
-            if ($packages.ContainsKey($PackageName)) {
-                $packageId = $packages[$PackageName]
-                if ($packageId -is [array]) {
-                    foreach ($id in $packageId) {
-                        Start-Process "winget" -ArgumentList "install --id $id -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                    }
+            if ($packageId -is [array]) {
+                foreach ($id in $packageId) {
+                    Start-Process "winget" -ArgumentList "install --id $id -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
                 }
-                else {
-                    Start-Process "winget" -ArgumentList "install --id $packageId -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-                }
-                [System.Windows.MessageBox]::Show("Package '$PackageName' has been installed.")
             }
             else {
-                [System.Windows.MessageBox]::Show("Package '$PackageName' not found.")
+                Start-Process "winget" -ArgumentList "install --id $packageId -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
             }
+            [System.Windows.MessageBox]::Show("Package '$PackageName' has been installed.")
         }
         "Uninstall" {
             # Uninstall the specified package
-            if ($packages.ContainsKey($PackageName)) {
-                $packageId = $packages[$PackageName]
-                if ($packageId -is [array]) {
-                    foreach ($id in $packageId) {
-                        Start-Process "winget" -ArgumentList "uninstall --id $id -e" -NoNewWindow -Wait
-                    }
+            if ($packageId -is [array]) {
+                foreach ($id in $packageId) {
+                    Start-Process "winget" -ArgumentList "uninstall --id $id -e" -NoNewWindow -Wait
                 }
-                else {
-                    Start-Process "winget" -ArgumentList "uninstall --id $packageId -e" -NoNewWindow -Wait
-                }
-                [System.Windows.MessageBox]::Show("Package '$PackageName' has been uninstalled.")
             }
             else {
-                [System.Windows.MessageBox]::Show("Package '$PackageName' not found.")
+                Start-Process "winget" -ArgumentList "uninstall --id $packageId -e" -NoNewWindow -Wait
             }
+            [System.Windows.MessageBox]::Show("Package '$PackageName' has been uninstalled.")
         }
     }
 }
