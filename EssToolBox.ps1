@@ -39,7 +39,7 @@ $ESS_ToolBox = @"
 "@
 
 # Version of the ESSToolBox
-$ESS_ToolBox_Version = "Beta 0.2"
+$ESS_ToolBox_Version = "Beta 0.3"
 # Subtitle for the ESSToolBox
 $ESS_ToolBox_Subtitle = @"
 ======================================================================================
@@ -792,12 +792,14 @@ foreach ($tool in $sysinternalsTools) {
 }
 
 # Apply the style to each ComboBoxItem after they are added
-foreach ($item in $controls["ToolComboBox"].Items) {
-    $comboBoxItem = $controls["ToolComboBox"].ItemContainerGenerator.ContainerFromItem($item)
-    if ($comboBoxItem -ne $null) {
-        $comboBoxItem.Style = $window.FindResource("CustomComboBoxItemStyle")
-    }
-}
+$controls["ToolComboBox"].Add_Loaded({
+        foreach ($item in $controls["ToolComboBox"].Items) {
+            $comboBoxItem = $controls["ToolComboBox"].ItemContainerGenerator.ContainerFromItem($item)
+            if ($comboBoxItem -ne $null) {
+                $comboBoxItem.Style = $window.FindResource("CustomComboBoxItemStyle")
+            }
+        }
+    })
 
 # Variable to store the selected tool
 $selectedTool = $null
