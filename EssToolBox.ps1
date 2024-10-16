@@ -39,7 +39,7 @@ $ESS_ToolBox = @"
 "@
 
 # Version of the ESSToolBox
-$ESS_ToolBox_Version = "Beta 0.3"
+$ESS_ToolBox_Version = "Beta 0.3.1"
 # Subtitle for the ESSToolBox
 $ESS_ToolBox_Subtitle = @"
 ======================================================================================
@@ -824,20 +824,42 @@ $controls["RunButton"].Add_Click({
                 $webClient = New-Object System.Net.WebClient
                 $webClient.DownloadFile($toolUrl, $localPath)
                 # Execute the tool with or without the parameter
-                if ([string]::IsNullOrEmpty($parameter)) {
-                    Start-Process -FilePath $localPath
+                $processInfo = New-Object System.Diagnostics.ProcessStartInfo
+                $processInfo.FileName = $localPath
+                if (-not [string]::IsNullOrEmpty($parameter)) {
+                    $processInfo.Arguments = $parameter
                 }
-                else {
-                    Start-Process -FilePath $localPath -ArgumentList $parameter
+                $processInfo.RedirectStandardOutput = $true
+                $processInfo.RedirectStandardError = $true
+                $processInfo.UseShellExecute = $false
+                $processInfo.CreateNoWindow = $true
+
+                $process = New-Object System.Diagnostics.Process
+                $process.StartInfo = $processInfo
+                $process.Start() | Out-Null
+
+                # Read the output and error streams
+                $output = $process.StandardOutput.ReadToEnd()
+                $errorOutput = $process.StandardError.ReadToEnd()
+                $process.WaitForExit()
+
+                # Update the console window with the output
+                if ($output) {
+                    $controls["ConsoleTextBox"].AppendText("Output:`n$output`n")
+                }
+                if ($errorOutput) {
+                    $controls["ConsoleTextBox"].AppendText("Error:`n$errorOutput`n")
                 }
             }
             catch {
-                Write-Error "Failed to run the selected tool: $_"
+                $controls["ConsoleTextBox"].AppendText("Failed to run the selected tool: $_`n")
             }
         }
         else {
-            Write-Host "Please select a tool to run."
+            $controls["ConsoleTextBox"].AppendText("Please select a tool to run.`n")
         }
+        # Scroll to the end of the console window
+        $controls["ConsoleTextBox"].ScrollToEnd()
     })
 
 # Event handler for the Hyperlink click
