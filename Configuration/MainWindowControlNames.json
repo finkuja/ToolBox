@@ -24,7 +24,11 @@
         "ResetNetworkButton",
         "ResetWinUpdateButton",
         "SystemRepairButton",
-        "SystemTroubleshootButton"
+        "SystemTroubleshootButton",
+        "ToolComboBox",
+        "RunButton",
+        "InfoHyperlink",
+        "ParameterTextBox"
     ],
     "InstallCheckboxNames": [
         "AdobeCreativeCloud",
