@@ -4,11 +4,13 @@
     This will uninstall Edge by changing the region to Ireland and uninstalling Edge, then changing it back.
 
     .DESCRIPTION
-    The Uninstall-EdgeBrowser function stops any running instances of Microsoft Edge and Widgets, changes the system region to Ireland, and then uninstalls Microsoft Edge. After the uninstallation, it restores the original region settings.
+    The Uninstall-EdgeBrowser function stops any running instances of Microsoft Edge and Widgets, changes the system region to Ireland, and then uninstalls Microsoft Edge. 
+    After the uninstallation, it restores the original region settings.
 
     .NOTES
-    Author: Chris Titus Tech
-    Date: YYYY-MM-DD
+    Author: Chris Titus Tech github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/Uninstall-EdgeBrowser.md
+    File Name: Uninstall-EdgeBrowser.ps1
+    The function uses the Get-Process, Stop-Process, Get-ItemProperty, Remove-ItemProperty, and Start-Process cmdlets to uninstall Microsoft Edge.
     #>
 function Uninstall-EdgeBrowser {
 
@@ -47,7 +49,6 @@ function Uninstall-EdgeBrowser {
     
             .NOTES
             Author: Chris Titus Tech
-            Date: YYYY-MM-DD
             #>
         param(
             [Parameter(Mandatory = $true)]

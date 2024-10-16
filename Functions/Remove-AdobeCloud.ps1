@@ -1,3 +1,24 @@
+<#
+.SYNOPSIS
+Removes Adobe Creative Cloud from the system.
+
+.DESCRIPTION
+The Remove-AdobeCloud function uninstalls Adobe Creative Cloud from the system. 
+It provides feedback to the user by displaying a message before starting the uninstallation process.
+
+.PARAMETER None
+This function does not take any parameters.
+
+.NOTES
+Code Snippet from CHrisTitusTech winutil repository http://github.com/ChrisTitusTech/winutil/blob/main/docs/dev/features/Fixes/RunAdobeCCCleanerTool.md
+File Name      : Remove-AdobeCloud.ps1
+The function uses the Start-Process cmdlet to run the uninstallation commands.
+
+.EXAMPLE
+Remove-AdobeCloud
+Prompts the user and uninstalls Adobe Creative Cloud from the system.
+
+#>
 function Remove-AdobeCloud {
     # Create a confirmation dialog
     $confirmation = [System.Windows.Forms.MessageBox]::Show(

@@ -1,3 +1,26 @@
+<#
+.SYNOPSIS
+Deletes temporary files from specified directories, with an option to protect a specific folder.
+
+.DESCRIPTION
+The Invoke-DeleteTempFiles function prompts the user for confirmation before deleting temporary files from specified directories. 
+It allows for the exclusion of a protected folder within the temporary directory. 
+The function handles locked files and non-existent paths gracefully, providing feedback to the user.
+
+.PARAMETER None
+This function does not take any parameters.
+
+.NOTES
+File Name      : Invoke-DeleteTempFiles.ps1
+The function uses Windows Forms for the confirmation dialog, so it requires the .NET Framework.
+The protected folder is excluded from the deletion process to prevent accidental removal of important files.
+The function is part of the ToolBox project and is stored in the GitHub repository https://github.com/finkuja/ToolBox
+
+.EXAMPLE
+Invoke-DeleteTempFiles
+Prompts the user for confirmation and deletes temporary files from the default temporary directories, excluding the protected folder.
+
+#>
 function Invoke-DeleteTempFiles {
     $confirmation = [System.Windows.Forms.MessageBox]::Show(
         "Are you sure you want to delete all temporary files?",

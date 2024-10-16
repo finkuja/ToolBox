@@ -1,3 +1,24 @@
+<#
+.SYNOPSIS
+Performs a comprehensive system repair.
+
+.DESCRIPTION
+The Invoke-SystemRepair function performs a series of system repair tasks, including CHKDSK, SFC scans, and DISM. 
+It prompts the user for confirmation before proceeding and runs the repair tasks with elevated privileges.
+
+.PARAMETER None
+This function does not take any parameters.
+
+.NOTES
+File Name      : Invoke-SystemRepair.ps1
+The function uses the Start-Process cmdlet to run the repair tasks in an elevated PowerShell session.
+The function is part of the ToolBox project and is stored in the GitHub repository https://github.com/finkuja/ToolBox
+
+.EXAMPLE
+Invoke-SystemRepair
+Prompts the user for confirmation and runs the system repair tasks.
+
+#>
 function Invoke-SystemRepair {
     $confirmation = [System.Windows.Forms.MessageBox]::Show(
         "Are you sure you want to perform a system repair? This may take some time.",

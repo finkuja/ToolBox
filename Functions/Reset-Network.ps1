@@ -1,3 +1,25 @@
+<#
+.SYNOPSIS
+Resets the network settings on the system.
+
+.DESCRIPTION
+The Reset-Network function resets the network settings on the system. 
+It prompts the user for confirmation before proceeding, resets various network components using netsh commands, 
+disables and re-enables all network adapters, and prompts the user to reboot the system to apply the changes.
+
+.PARAMETER None
+This function does not take any parameters.
+
+.NOTES
+File Name      : Reset-Network.ps1
+The function uses netsh commands to reset network settings and the Get-NetAdapter cmdlet to manage network adapters.
+The function is part of the ToolBox project and is stored in the GitHub repository https://github.com/finkuja/ToolBox
+
+.EXAMPLE
+Reset-Network
+Prompts the user for confirmation and resets the network settings on the system.
+
+#>
 function Reset-Network {
     # Reset network
     $confirmation = [System.Windows.Forms.MessageBox]::Show(

@@ -1,4 +1,24 @@
-# Mixed color functions for writing text with rainbow colors
+<#
+.SYNOPSIS
+Writes text with mixed rainbow colors to the console.
+
+.DESCRIPTION
+The Write-MixedColor function writes text to the console with each character in a different color, creating a rainbow effect. 
+It cycles through a predefined set of colors to achieve the mixed color effect.
+
+.PARAMETER Text
+Specifies the text to be written to the console.
+
+.NOTES
+File Name      : Write-MixedColor.ps1
+The function uses the Write-Host cmdlet to write colored text to the console.
+The function is part of the ToolBox project and is stored in the GitHub repository https://github.com/finkuja/ToolBox
+
+.EXAMPLE
+Write-MixedColor -Text "Hello, World!"
+Writes "Hello, World!" to the console with each character in a different color.
+
+#>
 function Write-MixedColorTitle {
     param (
         [string]$Text
