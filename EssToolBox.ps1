@@ -39,7 +39,7 @@ $ESS_ToolBox = @"
 "@
 
 # Version of the ESSToolBox
-$ESS_ToolBox_Version = "Beta 0.2.3"
+$ESS_ToolBox_Version = "Beta 0.3"
 # Subtitle for the ESSToolBox
 $ESS_ToolBox_Subtitle = @"
 ======================================================================================
