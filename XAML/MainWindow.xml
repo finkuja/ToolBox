@@ -2,7 +2,7 @@
     <WindowChrome.WindowChrome>
         <WindowChrome CornerRadius="10" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
-    <Window.Resources><!-- Button Style -->
+    <Window.Resources>
         <Style x:Key="CustomButtonStyle" TargetType="Button">
             <Setter Property="Template">
                 <Setter.Value>
@@ -54,7 +54,7 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-        </Style><!-- Define ComboBox Static Background and Border resources -->
+        </Style><!-- Define ComboBox Static Background and Border resources --><!-- Define ComboBox Static Background and Border resources --><!-- Define ComboBox Static Background and Border resources -->
         <SolidColorBrush x:Key="ComboBox.Static.Background" Color="#FFD8D8D8"/>
         <SolidColorBrush x:Key="ComboBox.Static.Border" Color="Gray"/><!-- Define ComboBox MouseOver Background and Border resources -->
         <SolidColorBrush x:Key="ComboBox.MouseOver.Background" Color="#4747D8"/>
@@ -108,12 +108,18 @@
                                 <Setter Property="Foreground" Value="White"/>
                                 <Setter Property="Cursor" Value="Hand"/>
                             </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#4747D8"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style><!-- ComboBox Style -->
         <Style x:Key="CustomComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Background" Value="White"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
@@ -189,6 +195,30 @@
         </Style><!-- StackPanel Style -->
         <Style x:Key="StackPanelStyle" TargetType="StackPanel">
             <Setter Property="Margin" Value="5"/>
+        </Style><!-- Define CustomTextBoxStyle -->
+        <Style x:Key="CustomTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="#2E2E3D"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#3E3E4D"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#3D3DA1"/>
+                </Trigger>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="#4747D8"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#4E4E5D"/>
+                    <Setter Property="Foreground" Value="#B0B0B0"/>
+                    <Setter Property="BorderBrush" Value="#7E7E8D"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
     </Window.Resources>
     <Border Background="#1B1B21" CornerRadius="10" BorderBrush="Gray" BorderThickness="1">
@@ -388,6 +418,37 @@
                                 </GroupBox>
                             </Grid>
                         </ScrollViewer>
+                    </Border>
+                </TabItem>
+                <TabItem Header="SysInternals Live" Name="SysInternalsLiveTab" FontSize="14">
+                    <Border CornerRadius="0,0,10,10" Background="#2E2E3D" BorderThickness="0">
+                        <Grid Margin="50,10,0,10" Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="20"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions><!-- TextBlock with link for information -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Foreground="White" Margin="10,5">
+                                <Run Text="You can learn about the different tools and parameters"/>
+                                <Hyperlink Name="InfoHyperlink" NavigateUri="https://learn.microsoft.com/en-us/sysinternals/" Foreground="LightBlue">
+                                    <Run Text="here"/>
+                                </Hyperlink>
+                            </TextBlock><!-- ComboBox for Tool selection with label -->
+                            <Label Content="Tool:" Foreground="White" VerticalAlignment="Center" Margin="10,0" Grid.Row="2" Grid.Column="0"/>
+                            <ComboBox Name="ToolComboBox" Width="200" Height="30" Margin="0,10" Grid.Row="2" Grid.Column="1" Style="{StaticResource CustomComboBoxStyle}"/>
+                            <Label Content="Parameter:" Foreground="White" VerticalAlignment="Center" Margin="10,5" Grid.Row="2" Grid.Column="2"/><!-- TextBox for Parameter input with label -->
+                            <TextBox Name="ParameterTextBox" Width="100" Height="30" Margin="0,5" Grid.Row="2" Grid.Column="3" Style="{StaticResource CustomTextBoxStyle}"/><!-- Add the Apply and Run buttons -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0" Grid.Row="2" Grid.Column="4" Grid.ColumnSpan="2">
+                                <Button Name="RunButton" Content="Run" Width="100" Height="30" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
+                            </StackPanel>
+                        </Grid>
                     </Border>
                 </TabItem>
             </TabControl>

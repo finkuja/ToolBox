@@ -246,7 +246,6 @@ if ($tempDir) {
     }
 
     # Function to display a custom progress bar
-    # Function to display a custom progress bar
     function Show-ProgressBar {
         param (
             [int]$percentComplete,
@@ -305,7 +304,7 @@ $functionsDir = [System.IO.Path]::Combine($scriptDir, "Functions")
 $configDir = [System.IO.Path]::Combine($scriptDir, "Configuration")
 
 # Load the required assemblies for WPF and WinForms
-Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 Add-Type -AssemblyName System.Windows.Forms
 
 # Source all .ps1 files in the Functions directory
@@ -472,28 +471,9 @@ if ($null -eq $mainTabControl) {
     exit
 }
 
-###########################################
-# INSTALL TAB Event Handlers and Functions #
-###########################################
-
-# Hide the InstallTab if $disableInstall is $true
-if ($disableInstall) {
-    $installTab = $mainTabControl.Items | Where-Object { $_.Name -eq "InstallTab" }
-    if ($installTab) {
-        $installTab.Visibility = [System.Windows.Visibility]::Collapsed
-    }
-
-    # Set the default selected tab to Tweak
-    $tweakTab = $mainTabControl.Items | Where-Object { $_.Name -eq "TweakTab" }
-    if ($tweakTab) {
-        $mainTabControl.SelectedItem = $tweakTab
-
-        # Refresh the content of the TweakTab
-        $tweakTabContent = $tweakTab.Content
-        $tweakTab.Content = $null
-        $tweakTab.Content = $tweakTabContent
-    }
-}
+#################################################
+# MAIN CONTROL TAB Event Handlers and Functions #
+#################################################
 
 # Event handler for tab selection change
 $mainTabControl.Add_SelectionChanged({
@@ -520,9 +500,44 @@ $mainTabControl.Add_SelectionChanged({
                     $selectedTab.Content = $null
                     $selectedTab.Content = $fixTabContent
                 }
+                "SysInternalsLiveTab" {
+                    # Refresh the content of the SysInternalsLiveTab
+                    $sysInternalsLiveTabContent = $selectedTab.Content
+                    $selectedTab.Content = $null
+                    $selectedTab.Content = $sysInternalsLiveTabContent
+                }
             }
         }
     })
+
+########################################################
+# END OF MAIN CONTROL TAB Event Handlers and Functions #
+########################################################
+
+###########################################
+# INSTALL TAB Event Handlers and Functions #
+###########################################
+
+# Hide the InstallTab if $disableInstall is $true
+if ($disableInstall) {
+    $installTab = $mainTabControl.Items | Where-Object { $_.Name -eq "InstallTab" }
+    if ($installTab) {
+        $installTab.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+
+    # Set the default selected tab to Tweak
+    $tweakTab = $mainTabControl.Items | Where-Object { $_.Name -eq "TweakTab" }
+    if ($tweakTab) {
+        $mainTabControl.SelectedItem = $tweakTab
+
+        # Refresh the content of the TweakTab
+        $tweakTabContent = $tweakTab.Content
+        $tweakTab.Content = $null
+        $tweakTab.Content = $tweakTabContent
+    }
+}
+
+
 
 # Add event handlers for the InstallTab buttons
 $controls["CheckAllButton"].Add_Click({
@@ -740,6 +755,99 @@ $controls["SystemTroubleshootButton"].Add_Click({
 ###############################################
 # END OF FIX TAB Event Handlers and Functions #
 ###############################################
+
+######################################################
+# SYSINTERNALS LIVE TAB Event Handlers and Functions #
+######################################################
+
+# Function to retrieve the list of Sysinternals tools from the Sysinternals Live website
+function Get-SysinternalsTools {
+    $tools = @()
+    try {
+        $webClient = New-Object System.Net.WebClient
+        $html = $webClient.DownloadString("https://live.sysinternals.com/")
+        
+        $regexMatches = [regex]::Matches($html, '<A HREF="/([^"]+\.exe)">')
+        
+        foreach ($match in $regexMatches) {
+            $tools += $match.Groups[1].Value
+        }
+    }
+    catch {
+        Write-Error "Failed to load Sysinternals tools: $_"
+    }
+    return $tools
+}
+
+# Get the list of Sysinternals tools once and store it
+$sysinternalsTools = Get-SysinternalsTools
+
+# Clear existing items in the ComboBox
+$controls["ToolComboBox"].Items.Clear()
+
+# Iterate through the list of Sysinternals tools
+foreach ($tool in $sysinternalsTools) {
+    # Add the tool name directly to the ComboBox
+    $null = $controls["ToolComboBox"].Items.Add($tool)
+}
+
+# Apply the style to each ComboBoxItem after they are added
+foreach ($item in $controls["ToolComboBox"].Items) {
+    $comboBoxItem = $controls["ToolComboBox"].ItemContainerGenerator.ContainerFromItem($item)
+    if ($comboBoxItem -ne $null) {
+        $comboBoxItem.Style = $window.FindResource("CustomComboBoxItemStyle")
+    }
+}
+
+# Variable to store the selected tool
+$selectedTool = $null
+
+# Event handler for the ToolComboBox selection change
+$controls["ToolComboBox"].Add_SelectionChanged({
+        param ($source, $e)
+    })
+
+# Event handler for the Run button click
+$controls["RunButton"].Add_Click({
+        $selectedTool = $controls["ToolComboBox"].SelectedItem
+        $parameter = $controls["ParameterTextBox"].Text
+        if ($selectedTool) {
+            Write-Host "Selected Tool: $selectedTool" -ForegroundColor Green
+            Write-Host "Parameter: $parameter" -ForegroundColor Green
+            $toolUrl = "https://live.sysinternals.com/$selectedTool"
+            $localPath = "$env:TEMP\$selectedTool"
+            try {
+                # Download the selected tool
+                Write-Host "Downloading..." -ForegroundColor Yellow
+                $webClient = New-Object System.Net.WebClient
+                $webClient.DownloadFile($toolUrl, $localPath)
+                # Execute the tool with or without the parameter
+                if ([string]::IsNullOrEmpty($parameter)) {
+                    Start-Process -FilePath $localPath
+                }
+                else {
+                    Start-Process -FilePath $localPath -ArgumentList $parameter
+                }
+            }
+            catch {
+                Write-Error "Failed to run the selected tool: $_"
+            }
+        }
+        else {
+            Write-Host "Please select a tool to run."
+        }
+    })
+
+# Event handler for the Hyperlink click
+$controls["InfoHyperlink"].Add_RequestNavigate({
+        param ($source, $e)
+        Start-Process $e.Uri.AbsoluteUri
+        $e.Handled = $true
+    })
+
+#############################################################
+# END OF SYSINTERNALS LIVE TAB Event Handlers and Functions #
+#############################################################
 
 # Show the window
 $window.ShowDialog() | Out-Null
