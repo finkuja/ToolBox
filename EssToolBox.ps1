@@ -246,6 +246,7 @@ if ($tempDir) {
     }
 
     # Function to display a custom progress bar
+    # Function to display a custom progress bar
     function Show-ProgressBar {
         param (
             [int]$percentComplete,
@@ -258,12 +259,14 @@ if ($tempDir) {
         Write-Host -NoNewline "`r[$progressBar] $percentComplete% Complete"
     }
 
-    # Total number of files to simulate downloading
+    # Download each file from the repository
     $totalFiles = $files.Count
     $currentFileIndex = 0
 
-    # Download each file from the repository
-    Write-Host "Downloading necesary files from GitHub repository..." -ForegroundColor Yellow
+    # Create an instance of HttpClient
+    Add-Type -AssemblyName "System.Net.Http"
+    $httpClient = New-Object System.Net.Http.HttpClient
+
     foreach ($file in $files) {
         $currentFileIndex++
         $fileUrl = "https://raw.githubusercontent.com/$owner/$repo/main/$($file.path)"
@@ -278,9 +281,17 @@ if ($tempDir) {
         $progressPercent = [math]::Round(($currentFileIndex / $totalFiles) * 100)
         Show-ProgressBar -percentComplete $progressPercent
 
-        # Use Start-BitsTransfer for a seamless download experience
-        Start-BitsTransfer -Source $fileUrl -Destination $outputPath -ErrorAction SilentlyContinue
+        # Download the file using HttpClient
+        $response = $httpClient.GetAsync($fileUrl).Result
+        if ($response.IsSuccessStatusCode) {
+            $content = $response.Content.ReadAsByteArrayAsync().Result
+            [System.IO.File]::WriteAllBytes($outputPath, $content)
+        }
+        else {
+            Write-Host "Failed to download $fileUrl" -ForegroundColor Red
+        }
     }
+
     Write-Host "`nDownloaded script Temp Files to $tempFolder" -ForegroundColor Green
 
     # Set the script directory to the temporary folder
