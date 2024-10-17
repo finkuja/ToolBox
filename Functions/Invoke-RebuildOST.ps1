@@ -69,8 +69,11 @@ function Invoke-RebuildOST {
         # Create a form to display the list of .ost files
         $form = New-Object System.Windows.Forms.Form
         $form.Text = "Select .OST Files"
-        $form.Size = New-Object System.Drawing.Size(800, 400)  # Set a wider form size
+        $form.Size = New-Object System.Drawing.Size(800, 440)  # Set a wider form size
         $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+        $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+        $form.MaximizeBox = $false  # Disable the maximize button
+        $form.MinimizeBox = $false  # Optionally, disable the minimize button
 
         $label = New-Object System.Windows.Forms.Label
         $label.Text = "Select the .ost files to delete or rename:"
@@ -94,6 +97,7 @@ function Invoke-RebuildOST {
 
         $deleteButton = New-Object System.Windows.Forms.Button
         $deleteButton.Text = "Delete"
+        $deleteButton.AutoSize = $true
         $deleteButton.Location = New-Object System.Drawing.Point(10, 330)
         $deleteButton.Add_Click({
                 $deletedFiles = $checkedListBox.CheckedItems | ForEach-Object {
@@ -113,6 +117,7 @@ function Invoke-RebuildOST {
 
         $renameButton = New-Object System.Windows.Forms.Button
         $renameButton.Text = "Rename"
+        $renameButton.AutoSize = $true
         $renameButton.Location = New-Object System.Drawing.Point(100, 330)
         $renameButton.Add_Click({
                 $renamedFiles = $checkedListBox.CheckedItems | ForEach-Object {
@@ -133,6 +138,7 @@ function Invoke-RebuildOST {
 
         $cancelButton = New-Object System.Windows.Forms.Button
         $cancelButton.Text = "Cancel"
+        $cancelButton.AutoSize = $true
         $cancelButton.Location = New-Object System.Drawing.Point(190, 330)
         $cancelButton.Add_Click({
                 $form.Close()
