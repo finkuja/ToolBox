@@ -276,7 +276,7 @@ if ($tempDir) {
         $progressBar = ('█' * $completeLength) + ('░' * $incompleteLength)
         Write-Host -NoNewline "`r[$progressBar] $percentComplete% Complete"
     }
-    Write-Host "Downloading necesary script files from the repository..." -ForegroundColor Yellow
+    Write-Host "Downloading necessary script files from the repository..." -ForegroundColor Yellow
     # Download each file from the repository
     $totalFiles = $files.Count
     $currentFileIndex = 0
