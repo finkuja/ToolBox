@@ -538,7 +538,7 @@ $mainTabControl.Add_SelectionChanged({
 ###########################################
 
 # Hide the InstallTab if $disableInstall is $true
-if ($disableInstall) {
+<# if ($disableInstall) {
     $installTab = $mainTabControl.Items | Where-Object { $_.Name -eq "InstallTab" }
     if ($installTab) {
         $installTab.Visibility = [System.Windows.Visibility]::Collapsed
@@ -554,7 +554,7 @@ if ($disableInstall) {
         $tweakTab.Content = $null
         $tweakTab.Content = $tweakTabContent
     }
-}
+} #>
 
 
 
