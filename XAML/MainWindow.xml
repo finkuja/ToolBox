@@ -413,7 +413,7 @@
                                             <Button Content="Reset Network" Name="ResetNetworkButton" Grid.Row="1" Grid.Column="0" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                             <Button Content="Reset Windows Update" Name="ResetWinUpdateButton" Grid.Row="1" Grid.Column="1" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                             <Button Content="Repair System Files" Name="SystemRepairButton" Grid.Row="2" Grid.Column="0" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
-                                            <Button Content="System Troubleshooters" Name="SystemTroubleshootButton" Grid.Row="2" Grid.Column="1" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
+                                            <Button Content="System Troubleshoot" Name="SystemTroubleshootButton" Grid.Row="2" Grid.Column="1" Margin="5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                         </Grid>
                                     </StackPanel>
                                 </GroupBox>
