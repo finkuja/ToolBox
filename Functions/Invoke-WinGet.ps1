@@ -79,7 +79,6 @@ function Invoke-WinGet {
             else {
                 Start-Process "winget" -ArgumentList "install --id $packageId -e --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
             }
-            [System.Windows.MessageBox]::Show("Package '$PackageName' has been installed.")
         }
         "Uninstall" {
             # Uninstall the specified package
@@ -91,7 +90,6 @@ function Invoke-WinGet {
             else {
                 Start-Process "winget" -ArgumentList "uninstall --id $packageId -e" -NoNewWindow -Wait
             }
-            [System.Windows.MessageBox]::Show("Package '$PackageName' has been uninstalled.")
         }
     }
 }
