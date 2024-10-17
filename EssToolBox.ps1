@@ -113,7 +113,7 @@ else {
 # Check the system architecture
 $cpuInfo = Get-WmiObject -Class Win32_Processor | Select-Object -First 1 -Property Name, Manufacturer, Description, Architecture
 
-switch ($cpuInfo.Architecture) {
+<# switch ($cpuInfo.Architecture) {
     0 {
         Write-Host "CPU Architecture: x86 (32-bit)"
         $disableInstall = $false
@@ -130,7 +130,7 @@ switch ($cpuInfo.Architecture) {
         Write-Host "CPU Architecture: Unknown"
         $disableInstall = $true
     }
-}
+} #>
 
 Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
 
