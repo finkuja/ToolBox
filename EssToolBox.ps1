@@ -113,7 +113,7 @@ else {
 # Check the system architecture
 $cpuInfo = Get-WmiObject -Class Win32_Processor | Select-Object -First 1 -Property Name, Manufacturer, Description, Architecture
 
-switch ($cpuInfo.Architecture) {
+<# switch ($cpuInfo.Architecture) {
     0 {
         Write-Host "CPU Architecture: x86 (32-bit)"
         $disableInstall = $false
@@ -130,7 +130,7 @@ switch ($cpuInfo.Architecture) {
         Write-Host "CPU Architecture: Unknown"
         $disableInstall = $true
     }
-}
+} #>
 
 Write-Host "CPU Information: $($cpuInfo.Name), $($cpuInfo.Manufacturer), $($cpuInfo.Description)"
 
@@ -538,7 +538,7 @@ $mainTabControl.Add_SelectionChanged({
 ###########################################
 
 # Hide the InstallTab if $disableInstall is $true
-if ($disableInstall) {
+<# if ($disableInstall) {
     $installTab = $mainTabControl.Items | Where-Object { $_.Name -eq "InstallTab" }
     if ($installTab) {
         $installTab.Visibility = [System.Windows.Visibility]::Collapsed
@@ -554,7 +554,7 @@ if ($disableInstall) {
         $tweakTab.Content = $null
         $tweakTab.Content = $tweakTabContent
     }
-}
+} #>
 
 
 
