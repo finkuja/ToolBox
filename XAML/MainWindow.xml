@@ -331,6 +331,7 @@
                             <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,0">
                                 <Button Name="DeleteTempFilesButton" Content="Delete Temporary Files" Width="180" Height="30" Margin="0,5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                 <Button Name="OptimizeDrivesButton" Content="Optimize Drives" Width="180" Height="30" Margin="0,5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
+                                <Button Name="PerformanceOptionsButton" Content="Performance Options" Width="180" Height="30" Margin="0,5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                 <Button Name="RunDiskCleanupButton" Content="Run Disk Cleanup" Width="180" Height="30" Margin="0,5" Cursor="Hand" Style="{StaticResource CustomButtonStyle}"/>
                                 <ComboBox Name="DNSComboBox" Width="180" Height="30" Margin="0,5" SelectedIndex="0" Style="{StaticResource CustomComboBoxStyle}">
                                     <ComboBoxItem Content="DNS" Style="{StaticResource CustomComboBoxItemStyle}"/>

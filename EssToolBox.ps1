@@ -62,7 +62,6 @@ if (-not $isAdmin) {
         
         # Get the current script path
         $scriptPath = $MyInvocation.MyCommand.Path
-        
         # Create a new process to run the script with administrator privileges
         $startInfo = New-Object System.Diagnostics.ProcessStartInfo
         $startInfo.FileName = "powershell.exe"
@@ -658,6 +657,10 @@ $controls["DeleteTempFilesButton"].Add_Click({
 
 $controls["OptimizeDrivesButton"].Add_Click({
         Invoke-OptimizeDrives
+    })
+
+$controls["PerformanceOptionsButton"].Add_Click({
+        Invoke-PerformanceOptions
     })
 
 $controls["RunDiskCleanupButton"].Add_Click({

@@ -29,7 +29,8 @@
         "RunButton",
         "InfoHyperlink",
         "ParameterTextBox",
-        "ConsoleTextBox"
+        "ConsoleTextBox",
+        "PerformanceOptionsButton"
     ],
     "InstallCheckboxNames": [
         "AdobeCreativeCloud",
