@@ -1,5 +1,6 @@
 param (
     [switch]$OfflineMode
+    
 )
 
 <#
@@ -56,34 +57,53 @@ $ESS_ToolBox_Subtitle = @"
 # Check if the script is running with administrator privileges
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 if (-not $isAdmin) {
-    Write-Host "The ESSToolBox needs to run as Administrator, trying to elevate the permissions..." -ForegroundColor Yellow
-    
-    # Get the current script content
-    $scriptContent = (Invoke-RestMethod https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/Test/EssToolBox.ps1)
-    
-    # Define a temporary file path
-    $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "ESSToolBox.ps1")
-    
-    # Save the script content to the temporary file
-    [System.IO.File]::WriteAllText($tempFilePath, $scriptContent)
-    
-    # Create a new process to run the script with administrator privileges
-    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $startInfo.FileName = "powershell.exe"
-    $startInfo.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$tempFilePath`"" 
-    $startInfo.Verb = "runas"
-    
-    try {
-        # Start the new process
-        $process = [System.Diagnostics.Process]::Start($startInfo)
-        $process.WaitForExit()
+    if ($OfflineMode) {
+        Write-Host "Running in Offline Mode." -ForegroundColor Yellow
+        
+        # Get the current script path
+        $scriptPath = $MyInvocation.MyCommand.Path
+        
+        # Create a new process to run the script with administrator privileges
+        $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $startInfo.FileName = "powershell.exe"
+        $startInfo.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" 
+        $startInfo.Verb = "runas"
+        
+        try {
+            # Start the new process
+            $process = [System.Diagnostics.Process]::Start($startInfo)
+            $process.WaitForExit()
+        }
+        catch {
+            [System.Windows.Forms.MessageBox]::Show("Failed to run the script with administrator privileges. Please run this script with administrator privileges manually.")
+        }
+        
+        # Exit the current script
+        exit
     }
-    catch {
-        [System.Windows.Forms.MessageBox]::Show("Failed to run the script with administrator privileges. Please run this script with administrator privileges manually.")
+    else {
+        Write-Host "Running in Online Mode." -ForegroundColor Yellow
+        
+        Write-Host "The ESSToolBox needs to run as Administrator, trying to elevate the permissions..." -ForegroundColor Yellow
+        
+        # Create a new process to run the script with administrator privileges
+        $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $startInfo.FileName = "powershell.exe"
+        $startInfo.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"Invoke-RestMethod 'https://raw.githubusercontent.com/finkuja/ToolBox/refs/heads/main/EssToolBox.ps1' | iex`"" 
+        $startInfo.Verb = "runas"
+         
+        try {
+            # Start the new process
+            $process = [System.Diagnostics.Process]::Start($startInfo)
+            $process.WaitForExit()
+        }
+        catch {
+            [System.Windows.Forms.MessageBox]::Show("Failed to run the script with administrator privileges. Please run this script with administrator privileges manually.")
+        }
+         
+        # Exit the current script
+        exit
     }
-    
-    # Exit the current script
-    exit
 }
 else {
     Write-Host "Running with administrator privileges." -ForegroundColor Green
