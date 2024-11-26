@@ -101,10 +101,6 @@ This is the main script that initializes the GUI and handles the primary logic f
       ```
 3. Use the GUI to navigate through the tabs and perform various actions such as installing packages, applying tweaks, and fixing issues.
 
-## Contributors
-
-- [finkuja](https://github.com/finkuja)
-
 ## License
 
 This project is licensed under the MIT License.
